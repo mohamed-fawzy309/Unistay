@@ -13,13 +13,12 @@
         body { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
         .login-card { box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: none; }
         .university-logo { width: 90px; height: 90px; }
-        .logo-header { text-align: center; padding: 1.5rem 0 .5rem; }
-        .logo-header img { height: 60px; }
+
     </style>
 </head>
 <body>
-    <div class="logo-header">
-        <img src="~/images/Unistay_logo.png" alt="UniStay">
+    <div class="d-flex justify-content-between align-items-start pe-3 pt-3">
+        <a href="/"><img src="~/images/Unistay_logo.png" alt="UniStay" style="height:60px"></a>
     </div>
     <div class="container">
         @RenderBody()
