@@ -196,6 +196,10 @@ namespace UniStay.Controllers
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
+            var activeAlloc = await _context.Allocations
+                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
+            ViewBag.HasActiveAllocation = activeAlloc != null;
+
             return View(applications);
         }
 
@@ -332,7 +336,7 @@ namespace UniStay.Controllers
 
         // POST: /Student/ProcessPayment
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> ProcessPayment()
         {
             var studentId = GetCurrentStudentId();
@@ -361,7 +365,7 @@ namespace UniStay.Controllers
                 payment.PaidAmount = payment.Amount;
                 payment.ReceiptNumber = $"SIM-{DateTime.Now:yyyyMMdd}-{DateTime.Now.Ticks % 100000}";
                 payment.PaymentMethod = "Simulation";
-                payment.RecordedBy = -1;
+                payment.RecordedBy = null;
             }
 
             if (alloc.CityRoom != null)
@@ -477,6 +481,10 @@ namespace UniStay.Controllers
             ViewBag.MonthlyFee = monthlyFee;
             ViewBag.Violations = violations;
 
+            var months = new[] { "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس" };
+            var now = DateTime.UtcNow;
+            ViewBag.CurrentMonthLabel = now.Day >= 20 ? months[now.Month - 1] : null;
+
             return View(payments);
         }
 
@@ -551,40 +559,34 @@ namespace UniStay.Controllers
 
         private async Task EnsureMonthlyFees(Allocation alloc)
         {
-            var startMonth = alloc.AllocatedAt ?? DateTime.UtcNow;
             var now = DateTime.UtcNow;
             var monthlyFee = 500m;
 
-            var existingMonths = await _context.Payments
-                .Where(p => p.AllocationID == alloc.ID && p.PaymentType == "MonthlyFee")
-                .Select(p => p.Notes)
-                .ToListAsync();
+            // Only show monthly fee after the 20th of the month
+            if (now.Day < 20) return;
 
-            var existingSet = new HashSet<string>(existingMonths ?? new());
             var months = new[] { "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس" };
+            var currentMonthLabel = months[now.Month - 1];
 
-            for (int m = 0; m < 12; m++)
+            var exists = await _context.Payments
+                .AnyAsync(p => p.AllocationID == alloc.ID && p.PaymentType == "MonthlyFee" && p.Notes == currentMonthLabel);
+
+            if (exists) return;
+
+            var dueDate = new DateTime(now.Year, now.Month, 1);
+            _context.Payments.Add(new Payment
             {
-                var monthLabel = months[m];
-                if (existingSet.Contains(monthLabel)) continue;
-
-                var dueDate = new DateTime(startMonth.Year, m + 1, 1);
-                if (dueDate > now) continue;
-
-                _context.Payments.Add(new Payment
-                {
-                    StudentID = alloc.StudentID,
-                    ApplicationID = alloc.ApplicationID,
-                    AllocationID = alloc.ID,
-                    PaymentType = "MonthlyFee",
-                    Amount = monthlyFee,
-                    PaidAmount = 0,
-                    Status = "Pending",
-                    AcademicYear = alloc.AcademicYear,
-                    Notes = monthLabel,
-                    RecordedAt = dueDate
-                });
-            }
+                StudentID = alloc.StudentID,
+                ApplicationID = alloc.ApplicationID,
+                AllocationID = alloc.ID,
+                PaymentType = "MonthlyFee",
+                Amount = monthlyFee,
+                PaidAmount = 0,
+                Status = "Pending",
+                AcademicYear = alloc.AcademicYear,
+                Notes = currentMonthLabel,
+                RecordedAt = dueDate
+            });
 
             await _context.SaveChangesAsync();
         }

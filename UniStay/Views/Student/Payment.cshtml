@@ -68,7 +68,7 @@
                 </div>
                 <p class="text-muted mb-3">هذه محاكاة لعملية الدفع. اضغط على الزر لتأكيد الدفع.</p>
                 @Html.AntiForgeryToken()
-                <button id="btnPay" class="btn btn-success btn-lg w-100" onclick="processPayment()">
+                <button id="btnPay" class="btn btn-success btn-lg w-100">
                     <i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م
                 </button>
                 <div id="paymentResult" class="mt-3"></div>
@@ -79,61 +79,76 @@
 
 @section Scripts {
     <script>
-        const totalSeconds = @remaining;
-        const deadlineMs = new Date('@deadline.ToString("o")').getTime();
+        (function() {
+            var deadlineMs = new Date('@deadline.ToString("o")').getTime();
+            var totalSec = Math.max(0, Math.floor((deadlineMs - Date.now()) / 1000));
 
-        function updateCountdown() {
-            const now = Date.now();
-            const diff = Math.max(0, Math.floor((deadlineMs - now) / 1000));
+            function updateCountdown() {
+                var now = Date.now();
+                var diff = Math.max(0, Math.floor((deadlineMs - now) / 1000));
 
-            if (diff <= 0) {
-                document.getElementById('countdown').innerHTML = '<span class="text-muted fs-4">انتهت المهلة</span>';
-                document.getElementById('btnPay').disabled = true;
-                document.getElementById('btnPay').innerHTML = '<i class="bi bi-x-circle me-2"></i> انتهت المهلة';
-                document.getElementById('progressBar').style.width = '0%';
-                document.getElementById('progressBar').classList.remove('bg-danger');
-                document.getElementById('progressBar').classList.add('bg-secondary');
-                location.reload();
-                return;
+                if (diff <= 0) {
+                    document.getElementById('countdown').innerHTML = '<span class="text-muted fs-4">انتهت المهلة</span>';
+                    document.getElementById('btnPay').disabled = true;
+                    document.getElementById('btnPay').innerHTML = '<i class="bi bi-x-circle me-2"></i> انتهت المهلة';
+                    document.getElementById('progressBar').style.width = '0%';
+                    document.getElementById('progressBar').className = 'progress-bar bg-secondary';
+                    location.reload();
+                    return;
+                }
+
+                document.getElementById('hours').textContent =
+                    String(Math.floor(diff / 3600)).padStart(2, '0');
+                document.getElementById('minutes').textContent =
+                    String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+                document.getElementById('seconds').textContent =
+                    String(Math.floor(diff % 60)).padStart(2, '0');
+
+                document.getElementById('progressBar').style.width =
+                    (diff / totalSec * 100) + '%';
             }
 
-            const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
-            const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-            const secs = String(diff % 60).padStart(2, '0');
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
 
-            document.getElementById('hours').textContent = hours;
-            document.getElementById('minutes').textContent = minutes;
-            document.getElementById('seconds').textContent = secs;
+            document.getElementById('btnPay').addEventListener('click', function() {
+                var btn = this;
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> جاري المعالجة...';
 
-            const pct = (diff / totalSeconds) * 100;
-            document.getElementById('progressBar').style.width = pct + '%';
-        }
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '@Url.Action("ProcessPayment", "Student")', true);
+                xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('[name=__RequestVerificationToken]').value);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.withCredentials = true;
 
-        updateCountdown();
-        setInterval(updateCountdown, 1000);
+                xhr.onload = function() {
+                    console.log("Status:", xhr.status);
+                    console.log("Response:", xhr.responseText);
 
-        async function processPayment() {
-            const btn = document.getElementById('btnPay');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> جاري المعالجة...';
-
-            try {
-                const token = document.querySelector('[name=__RequestVerificationToken]').value;
-                const response = await fetch('@Url.Action("ProcessPayment", "Student")', {
-                    method: 'POST',
-                    headers: {
-                        'RequestVerificationToken': token,
+                    if (xhr.status !== 200) {
+                        document.getElementById('paymentResult').innerHTML =
+                            '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i> السيرفر أرجع خطأ ' + xhr.status + '<br><small>' + xhr.responseText.substring(0, 200) + '</small></div>';
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م';
+                        return;
                     }
-                });
-                const r = await response.json();
 
-                if (r.success) {
-                    document.getElementById('paymentResult').innerHTML =
-                        '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>' + r.message + '</div>';
-                    btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تم الدفع بنجاح';
-                    setTimeout(() => window.location.href = '@Url.Action("Home", "Student")', 2000);
-                } else {
-                    if (r.expired) {
+                    var r;
+                    try { r = JSON.parse(xhr.responseText); } catch (e) {
+                        document.getElementById('paymentResult').innerHTML =
+                            '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i> خطأ في الاستجابة<br><small>' + xhr.responseText.substring(0, 300) + '</small></div>';
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م';
+                        return;
+                    }
+
+                    if (r.success) {
+                        document.getElementById('paymentResult').innerHTML =
+                            '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>' + r.message + '</div>';
+                        btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تم الدفع بنجاح';
+                        setTimeout(function() { window.location.href = '@Url.Action("Home", "Student")'; }, 2000);
+                    } else if (r.expired) {
                         location.reload();
                     } else {
                         document.getElementById('paymentResult').innerHTML =
@@ -141,13 +156,17 @@
                         btn.disabled = false;
                         btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م';
                     }
-                }
-            } catch {
-                document.getElementById('paymentResult').innerHTML =
-                    '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i> حدث خطأ في الاتصال</div>';
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م';
-            }
-        }
+                };
+
+                xhr.onerror = function() {
+                    document.getElementById('paymentResult').innerHTML =
+                        '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i> حدث خطأ في الاتصال</div>';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م';
+                };
+
+                xhr.send('{}');
+            });
+        })();
     </script>
 }

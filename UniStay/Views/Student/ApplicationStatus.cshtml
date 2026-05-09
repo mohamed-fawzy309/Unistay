@@ -34,7 +34,7 @@ else
             bool step2Done = app.Status != "Pending";
             bool step2Failed = app.Status == "Rejected" || app.Status == "Cancelled";
             bool step3Done = app.Status == "Accepted" || app.Status == "Allocated";
-            bool step4Done = app.Status == "Allocated";
+            bool step4Done = app.Status == "Allocated" || ViewBag.HasActiveAllocation == true;
 
             <div class="card mb-4 shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
