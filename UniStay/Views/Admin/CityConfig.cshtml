@@ -1,0 +1,105 @@
+@model UniStay.Models.CityConfiguration
+@{
+    ViewData["Title"] = "إعدادات المدينة";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>إعدادات: @ViewBag.CityName</h2>
+    <a asp-action="Cities" class="btn btn-secondary">رجوع</a>
+</div>
+
+<form asp-action="CityConfig" method="post" class="card shadow-sm">
+    <input type="hidden" asp-for="ID" />
+    <input type="hidden" asp-for="DormitoryCityID" />
+
+    <div class="card-header bg-primary text-white"><h5 class="mb-0">الرسوم</h5></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">رسوم السكن العادي</label>
+                <input asp-for="StandardFee" class="form-control" type="number" step="0.01">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">رسوم السكن ممتاز</label>
+                <input asp-for="PremiumFee" class="form-control" type="number" step="0.01">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">رسوم VIP</label>
+                <input asp-for="VIPFee" class="form-control" type="number" step="0.01">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">رسوم الطلاب الوافدين</label>
+                <input asp-for="ForeignStudentFee" class="form-control" type="number" step="0.01">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">تأمين</label>
+                <input asp-for="SecurityDeposit" class="form-control" type="number" step="0.01">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">رسوم الوجبة</label>
+                <input asp-for="MealFee" class="form-control" type="number" step="0.01">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">رسوم وجبة رمضان</label>
+                <input asp-for="RamadanMealFee" class="form-control" type="number" step="0.01">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">رسوم وجبة مسيحي</label>
+                <input asp-for="ChristianMealFee" class="form-control" type="number" step="0.01">
+            </div>
+        </div>
+    </div>
+
+    <div class="card-header bg-success text-white mt-3"><h5 class="mb-0">شروط القبول</h5></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label">أقل مسافة (كم)</label>
+                <input asp-for="MinDistanceKm" class="form-control" type="number" step="0.01">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">أقل نسبة تقدير</label>
+                <input asp-for="MinGradePercentage" class="form-control" type="number" step="0.01">
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">أقصى عمر</label>
+                <input asp-for="MaxAge" class="form-control" type="number">
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">عدد الأسرة الأقصى في الغرفة</label>
+                <input asp-for="MaxBedsPerRoom" class="form-control" type="number">
+            </div>
+            <div class="col-md-6 mb-3 d-flex align-items-end">
+                <div class="form-check">
+                    <input asp-for="AutoCoordinationEnabled" class="form-check-input" type="checkbox">
+                    <label class="form-check-label">تفعيل التنسيق الآلي</label>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3 d-flex align-items-end">
+                <div class="form-check">
+                    <input asp-for="AllowStudentBedSelection" class="form-check-input" type="checkbox">
+                    <label class="form-check-label">السماح للطالب باختيار السرير</label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-header bg-info text-white mt-3"><h5 class="mb-0">الكليات المسموحة / المستثناة</h5></div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">الكليات المسموحة فقط (JSON)</label>
+                <textarea asp-for="AllowedFacultiesOnly" class="form-control" rows="3" placeholder='["كلية الهندسة", "كلية الطب"]'></textarea>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">الكليات المستثناة (JSON)</label>
+                <textarea asp-for="ExcludedFaculties" class="form-control" rows="3" placeholder='["كلية الحقوق"]'></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-footer">
+        <button type="submit" class="btn btn-primary btn-lg">حفظ الإعدادات</button>
+        <a asp-action="Cities" class="btn btn-secondary">إلغاء</a>
+    </div>
+</form>

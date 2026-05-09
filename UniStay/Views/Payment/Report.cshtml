@@ -1,0 +1,94 @@
+@model PaymentReportViewModel
+@{
+    ViewData["Title"] = "تقرير المدفوعات";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-earmark-bar-graph"></i> تقرير المدفوعات</h2>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-3">
+                    <label class="form-label">من تاريخ</label>
+                    <input name="fromDate" class="form-control" type="date" value="@Model.FromDate?.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">إلى تاريخ</label>
+                    <input name="toDate" class="form-control" type="date" value="@Model.ToDate?.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">المدينة</label>
+                    <select name="cityId" class="form-select">
+                        <option value="">الكل</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> عرض</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h6>الإجمالي المحصل</h6>
+                    <h3 class="text-success">@Model.TotalCollected.ToString("N2")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h6>إجمالي المعاملات</h6>
+                    <h3 class="text-primary">@Model.TotalTransactions</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <h6>ناجحة</h6>
+                    <h3 class="text-info">@Model.SuccessfulCount</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <h6>متأخرة</h6>
+                    <h3 class="text-danger">@Model.OverdueCount</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Summary.Any())
+    {
+        <div class="card">
+            <div class="card-header bg-dark text-white"><h5 class="mb-0">ملخص حسب النوع</h5></div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr><th>النوع</th><th>العدد</th><th>الإجمالي</th><th>المحصل</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.Summary)
+                        {
+                            <tr>
+                                <td>@s.PaymentType</td>
+                                <td>@s.Count</td>
+                                <td>@s.TotalAmount.ToString("N2")</td>
+                                <td>@s.TotalPaid.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

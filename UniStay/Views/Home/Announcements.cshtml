@@ -1,0 +1,45 @@
+@model List<UniStay.Models.Announcement>
+@{
+    ViewData["Title"] = "الإعلانات";
+}
+
+<h2 class="mb-4">الإعلانات</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">لا توجد إعلانات حالياً</div>
+}
+
+<div class="row">
+    @foreach (var ann in Model)
+    {
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">@ann.Title</h5>
+                    <p class="card-text">@ann.Body</p>
+                    <span class="badge bg-info">@ann.AnnouncementType</span>
+                    @if (!string.IsNullOrEmpty(ann.TargetAudience))
+                    {
+                        <span class="badge bg-warning">@ann.TargetAudience</span>
+                    }
+                    <small class="text-muted d-block mt-2">@ann.PublishedAt?.ToString("yyyy-MM-dd")</small>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (ViewBag.TotalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination justify-content-center">
+            @for (int i = 1; i <= ViewBag.TotalPages; i++)
+            {
+                <li class="page-item @(i == ViewBag.Page ? "active" : "")">
+                    <a class="page-link" asp-action="Announcements" asp-route-page="@i">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

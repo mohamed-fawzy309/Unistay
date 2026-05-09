@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36930.0 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UniStay", "UniStay\UniStay.csproj", "{6399FAAA-D773-4C5E-9A02-259D9C22006B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6399FAAA-D773-4C5E-9A02-259D9C22006B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6399FAAA-D773-4C5E-9A02-259D9C22006B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6399FAAA-D773-4C5E-9A02-259D9C22006B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6399FAAA-D773-4C5E-9A02-259D9C22006B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2D1DFBC2-65E0-49B0-8235-482FC3FDC2A1}
+	EndGlobalSection
+EndGlobal

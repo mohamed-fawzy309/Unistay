@@ -1,0 +1,115 @@
+@model UniStay.ViewModels.Violation.AddViolationViewModel
+@{
+    ViewData["Title"] = "تسجيل مخالفة جديدة";
+}
+
+<h2 class="page-title mb-4">تسجيل مخالفة جديدة</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+<form asp-action="Add" method="post" class="filter-bar p-4">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label asp-for="StudentID" class="form-label">الطالب <span class="text-danger">*</span></label>
+            <input asp-for="StudentID" class="form-control" placeholder="بحث بكود الطالب أو الرقم القومي" id="studentSearch" autocomplete="off" />
+            <span asp-validation-for="StudentID" class="text-danger"></span>
+            <div id="studentResult" class="mt-1 small text-muted"></div>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="DormitoryCityID" class="form-label">المدينة الجامعية <span class="text-danger">*</span></label>
+            <select asp-for="DormitoryCityID" class="form-select" asp-items="ViewBag.Cities">
+                <option value="">-- اختر المدينة --</option>
+            </select>
+            <span asp-validation-for="DormitoryCityID" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="ViolationType" class="form-label">نوع المخالفة <span class="text-danger">*</span></label>
+            <select asp-for="ViolationType" class="form-select" asp-items="ViewBag.ViolationTypes">
+                <option value="">-- اختر النوع --</option>
+            </select>
+            <span asp-validation-for="ViolationType" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">درجة الخطورة <span class="text-danger">*</span></label>
+            <div class="d-flex gap-3 mt-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" asp-for="Severity" value="Low" id="sevLow">
+                    <label class="form-check-label text-info" for="sevLow">منخفضة</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" asp-for="Severity" value="Medium" id="sevMedium">
+                    <label class="form-check-label text-warning" for="sevMedium">متوسطة</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" asp-for="Severity" value="High" id="sevHigh">
+                    <label class="form-check-label text-danger" for="sevHigh">عالية</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" asp-for="Severity" value="Critical" id="sevCritical">
+                    <label class="form-check-label text-dark" for="sevCritical">حرجة</label>
+                </div>
+            </div>
+            <span asp-validation-for="Severity" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="FineAmount" class="form-label">قيمة الغرامة</label>
+            <div class="input-group">
+                <input asp-for="FineAmount" class="form-control" type="number" step="0.01" min="0" />
+                <span class="input-group-text">جنيه</span>
+            </div>
+            <span asp-validation-for="FineAmount" class="text-danger"></span>
+        </div>
+        <div class="col-12">
+            <label asp-for="Description" class="form-label">وصف المخالفة</label>
+            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-save"></i> تسجيل المخالفة
+        </button>
+        <a asp-action="Report" class="btn btn-secondary">تقرير المخالفات</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        let searchTimeout;
+        document.getElementById('studentSearch')?.addEventListener('input', function () {
+            clearTimeout(searchTimeout);
+            const val = this.value.trim();
+            if (val.length < 1) { document.getElementById('studentResult').innerHTML = ''; return; }
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch('/api/students/search?q=' + encodeURIComponent(val));
+                    const data = await response.json();
+                    const div = document.getElementById('studentResult');
+                    if (data.length > 0) {
+                        div.innerHTML = data.map(s =>
+                            `<div class="student-item" data-id="${s.id}" style="cursor:pointer;padding:2px 4px;border-bottom:1px solid #eee;">${s.name} - ${s.nationalId}</div>`
+                        ).join('');
+                        div.querySelectorAll('.student-item').forEach(el => {
+                            el.addEventListener('click', function () {
+                                document.getElementById('studentSearch').value = this.dataset.id;
+                                div.innerHTML = `<span class="text-success">✓ تم اختيار: ${this.textContent}</span>`;
+                            });
+                        });
+                    } else {
+                        div.innerHTML = '<span class="text-muted">لا توجد نتائج</span>';
+                    }
+                } catch { document.getElementById('studentResult').innerHTML = '<span class="text-danger">خطأ في البحث</span>'; }
+            }, 300);
+        });
+    </script>
+}

@@ -1,0 +1,196 @@
+@model UniStay.Models.Student
+@{
+    ViewData["Title"] = "بيان الحالة";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0"><i class="bi bi-file-earmark-text text-success me-2"></i> بيان الحالة</h3>
+</div>
+
+@if (Model == null)
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i> لم يتم العثور على بيانات الطالب.
+    </div>
+    return;
+}
+
+@* بيانات الطالب *@
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-success text-white fw-bold">
+        <i class="bi bi-person me-2"></i> البيانات الشخصية
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <small class="text-muted d-block">الاسم الكامل</small>
+                <strong>@Model.FullName</strong>
+            </div>
+            <div class="col-md-4">
+                <small class="text-muted d-block">الرقم القومي</small>
+                <strong>@Model.NationalID</strong>
+            </div>
+            <div class="col-md-4">
+                <small class="text-muted d-block">الجنس</small>
+                <strong>@(Model.Gender == "Male" ? "ذكر" : "أنثى")</strong>
+            </div>
+            <div class="col-md-4">
+                <small class="text-muted d-block">الكلية</small>
+                <strong>@Model.Faculty</strong>
+            </div>
+            <div class="col-md-4">
+                <small class="text-muted d-block">السنة الدراسية</small>
+                <strong>@Model.AcademicYear</strong>
+            </div>
+            <div class="col-md-4">
+                <small class="text-muted d-block">رقم الهاتف</small>
+                <strong>@Model.Phone</strong>
+            </div>
+            <div class="col-md-6">
+                <small class="text-muted d-block">البريد الإلكتروني</small>
+                <strong>@Model.Email</strong>
+            </div>
+            <div class="col-md-6">
+                <small class="text-muted d-block">العنوان</small>
+                <strong>@Model.Governorate - @Model.City - @Model.Address</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* بيانات ولي الأمر *@
+@if (Model.Guardians != null && Model.Guardians.Any())
+{
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-secondary text-white fw-bold">
+            <i class="bi bi-people me-2"></i> بيانات ولي الأمر
+        </div>
+        <div class="card-body">
+            @foreach (var g in Model.Guardians)
+            {
+                <div class="row g-2 mb-3 pb-3 border-bottom">
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">النوع</small>
+                        <strong>@(g.GuardianType == "Father" ? "الأب" : "ولي الأمر")</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted d-block">الاسم</small>
+                        <strong>@g.FullName</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted d-block">الوظيفة</small>
+                        <strong>@(g.Job ?? "—")</strong>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted d-block">متوفى؟</small>
+                        <strong>@(g.IsDeceased == true ? "نعم" : "لا")</strong>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@* بيانات التسكين *@
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-primary text-white fw-bold">
+        <i class="bi bi-house me-2"></i> بيانات التسكين
+    </div>
+    <div class="card-body">
+        @if (ViewBag.Allocation == null)
+        {
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i>
+                لم يتم تسكينك بعد. انتظر الإخطار من إدارة المدينة الجامعية.
+            </div>
+        }
+        else
+        {
+            var alloc = ViewBag.Allocation as UniStay.Models.Allocation;
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <small class="text-muted d-block">المدينة الجامعية</small>
+                    <strong>@alloc?.CityRoom?.CityBuilding?.DormitoryCity?.Name</strong>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted d-block">المبنى</small>
+                    <strong>@alloc?.CityRoom?.CityBuilding?.BuildingName</strong>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted d-block">رقم الغرفة</small>
+                    <strong>@alloc?.CityRoom?.RoomNumber</strong>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted d-block">تاريخ التسكين</small>
+                    <strong>@(alloc?.AllocatedAt.HasValue == true ? alloc.AllocatedAt.Value.ToString("dd/MM/yyyy") : "—")</strong>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted d-block">الحالة</small>
+                    <span class="badge bg-success fs-6">@alloc?.Status</span>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@* سجل الغيابات *@
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-warning text-dark fw-bold">
+        <i class="bi bi-clock-history me-2"></i> سجل طلبات الغياب (آخر 10)
+    </div>
+    <div class="card-body p-0">
+        @{
+            var absencesList = ViewBag.Absences as List<UniStay.Models.Absence> ?? new();
+        }
+        @if (!absencesList.Any())
+        {
+            <div class="p-3 text-muted">
+                <i class="bi bi-info-circle me-2"></i> لا توجد طلبات غياب مسجلة.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>النوع</th>
+                            <th>من</th>
+                            <th>إلى</th>
+                            <th>الحالة</th>
+                            <th>تاريخ الطلب</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ab in absencesList)
+                        {
+                            var badgeColor = ab.Status switch
+                            {
+                                "Approved" => "success",
+                                "Rejected" => "danger",
+                                "Pending"  => "warning text-dark",
+                                _          => "secondary"
+                            };
+                            var statusText = ab.Status switch
+                            {
+                                "Approved" => "موافق عليه",
+                                "Rejected" => "مرفوض",
+                                "Pending"  => "قيد المراجعة",
+                                _          => ab.Status
+                            };
+                            <tr>
+                                <td>@ab.ID</td>
+                                <td>@ab.AbsenceType</td>
+                                @ab.AbsenceDate.ToString("dd/MM/yyyy")
+                                <td>@(ab.ToDate.HasValue ? ab.ToDate.Value.ToString("dd/MM/yyyy") : "—")</td>
+                                <td><span class="badge bg-@badgeColor">@statusText</span></td>
+                                <td>@(ab.CreatedAt.HasValue ? ab.CreatedAt.Value.ToString("dd/MM/yyyy") : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

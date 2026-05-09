@@ -1,0 +1,160 @@
+@model UniStay.ViewModels.Application.ApplicationViewModel
+@{
+    ViewData["Title"] = "تعديل البيانات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0"><i class="bi bi-pencil-square text-success me-2"></i> تعديل البيانات الشخصية</h3>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-2"></i> @TempData["Warning"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form asp-action="EditProfile" method="post">
+    @Html.AntiForgeryToken()
+
+    @* البيانات الشخصية *@
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-success text-white fw-bold">
+            <i class="bi bi-person me-2"></i> البيانات الشخصية
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">الرقم القومي</label>
+                    <input asp-for="NationalID" class="form-control" readonly />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">الاسم الكامل <span class="text-danger">*</span></label>
+                    <input asp-for="FullName" class="form-control" />
+                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">الجنس</label>
+                    <input asp-for="Gender" class="form-control" readonly />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">تاريخ الميلاد</label>
+                    <input asp-for="BirthDate" type="date" class="form-control" readonly />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">الجنسية</label>
+                    <input asp-for="Nationality" class="form-control" readonly />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">البريد الإلكتروني <span class="text-danger">*</span></label>
+                    <input asp-for="Email" type="email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">رقم الهاتف <span class="text-danger">*</span></label>
+                    <input asp-for="Phone" class="form-control" />
+                    <span asp-validation-for="Phone" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">المحافظة</label>
+                    <input asp-for="Governorate" class="form-control" />
+                    <span asp-validation-for="Governorate" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">المدينة</label>
+                    <input asp-for="City" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">العنوان</label>
+                    <input asp-for="Address" class="form-control" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* البيانات الدراسية *@
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-success text-white fw-bold">
+            <i class="bi bi-mortarboard me-2"></i> البيانات الدراسية
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">الكلية <span class="text-danger">*</span></label>
+                    <input asp-for="Faculty" class="form-control" />
+                    <span asp-validation-for="Faculty" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">السنة الدراسية</label>
+                    <input asp-for="AcademicYear" type="number" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">النسبة المئوية للدرجات</label>
+                    <input asp-for="GradePercentage" type="number" step="0.01" class="form-control" />
+                    <span asp-validation-for="GradePercentage" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">المسافة من الجامعة (كم)</label>
+                    <input asp-for="DistanceFromUniv" type="number" step="0.1" class="form-control" />
+                </div>
+                <div class="col-md-6 d-flex align-items-center gap-4 pt-4">
+                    <div class="form-check">
+                        <input asp-for="HasFamilyAbroad" type="checkbox" class="form-check-input" />
+                        <label class="form-check-label fw-bold">أسرة مقيمة بالخارج</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* الحالة الصحية *@
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-success text-white fw-bold">
+            <i class="bi bi-heart-pulse me-2"></i> الحالة الصحية
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="form-check">
+                        <input asp-for="HasMedicalCondition" type="checkbox" class="form-check-input" id="medCheck" />
+                        <label class="form-check-label fw-bold" for="medCheck">يوجد حالة مرضية أو إعاقة</label>
+                    </div>
+                </div>
+                <div class="col-12" id="medDescSection">
+                    <label class="form-label fw-bold">وصف الحالة</label>
+                    <textarea asp-for="MedicalDescription" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-success px-4">
+            <i class="bi bi-save me-2"></i> حفظ التعديلات
+        </button>
+        <a asp-action="Home" class="btn btn-outline-secondary px-4">إلغاء</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const medCheck = document.getElementById('medCheck');
+        const medDescSection = document.getElementById('medDescSection');
+
+        function toggleMedDesc() {
+            medDescSection.style.display = medCheck.checked ? 'block' : 'none';
+        }
+
+        medCheck.addEventListener('change', toggleMedDesc);
+        toggleMedDesc();
+    </script>
+}

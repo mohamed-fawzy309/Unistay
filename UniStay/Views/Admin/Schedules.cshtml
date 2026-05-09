@@ -1,0 +1,381 @@
+@model List<UniStay.Models.ApplicationSchedule>
+@{
+    ViewData["Title"] = "مواعيد التقديم";
+}
+
+<style>
+    .schedule-card { border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .schedule-card .card-header { font-weight: 700; }
+    .modal-schedule .modal-header { background: #0d6efd; color: #fff; border-bottom: none; }
+    .modal-schedule .modal-header .btn-close { filter: brightness(0) invert(1); }
+    .modal-schedule .section-label { font-size: .82rem; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: .05em; margin-bottom: .75rem; padding-bottom: .4rem; border-bottom: 1px solid #dee2e6; }
+    .modal-schedule .form-label { font-weight: 600; font-size: .86rem; }
+    .modal-schedule .form-control:focus, .modal-schedule .form-select:focus { border-color: #0d6efd; box-shadow: 0 0 0 .2rem rgba(13,110,253,.15); }
+    .badge-lg { font-size: .8rem; padding: .35rem .75rem; }
+
+    .modal {
+        z-index: 999999;
+    }
+
+    .modal-backdrop {
+        z-index: 999998;
+    }
+
+    .modal-content {
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .modal-schedule .modal-body {
+        background: #f8fafc;
+    }
+
+    .section-label {
+        font-size: .82rem;
+        font-weight: 700;
+        color: #0d6efd;
+        margin-bottom: .75rem;
+        padding-bottom: .4rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .modal-schedule .form-control,
+    .modal-schedule .form-select {
+        border-radius: 12px;
+    }
+
+        .modal-schedule .form-control:focus,
+        .modal-schedule .form-select:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 .2rem rgba(13,110,253,.15);
+        }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-calendar-range me-2"></i>مواعيد التقديم</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal"><i class="bi bi-plus-lg me-1"></i>إضافة جدول</button>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="table-responsive bg-white rounded shadow-sm schedule-card">
+    <table class="table table-hover mb-0 align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>المدينة</th>
+                <th>العام</th>
+                <th>الجدد من</th>
+                <th>الجدد إلى</th>
+                <th>القدامى من</th>
+                <th>القدامى إلى</th>
+                <th>الحالة</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model)
+            {
+                <tr>
+                    <td><strong>@s.DormitoryCity?.Name</strong></td>
+                    <td>@s.AcademicYear</td>
+                    <td>@(s.NewStudentsOpenDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                    <td>@(s.NewStudentsCloseDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                    <td>@(s.ReturningStudentsOpenDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                    <td>@(s.ReturningStudentsCloseDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                    <td>
+                        @if (s.IsOpen)
+                        {
+                            <span class="badge bg-success badge-lg"><i class="bi bi-check-circle me-1"></i>مفتوح</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger badge-lg"><i class="bi bi-x-circle me-1"></i>مغلق</span>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-@s.ID">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @foreach (var s in Model)
+{
+    <div class="modal fade modal-schedule"
+         id="editModal-@s.ID"
+         tabindex="-1"
+         aria-hidden="true">
+
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+
+            <form asp-action="EditSchedule"
+                  method="post"
+                  class="modal-content border-0 shadow-lg">
+
+                <input type="hidden" name="ID" value="@s.ID">
+
+                <div class="modal-header bg-primary text-white">
+
+                    <h5 class="modal-title">
+                        <i class="bi bi-pencil-square me-2"></i>
+                        تعديل المواعيد
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal">
+                    </button>
+
+                </div>
+
+                <div class="modal-body bg-light">
+
+                    <div class="bg-white border rounded-4 p-3 mb-4 d-flex align-items-center gap-3 shadow-sm">
+
+                        <span class="badge bg-primary fs-6 px-3 py-2">
+                            @s.DormitoryCity?.Name
+                        </span>
+
+                        <span class="text-muted">
+                            <i class="bi bi-calendar3 me-1"></i>
+                            @s.AcademicYear
+                        </span>
+
+                    </div>
+
+                    <div class="mb-4">
+
+                        <div class="section-label">
+                            <i class="bi bi-person-plus me-1"></i>
+                            الطلاب الجدد
+                        </div>
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+
+                                <label class="form-label">
+                                    تاريخ فتح التقديم
+                                </label>
+
+                                <input name="NewStudentsOpenDate"
+                                       type="date"
+                                       class="form-control schedule-open"
+                                       value="@s.NewStudentsOpenDate?.ToString("yyyy-MM-dd")">
+
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <label class="form-label">
+                                    تاريخ إغلاق التقديم
+                                </label>
+
+                                <input name="NewStudentsCloseDate"
+                                       type="date"
+                                       class="form-control schedule-close"
+                                       value="@s.NewStudentsCloseDate?.ToString("yyyy-MM-dd")">
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-4">
+
+                        <div class="section-label">
+                            <i class="bi bi-arrow-repeat me-1"></i>
+                            الطلاب القدامى
+                        </div>
+
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+
+                                <label class="form-label">
+                                    تاريخ فتح التقديم
+                                </label>
+
+                                <input name="ReturningStudentsOpenDate"
+                                       type="date"
+                                       class="form-control schedule-open"
+                                       value="@s.ReturningStudentsOpenDate?.ToString("yyyy-MM-dd")">
+
+                            </div>
+
+                            <div class="col-md-6">
+
+                                <label class="form-label">
+                                    تاريخ إغلاق التقديم
+                                </label>
+
+                                <input name="ReturningStudentsCloseDate"
+                                       type="date"
+                                       class="form-control schedule-close"
+                                       value="@s.ReturningStudentsCloseDate?.ToString("yyyy-MM-dd")">
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-2">
+
+                        <div class="section-label">
+                            <i class="bi bi-toggle-on me-1"></i>
+                            حالة التقديم
+                        </div>
+                            <select name="IsOpen"
+                                    class="form-select"
+                                    style="max-width:220px">
+
+                                @if (s.IsOpen)
+                                {
+                                    <option value="true" selected>مفتوح</option>
+                                    <option value="false">مغلق</option>
+                                }
+                                else
+                                {
+                                    <option value="true">مفتوح</option>
+                                    <option value="false" selected>مغلق</option>
+                                }
+
+                            </select>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer bg-white">
+
+                    <button type="button"
+                            class="btn btn-light border"
+                            data-bs-dismiss="modal">
+
+                        إلغاء
+
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary px-4">
+
+                        <i class="bi bi-check-lg me-1"></i>
+                        حفظ التعديلات
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+}
+</div>
+
+@* ─── Add Modal ─── *@
+<div class="modal fade modal-schedule" id="addModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form asp-action="Schedules" method="post" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>إضافة جدول مواعيد جديد</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label">المدينة <span class="text-danger">*</span></label>
+                        <select name="DormitoryCityID" class="form-select">
+                            @foreach (var c in ViewBag.Cities)
+                            {
+                                <option value="@c.ID">@c.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">العام الدراسي <span class="text-danger">*</span></label>
+                        <input name="AcademicYear" class="form-control" placeholder="2025-2026" value="@($"{DateTime.Now.Year}-{DateTime.Now.Year + 1}")">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="section-label"><i class="bi bi-person-plus me-1"></i>الطلاب الجدد</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">تاريخ فتح التقديم</label>
+                            <input name="NewStudentsOpenDate" type="date" class="form-control schedule-open">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">تاريخ إغلاق التقديم</label>
+                            <input name="NewStudentsCloseDate" type="date" class="form-control schedule-close">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="section-label"><i class="bi bi-arrow-repeat me-1"></i>الطلاب القدامى</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">تاريخ فتح التقديم</label>
+                            <input name="ReturningStudentsOpenDate" type="date" class="form-control schedule-open">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">تاريخ إغلاق التقديم</label>
+                            <input name="ReturningStudentsCloseDate" type="date" class="form-control schedule-close">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="section-label"><i class="bi bi-toggle-on me-1"></i>حالة التقديم</div>
+                    <select name="IsOpen" class="form-select" style="max-width:200px">
+                        <option value="true" selected>مفتوح</option>
+                        <option value="false">مغلق</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>إضافة</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.schedule-open').forEach(function (openInput) {
+            openInput.addEventListener('change', function () {
+                var row = this.closest('.row');
+                if (!row) return;
+                var closeInput = row.querySelector('.schedule-close');
+                if (closeInput) {
+                    closeInput.min = this.value;
+                    if (closeInput.value && closeInput.value < this.value) {
+                        closeInput.value = this.value;
+                    }
+                }
+            });
+            if (openInput.value) {
+                var row = openInput.closest('.row');
+                if (row) {
+                    var closeInput = row.querySelector('.schedule-close');
+                    if (closeInput) {
+                        closeInput.min = openInput.value;
+                    }
+                }
+            }
+        });
+    });
+</script>

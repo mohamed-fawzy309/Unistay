@@ -1,0 +1,44 @@
+﻿@model BulkValidateViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "تحقق جماعي من سيرفر الجامعة";
+}
+<h4><i class="bi bi-check-all"></i> التحقق الجماعي من البيانات</h4>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">ادخال الأرقام القومية</div>
+            <div class="card-body">
+                <form asp-action="BulkValidate" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="All" class="text-danger"></div>
+                    <div class="mb-3">
+                        <label asp-for="NationalIDsText" class="form-label"></label>
+                        <textarea asp-for="NationalIDsText" class="form-control" rows="10" placeholder="مثال:&#10;12345678901234&#10;12345678901235"></textarea>
+                        <small class="text-muted">يمكنك لصق من Excel (كل رقم في سطر منفصل أو مفصول بفاصلة)</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-play-fill"></i> بدء التحقق
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="alert alert-info">
+            <h6><i class="bi bi-info-circle"></i> تعليمات:</h6>
+            <ul class="mb-0">
+                <li>يتم التحقق من كل رقم قومي في <strong>سيرفر الجامعة</strong></li>
+                <li><span class="badge bg-success">مطابق</span>: البيانات متطابقة تماماً</li>
+                <li><span class="badge bg-warning text-dark">اختلافات</span>: يوجد تباين (اسم/كلية/درجات)</li>
+                <li><span class="badge bg-danger">غير موجود</span>: الطالب غير مسجل في سجلات الجامعة</li>
+            </ul>
+        </div>
+
+        <div class="alert alert-warning">
+            <i class="bi bi-clock-history"></i> قد يستغرق التحقق الجماعي بعض الوقت حسب عدد الأرقام.
+        </div>
+    </div>
+</div>

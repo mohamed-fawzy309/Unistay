@@ -1,0 +1,35 @@
+@model AllocationFloorViewModel
+@{
+    ViewData["Title"] = "اختيار الدور";
+}
+
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">التسكين</a></li>
+            <li class="breadcrumb-item"><a asp-action="SelectBuilding" asp-route-appId="@Model.ApplicationID">اختيار المبنى</a></li>
+            <li class="breadcrumb-item active">اختيار الدور</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-building"></i> @Model.BuildingName</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                @foreach (var floor in Model.FloorNumbers)
+                {
+                    <div class="col-md-3 mb-3">
+                        <a asp-action="SelectRoom" asp-route-buildingId="@Model.BuildingID"
+                           asp-route-floor="@floor" asp-route-appId="@Model.ApplicationID"
+                           class="btn btn-outline-primary btn-lg w-100 py-4">
+                            <i class="bi bi-layers"></i><br />
+                            الدور @floor
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

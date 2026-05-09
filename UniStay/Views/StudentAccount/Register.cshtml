@@ -1,0 +1,64 @@
+@model UniStay.ViewModels.Account.StudentRegisterViewModel
+@{
+    ViewData["Title"] = "إنشاء حساب جديد - UniStay";
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+}
+
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-lg-5 col-md-7">
+            <div class="card shadow-lg border-0 rounded-4">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h4 class="mb-0">إنشاء حساب جديد</h4>
+                    <p class="mb-0">نظام UniStay - جامعة أسيوط</p>
+                </div>
+                <div class="card-body p-5">
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="alert alert-danger">@Model.ErrorMessage</div>
+                    }
+
+                    <form asp-action="Register" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label asp-for="NationalID" class="form-label fw-bold"></label>
+                            <input asp-for="NationalID" class="form-control form-control-lg" placeholder="الرقم القومي (14 رقم)" />
+                            <span asp-validation-for="NationalID" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="FullName" class="form-label fw-bold"></label>
+                            <input asp-for="FullName" class="form-control form-control-lg" placeholder="الاسم الرباعي كما في البطاقة" />
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Password" class="form-label fw-bold"></label>
+                            <input asp-for="Password" type="password" class="form-control form-control-lg" placeholder="كلمة المرور (8 أحرف على الأقل)" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="ConfirmPassword" class="form-label fw-bold"></label>
+                            <input asp-for="ConfirmPassword" type="password" class="form-control form-control-lg" placeholder="أعد إدخال كلمة المرور" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-success btn-lg w-100">إنشاء الحساب</button>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <a asp-action="Login" class="text-decoration-none">
+                            لديك حساب بالفعل؟ تسجيل الدخول
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

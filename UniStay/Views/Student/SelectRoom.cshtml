@@ -1,0 +1,135 @@
+@model List<UniStay.Models.CityBuilding>
+@{
+    ViewData["Title"] = "اختيار الغرفة";
+}
+
+@{
+    var reservedBeds = ViewBag.ReservedBeds as HashSet<string> ?? new HashSet<string>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0"><i class="bi bi-building text-success me-2"></i> اختر غرفتك — @ViewBag.CityName</h3>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        لا توجد غرف متاحة حالياً في هذه المدينة.
+    </div>
+}
+else
+{
+    foreach (var building in Model)
+    {
+        var availableRooms = building.CityRooms
+            .Where(r => r.CurrentOccupancy < r.BedsCount)
+            .OrderBy(r => r.FloorNumber).ThenBy(r => r.RoomNumber)
+            .ToList();
+
+        if (!availableRooms.Any()) continue;
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-house-door me-1"></i> @building.BuildingName</span>
+                <span class="badge bg-light text-dark">@building.BuildingType — @building.FloorCount أدوار</span>
+            </div>
+            <div class="card-body p-3">
+                @foreach (var floor in availableRooms.GroupBy(r => r.FloorNumber).OrderBy(g => g.Key))
+                {
+                    <h6 class="text-muted mb-2 mt-3">
+                        <i class="bi bi-layers me-1"></i> الدور @floor.Key
+                    </h6>
+                    <div class="row g-2">
+                        @foreach (var room in floor)
+                        {
+                            var availableBeds = Enumerable.Range(1, room.BedsCount)
+                                .Select(i => (byte)i)
+                                .Where(b => !reservedBeds.Contains($"{room.ID}-{b}"))
+                                .ToList();
+
+                            if (!availableBeds.Any()) continue;
+
+                            <div class="col-md-3 col-6">
+                                <div class="card border @(room.HasAC == true ? "border-primary" : "border-secondary") h-100">
+                                    <div class="card-body p-2 text-center">
+                                        <div class="fw-bold">غرفة @room.RoomNumber</div>
+                                        <small class="text-muted">
+                                            @(room.BedsCount - room.CurrentOccupancy) متاح
+                                            @if (room.HasAC == true) { <span><i class="bi bi-snow2 text-primary ms-1"></i></span> }
+                                            @if (room.HasPrivateBathroom == true) { <span><i class="bi bi-droplet text-info ms-1"></i></span> }
+                                        </small>
+                                        @foreach (var bed in availableBeds.Take(1))
+                                        {
+                                            <button class="btn btn-sm btn-outline-success mt-2 w-100 select-bed"
+                                                    data-room-id="@room.ID"
+                                                    data-bed="@bed"
+                                                    data-room-num="@room.RoomNumber"
+                                                    data-building="@building.BuildingName"
+                                                    data-floor="@floor.Key">
+                                                سرير @bed
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+}
+
+@Html.AntiForgeryToken()
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+    $(function(){
+        $(document).on('click', '.select-bed', function(){
+            const btn = $(this);
+            const roomId = btn.data('room-id');
+            const bed = btn.data('bed');
+            const roomNum = btn.data('room-num');
+            const building = btn.data('building');
+
+            if (!confirm(`تأكيد حجز سرير ${bed} في غرفة ${roomNum} - ${building}؟`)) return;
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+
+            $.ajax({
+                    url: '@Url.Action("ReserveRoom", "Student")',
+                type: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN':
+                        $('input[name="__RequestVerificationToken"]').val()
+                },
+                data: {
+                    roomId: roomId,
+                    bedNumber: bed
+                },
+                success: function(r) {
+                    if (r.success) {
+                        window.location.href = '@Url.Action("Payment", "Student")';
+                    } else {
+                        alert(r.message);
+                        btn.prop('disabled', false).text('سرير ' + bed);
+                    }
+                },
+                error: function(xhr) {
+                    var msg = 'خطأ ' + xhr.status;
+                    if (xhr.responseText && xhr.responseText.length < 200)
+                        msg += ': ' + xhr.responseText;
+                    alert(msg);
+                    btn.prop('disabled', false).text('سرير ' + bed);
+                }
+            });
+        });
+    });
+    </script>
+}

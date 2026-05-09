@@ -1,0 +1,213 @@
+@using UniStay.Models
+@{
+    ViewData["Title"] = "مواعيد التقديم - UniStay";
+    Layout = null;
+    var schedules = ViewBag.Schedules as List<ApplicationSchedule>;
+}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>مواعيد التقديم — UniStay</title>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --red: #e63946;
+            --red-dark: #b52530;
+            --red-dim: rgba(230,57,70,.15);
+            --black: #080b10;
+            --black-2: #0f1319;
+            --black-3: #161c26;
+            --black-4: #1e2736;
+            --border: #1e2736;
+            --text: #e8eaf0;
+            --muted: #6b7a99;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--black); color: var(--text); overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--black); }
+        ::-webkit-scrollbar-thumb { background: var(--red-dark); border-radius: 3px; }
+
+        .navbar {
+            background: rgba(8,11,16,.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(230,57,70,.12);
+            padding: .9rem 0;
+            position: fixed; top: 0; width: 100%; z-index: 1000;
+        }
+        .navbar-brand {
+            font-size: 1.5rem; font-weight: 900;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .nav-link { color: var(--muted) !important; font-weight: 500; font-size: .9rem; transition: color .2s; padding: .4rem .9rem !important; text-decoration: none; }
+        .nav-link:hover { color: #fff !important; }
+
+        .page-header {
+            padding: 8rem 0 3rem;
+            text-align: center;
+            position: relative;
+        }
+        .page-header::before {
+            content: ''; position: absolute; inset: 0;
+            background-image: linear-gradient(rgba(230,57,70,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(230,57,70,.05) 1px, transparent 1px);
+            background-size: 55px 55px;
+        }
+        .page-header-content { position: relative; z-index: 2; }
+        .page-title { font-size: 2.5rem; font-weight: 900; margin-bottom: .8rem; }
+        .page-title span { background: linear-gradient(135deg,#ff6b7a,var(--red)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .page-sub { color: var(--muted); font-size: 1.05rem; max-width: 600px; margin: 0 auto; line-height: 1.8; }
+
+        .section { padding: 4rem 0; }
+        .card-schedule {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 18px; padding: 2rem;
+            transition: transform .3s, border-color .3s;
+            height: 100%;
+        }
+        .card-schedule:hover { transform: translateY(-5px); border-color: rgba(230,57,70,.3); }
+        .card-schedule .icon {
+            width: 52px; height: 52px; border-radius: 13px;
+            background: var(--red-dim); border: 1px solid rgba(230,57,70,.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: var(--red); margin-bottom: 1rem;
+        }
+        .card-schedule h5 { font-weight: 700; margin-bottom: .5rem; }
+        .card-schedule p { color: var(--muted); font-size: .88rem; line-height: 1.7; margin-bottom: .3rem; }
+        .card-schedule .date { color: var(--red); font-weight: 600; }
+        .section-tag {
+            display: inline-block;
+            background: var(--red-dim);
+            border: 1px solid rgba(230,57,70,.2);
+            color: var(--red);
+            border-radius: 50px;
+            padding: .3rem .9rem;
+            font-size: .9rem;
+            font-weight: 700;
+            letter-spacing: .1em;
+            margin-bottom: 1rem;
+        }
+
+        .btn-back {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: transparent; border: 1px solid var(--border);
+            color: var(--muted); border-radius: 10px;
+            padding: .6rem 1.4rem; font-family: 'Tajawal', sans-serif;
+            font-size: .9rem; font-weight: 600; text-decoration: none;
+            transition: all .25s;
+        }
+        .btn-back:hover { border-color: var(--red); color: var(--red); }
+
+        footer {
+            background: var(--black-2);
+            border-top: 1px solid var(--border);
+            padding: 2rem 0; text-align: center;
+        }
+        .footer-text { color: var(--muted); font-size: .82rem; }
+        .footer-text span { color: var(--red); }
+
+        @@media (max-width: 768px) {
+            .page-title { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="container">
+            <a class="navbar-brand" href="/"><img src="~/images/Unistay_logo.png" alt="UniStay" style="height:38px"></a>
+            <div>
+                <a href="/" class="nav-link d-inline-block">الرئيسية</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="page-header">
+        <div class="container page-header-content">
+            <h1 class="page-title">مواعيد <span>التقديم</span></h1>
+            <p class="page-sub">تعرف على مواعيد فتح وإغلاق التقديم للسكن الجامعي لكل فصل دراسي</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            @if (schedules != null && schedules.Any())
+            {
+                var currentYear = schedules.First().AcademicYear;
+                <div class="text-center mb-5">
+                    <span class="section-tag">@currentYear</span>
+                </div>
+
+                <div class="row g-4">
+                    @foreach (var s in schedules)
+                    {
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card-schedule">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="icon" style="margin-bottom:0"><i class="fa-solid fa-city"></i></div>
+                                    @if (s.IsOpen)
+                                    {
+                                        <span class="badge" style="background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3);padding:.25rem .7rem;border-radius:50px;font-size:.75rem">مفتوح</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge" style="background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3);padding:.25rem .7rem;border-radius:50px;font-size:.75rem">مغلق</span>
+                                    }
+                                </div>
+                                <h5>@s.DormitoryCity?.Name</h5>
+                                <div style="margin-top:.8rem">
+                                    <p style="font-size:.82rem;color:var(--muted);margin-bottom:.2rem">الجدد:</p>
+                                    <p style="font-size:.88rem">
+                                        من <span class="date">@(s.NewStudentsOpenDate?.ToString("yyyy/MM/dd") ?? "—")</span>
+                                        إلى <span class="date">@(s.NewStudentsCloseDate?.ToString("yyyy/MM/dd") ?? "—")</span>
+                                    </p>
+                                </div>
+                                <div style="margin-top:.5rem">
+                                    <p style="font-size:.82rem;color:var(--muted);margin-bottom:.2rem">القدامى:</p>
+                                    <p style="font-size:.88rem">
+                                        من <span class="date">@(s.ReturningStudentsOpenDate?.ToString("yyyy/MM/dd") ?? "—")</span>
+                                        إلى <span class="date">@(s.ReturningStudentsCloseDate?.ToString("yyyy/MM/dd") ?? "—")</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <div style="font-size:3rem;color:var(--muted);margin-bottom:1rem"><i class="fa-regular fa-calendar"></i></div>
+                    <h4 style="color:var(--muted)">لم يتم تحديد مواعيد التقديم بعد</h4>
+                    <p style="color:var(--muted);font-size:.9rem">يرجى العودة لاحقاً للاطّلاع على مواعيد التقديم</p>
+                </div>
+            }
+
+            <div class="text-center mt-5">
+                <a href="/" class="btn-back">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    العودة إلى الرئيسية
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-text">
+                UniStay &nbsp;·&nbsp; <span>نظام إدارة السكن الجامعي</span>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

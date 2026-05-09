@@ -1,0 +1,87 @@
+@model AllocationIndexViewModel
+@{
+    ViewData["Title"] = "إدارة التسكين";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-house-door-fill"></i> إدارة التسكين</h2>
+        <a asp-action="ManualAllocation" class="btn btn-primary"><i class="bi bi-plus-circle"></i> تسكين يدوي</a>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h5 class="card-title">إجمالي الأسرة</h5>
+                    <h2 class="text-primary">@Model.TotalBeds</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h5 class="card-title">مشغول</h5>
+                    <h2 class="text-success">@Model.OccupiedBeds</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <h5 class="card-title">متاح</h5>
+                    <h2 class="text-info">@Model.AvailableBeds</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0"><i class="bi bi-clock-history"></i> طلبات بانتظار التسكين</h5>
+        </div>
+        <div class="card-body">
+            @if (!Model.PendingAllocations.Any())
+            {
+                <div class="alert alert-success">لا توجد طلبات بانتظار التسكين</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>الطالب</th>
+                                <th>الرقم القومي</th>
+                                <th>الكلية</th>
+                                <th>المدينة</th>
+                                <th>العام الدراسي</th>
+                                <th>الهاتف</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.PendingAllocations)
+                            {
+                                <tr>
+                                    <td>@item.StudentName</td>
+                                    <td>@item.NationalID</td>
+                                    <td>@item.Faculty</td>
+                                    <td>@item.CityName</td>
+                                    <td>@item.AcademicYear</td>
+                                    <td>@item.Phone</td>
+                                    <td>
+                                        <a asp-action="SelectBuilding" asp-route-appId="@item.ApplicationID"
+                                           class="btn btn-sm btn-success">
+                                            <i class="bi bi-box-arrow-in-right"></i> تسكين
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

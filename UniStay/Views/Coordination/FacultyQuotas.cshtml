@@ -1,0 +1,92 @@
+@model FacultyQuotasViewModel
+@{
+    ViewData["Title"] = "حصص الكليات";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pie-chart-fill"></i> حصص الكليات - @Model.CityName</h2>
+    </div>
+
+    <form method="get" class="row mb-4">
+        <div class="col-md-4">
+            <select name="cityId" class="form-select" onchange="this.form.submit()">
+                @foreach (var c in (IEnumerable<UniStay.Models.DormitoryCity>)ViewBag.Cities)
+                {
+                    <option value="@c.ID" selected="@(c.ID == Model.DormitoryCityID ? true : null)">@c.Name</option>
+                }
+            </select>
+        </div>
+    </form>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white"><h5 class="mb-0">الحصص الحالية</h5></div>
+                <div class="card-body">
+                    @if (!Model.Quotas.Any())
+                    {
+                        <div class="alert alert-info">لا توجد حصص للكليات بعد</div>
+                    }
+                    else
+                    {
+                        <table class="table table-hover">
+                            <thead>
+                                <tr><th>الكلية</th><th>الحد الأقصى</th><th>الحد الأدنى</th><th>المسجل حالياً</th><th>الحالة</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var q in Model.Quotas)
+                                {
+                                    <tr>
+                                        <td>@q.Faculty</td>
+                                        <td>@q.MaxQuota</td>
+                                        <td>@q.MinQuota</td>
+                                        <td>@q.CurrentCount</td>
+                                        <td>@(q.IsFull ? "ممتلئ" : "متاح")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white"><h5 class="mb-0">إضافة حصة</h5></div>
+                <div class="card-body">
+                    <form asp-action="AddFacultyQuota" method="post" id="addQuotaForm">
+                        <input type="hidden" name="cityId" value="@Model.DormitoryCityID" />
+                        <div class="mb-3">
+                            <label class="form-label">الكلية</label>
+                            <input asp-for="NewQuota.Faculty" class="form-control" required />
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">الحد الأقصى</label>
+                                <input asp-for="NewQuota.MaxQuota" class="form-control" type="number" required />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">الحد الأدنى</label>
+                                <input asp-for="NewQuota.MinQuota" class="form-control" type="number" />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-circle"></i> إضافة</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#addQuotaForm').submit(function (e) {
+            e.preventDefault();
+            $.post($(this).attr('action'), $(this).serialize(), function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        });
+    </script>
+}

@@ -1,0 +1,100 @@
+@model List<UniStay.Models.Violation>
+@{
+    ViewData["Title"] = "المخالفات";
+    var totalFines = (decimal)ViewBag.TotalFines;
+    var totalPaid = (decimal)ViewBag.TotalPaid;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0"><i class="bi bi-exclamation-triangle text-danger me-2"></i> المخالفات والغرامات</h3>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm bg-danger text-white">
+            <div class="card-body text-center">
+                <div class="fs-3 fw-bold">@totalFines.ToString("N2") ج.م</div>
+                <small>إجمالي الغرامات</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm bg-success text-white">
+            <div class="card-body text-center">
+                <div class="fs-3 fw-bold">@totalPaid.ToString("N2") ج.م</div>
+                <small>إجمالي المدفوع</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-success">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        لا توجد مخالفات مسجلة ضدك.
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>نوع المخالفة</th>
+                            <th>الوصف</th>
+                            <th>درجة الخطورة</th>
+                            <th>الغرامة</th>
+                            <th>الحالة</th>
+                            <th>التاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var v in Model.Select((item, i) => new { item, i }))
+                        {
+                            var severityColor = v.item.Severity switch
+                            {
+                                "Low" => "bg-success",
+                                "Medium" => "bg-warning text-dark",
+                                "High" => "bg-danger",
+                                _ => "bg-secondary"
+                            };
+                            var statusColor = v.item.Status switch
+                            {
+                                "Active" => "bg-danger",
+                                "Paid" => "bg-success",
+                                "Cancelled" => "bg-secondary",
+                                _ => "bg-secondary"
+                            };
+                            <tr>
+                                <td>@(v.i + 1)</td>
+                                <td class="fw-semibold">@v.item.ViolationType</td>
+                                <td><small class="text-muted">@(v.item.Description ?? "—")</small></td>
+                                <td><span class="badge @severityColor">@v.item.Severity</span></td>
+                                <td>
+                                    @if (v.item.FineAmount.HasValue)
+                                    {
+                                        <text>@(v.item.FineAmount.Value.ToString("N2")) ج.م</text>
+                                        @if (v.item.FinePaid.HasValue)
+                                        {
+                                            <br><small class="text-success">مدفوع: @v.item.FinePaid.Value.ToString("N2")</small>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td><span class="badge @statusColor">@v.item.Status</span></td>
+                                <td><small>@v.item.RecordedAt?.ToString("yyyy/MM/dd")</small></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

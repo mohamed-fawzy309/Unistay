@@ -1,0 +1,78 @@
+@model List<UniStay.ViewModels.Staff.AssignedCityViewModel>
+@{
+    ViewData["Title"] = "المدن المسندة";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">المدن المسندة</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> العودة</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-building-x" style="font-size:3rem"></i>
+        <p class="mt-2">لم يتم إسناد أي مدينة لك بعد</p>
+        <p class="small">يرجى التواصل مع المسؤول لإسناد المدن</p>
+    </div>
+}
+
+<div class="row g-3">
+    @foreach (var city in Model)
+    {
+        var badgeClass = city.CityType switch { "Male" => "badge-soft-primary", "Female" => "badge-soft-danger", "Mixed" => "badge-soft-info", "VIP" => "badge-soft-warning", "Foreign" => "badge-soft-secondary", _ => "badge-soft-light" };
+        var cityTypeLabel = city.CityType switch { "Male" => "ذكور", "Female" => "إناث", "Mixed" => "مختلط", "VIP" => "VIP", "Foreign" => "وافدون", _ => city.CityType };
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100 animate-fade-in">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1">@city.CityName</h5>
+                            <span class="badge @badgeClass">@cityTypeLabel</span>
+                            <span class="badge @(city.IsPrimary ? "badge-soft-success" : "badge-soft-secondary") ms-1">
+                                @(city.IsPrimary ? "رئيسي" : city.RoleInCity)
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-4 text-center">
+                            <div class="fw-bold fs-5">@city.BuildingsCount</div>
+                            <small class="text-muted">مباني</small>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="fw-bold fs-5">@city.TotalBeds</div>
+                            <small class="text-muted">أسرة</small>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="fw-bold fs-5">@city.OccupiedBeds</div>
+                            <small class="text-muted">مشغول</small>
+                        </div>
+                    </div>
+
+                    <div class="progress mb-3" style="height:6px;">
+                        @{
+                            var occupancyPct = city.TotalBeds > 0 ? (int)((double)city.OccupiedBeds / city.TotalBeds * 100) : 0;
+                        }
+                        <div class="progress-bar @(occupancyPct >= 90 ? "bg-danger" : occupancyPct >= 70 ? "bg-warning" : "bg-success")"
+                             role="progressbar" style="width:@occupancyPct%">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <a asp-action="Buildings" asp-controller="Admin" asp-route-cityId="@city.CityID" class="btn btn-outline-info btn-sm flex-fill">
+                            <i class="bi bi-layers"></i> المباني
+                        </a>
+                        <a asp-action="CityConfig" asp-controller="Admin" asp-route-id="@city.CityID" class="btn btn-outline-primary btn-sm flex-fill">
+                            <i class="bi bi-gear"></i> الإعدادات
+                        </a>
+                        <a asp-action="Students" asp-controller="Admin" asp-route-cityId="@city.CityID" class="btn btn-outline-secondary btn-sm flex-fill">
+                            <i class="bi bi-people"></i> الطلاب
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>

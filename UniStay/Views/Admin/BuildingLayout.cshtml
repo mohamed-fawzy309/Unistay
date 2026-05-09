@@ -1,0 +1,70 @@
+@model UniStay.ViewModels.Admin.BuildingLayoutViewModel
+@{
+    ViewData["Title"] = "الكروكي - " + Model.BuildingName;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>الكروكي التفاعلي: @Model.BuildingName</h2>
+    <div class="d-flex gap-2">
+        <span class="badge bg-primary fs-6">@Model.CityName</span>
+        <span class="badge bg-info fs-6">@Model.FloorCount أدوار</span>
+        <span class="badge bg-success fs-6">@Model.AvailableBeds سرير متاح</span>
+        <span class="badge bg-secondary fs-6">@Model.TotalBeds إجمالي</span>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white"><h6 class="mb-0">إحصائيات</h6></div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr><td>إجمالي الأسرة</td><td class="fw-bold">@Model.TotalBeds</td></tr>
+                    <tr><td>مشغول</td><td class="fw-bold text-danger">@Model.OccupiedBeds</td></tr>
+                    <tr><td>متاح</td><td class="fw-bold text-success">@Model.AvailableBeds</td></tr>
+                    <tr><td>عدد الأدوار</td><td class="fw-bold">@Model.FloorCount</td></tr>
+                </table>
+            </div>
+            <div class="card-footer">
+                <a asp-action="Rooms" asp-route-buildingId="@Model.BuildingID" class="btn btn-outline-primary btn-sm w-100">إدارة الغرف</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        @foreach (var floor in Model.Floors)
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">الدور @floor.FloorNumber</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        @foreach (var room in floor.Rooms)
+                        {
+                            <div class="col-md-3 col-6">
+                                <div class="card @(room.IsFull ? "border-danger" : room.AvailableBeds > 0 ? "border-success" : "border-secondary")">
+                                    <div class="card-body text-center p-2">
+                                        <h6 class="mb-1">@room.RoomNumber</h6>
+                                        <small class="text-muted">@room.RoomType</small>
+                                        <div class="mt-1">
+                                            @for (int b = 1; b <= room.BedsCount; b++)
+                                            {
+                                                var isOccupied = b <= room.CurrentOccupancy;
+                                                <span class="d-inline-block rounded-circle @(isOccupied ? "bg-danger" : "bg-success")" style="width:12px;height:12px;"
+                                                      title="@(isOccupied ? $"سرير {b} مشغول" : $"سرير {b} متاح")"></span>
+                                            }
+                                        </div>
+                                        <small class="d-block mt-1">
+                                            <span class="text-danger">@room.CurrentOccupancy</span>/<span class="text-success">@room.AvailableBeds</span>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,281 @@
+@model List<UniStay.Models.DormitoryCity>
+@{
+    ViewData["Title"] = "المدن الجامعية";
+    var total = Model.Count;
+    var active = Model.Count(c => c.IsActive);
+    var maleCount = Model.Count(c => c.CityType == "Male");
+    var femaleCount = Model.Count(c => c.CityType == "Female");
+    var vipCount = Model.Count(c => c.CityType == "VIP");
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">المدن الجامعية</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+        <i class="bi bi-plus-circle"></i> إضافة مدينة
+    </button>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show animate-fade-in">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show animate-fade-in">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-building"></i></div>
+                <div>
+                    <div class="stat-value">@total</div>
+                    <div class="stat-label">إجمالي المدن</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle"></i></div>
+                <div>
+                    <div class="stat-value">@active</div>
+                    <div class="stat-label">نشطة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-info bg-opacity-10 text-info"><i class="bi bi-gender-male"></i></div>
+                <div>
+                    <div class="stat-value">@maleCount</div>
+                    <div class="stat-label">ذكور</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-gender-female"></i></div>
+                <div>
+                    <div class="stat-value">@femaleCount</div>
+                    <div class="stat-label">إناث</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="filter-bar row g-2 mb-3">
+    <div class="col-md-4">
+        <input type="text" id="citySearch" class="form-control" placeholder="بحث عن مدينة..." oninput="filterCities()">
+    </div>
+    <div class="col-md-3">
+        <select id="typeFilter" class="form-select" onchange="filterCities()">
+            <option value="">جميع الأنواع</option>
+            <option value="Male">ذكور</option>
+            <option value="Female">إناث</option>
+            <option value="Mixed">مختلط</option>
+            <option value="VIP">VIP</option>
+            <option value="Foreign">وافدون</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select id="statusFilter" class="form-select" onchange="filterCities()">
+            <option value="">الكل</option>
+            <option value="active">نشط</option>
+            <option value="inactive">غير نشط</option>
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-secondary w-100" onclick="resetFilters()">إعادة تعيين</button>
+    </div>
+</div>
+
+<div class="row g-3" id="citiesContainer">
+    @foreach (var city in Model)
+    {
+        var cityTypeLabel = city.CityType switch { "Male" => "ذكور", "Female" => "إناث", "Mixed" => "مختلط", "VIP" => "VIP", "Foreign" => "وافدون", _ => city.CityType };
+        var badgeClass = city.CityType switch { "Male" => "badge-soft-primary", "Female" => "badge-soft-danger", "Mixed" => "badge-soft-info", "VIP" => "badge-soft-warning", "Foreign" => "badge-soft-secondary", _ => "badge-soft-light" };
+
+        <div class="col-md-4 city-card" data-name="@city.Name" data-type="@city.CityType" data-active="@(city.IsActive ? "active" : "inactive")">
+            <div class="card border-0 shadow-sm h-100 animate-fade-in @(city.IsActive ? "" : "opacity-75")">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h5 class="fw-bold mb-1">@city.Name</h5>
+                            <span class="badge @badgeClass">@cityTypeLabel</span>
+                            @if (!city.IsActive)
+                            {
+                                <span class="badge badge-soft-danger ms-1">غير نشط</span>
+                            }
+                        </div>
+                        <div class="text-muted small">
+                            <i class="bi bi-building"></i> @(city.CityBuildings?.Count ?? 0)
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(city.Location))
+                    {
+                        <p class="text-muted small mb-2">
+                            <i class="bi bi-geo-alt"></i> @city.Location
+                        </p>
+                    }
+
+                    <div class="d-flex gap-2 mt-3">
+                        <a asp-action="CityConfig" asp-route-id="@city.ID" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-gear"></i> الإعدادات
+                        </a>
+                        <a asp-action="Buildings" asp-route-cityId="@city.ID" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-layers"></i> المباني
+                        </a>
+                        <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-@city.ID">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Modal -->
+        <div class="modal fade" id="editModal-@city.ID" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <form asp-action="EditCity" method="post" class="modal-content">
+                    <input type="hidden" name="ID" value="@city.ID">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold">تعديل @city.Name</h5>
+                        <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">اسم المدينة <span class="text-danger">*</span></label>
+                            <input name="Name" class="form-control" value="@city.Name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">النوع <span class="text-danger">*</span></label>
+                            <select name="CityType" class="form-select">
+                                <option value="Male" selected="@(city.CityType == "Male")">ذكور</option>
+                                <option value="Female" selected="@(city.CityType == "Female")">إناث</option>
+                                <option value="Mixed" selected="@(city.CityType == "Mixed")">مختلط</option>
+                                <option value="VIP" selected="@(city.CityType == "VIP")">VIP</option>
+                                <option value="Foreign" selected="@(city.CityType == "Foreign")">وافدون</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">الموقع</label>
+                            <textarea name="Location" class="form-control" rows="2">@city.Location</textarea>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@city.IsActive" id="active-@city.ID">
+                            <label class="form-check-label" for="active-@city.ID">نشطة</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-building-x" style="font-size:3rem"></i>
+        <p class="mt-2">لا توجد مدن جامعية مضافة بعد</p>
+    </div>
+}
+
+<!-- Add Modal -->
+<div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form asp-action="Cities" method="post" class="modal-content">
+
+            <div class="modal-header">
+                <h4 class="modal-title fw-bold">إضافة مدينة جامعية</h4>
+                <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        اسم المدينة <span class="text-danger">*</span>
+                    </label>
+                    <input name="Name" class="form-control" placeholder="مثال: مدينة الطلاب" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">الجامعة</label>
+                    <select name="UniversityID" class="form-select">
+                        <option value="" selected disabled>اختر الجامعة</option>
+                        @foreach (var u in ViewBag.Universities as List<UniStay.Models.University> ?? new())
+                        {
+                            <option value="@u.ID">@u.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        النوع <span class="text-danger">*</span>
+                    </label>
+                    <select name="CityType" class="form-select" required>
+                        <option value="" selected disabled>اختر النوع</option>
+                        <option value="Male">ذكور</option>
+                        <option value="Female">إناث</option>
+                        <option value="Mixed">مختلط</option>
+                        <option value="VIP">VIP</option>
+                        <option value="Foreign">وافدون</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">الموقع</label>
+                    <textarea name="Location" class="form-control" rows="3" placeholder="أدخل موقع المدينة"></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> إضافة</button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterCities() {
+            var search = document.getElementById('citySearch').value.toLowerCase();
+            var type = document.getElementById('typeFilter').value;
+            var status = document.getElementById('statusFilter').value;
+
+            document.querySelectorAll('.city-card').forEach(function (card) {
+                var name = card.getAttribute('data-name').toLowerCase();
+                var cardType = card.getAttribute('data-type');
+                var cardStatus = card.getAttribute('data-active');
+
+                var matchSearch = !search || name.includes(search);
+                var matchType = !type || cardType === type;
+                var matchStatus = !status || cardStatus === status;
+
+                card.style.display = (matchSearch && matchType && matchStatus) ? '' : 'none';
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('citySearch').value = '';
+            document.getElementById('typeFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            filterCities();
+        }
+    </script>
+}

@@ -1,0 +1,114 @@
+@model List<UniStay.ViewModels.Admin.ApplicationRowViewModel>
+@{
+    ViewData["Title"] = "كل الطلبات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>كل الطلبات (@ViewBag.TotalCount)</h2>
+</div>
+
+<form method="get" class="row g-2 mb-3 bg-white p-3 rounded shadow-sm">
+    <div class="col-md-2">
+        <select name="status" class="form-select" onchange="this.form.submit()">
+            <option value="All">كل الحالات</option>
+            <option value="Pending" selected="@(ViewBag.FilterStatus == "Pending")">معلق</option>
+            <option value="UnderReview" selected="@(ViewBag.FilterStatus == "UnderReview")">قيد المراجعة</option>
+            <option value="Accepted" selected="@(ViewBag.FilterStatus == "Accepted")">مقبول</option>
+            <option value="Rejected" selected="@(ViewBag.FilterStatus == "Rejected")">مرفوض</option>
+            <option value="Allocated" selected="@(ViewBag.FilterStatus == "Allocated")">تم التسكين</option>
+            <option value="Waitlist" selected="@(ViewBag.FilterStatus == "Waitlist")">قائمة انتظار</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="studentType" class="form-select" onchange="this.form.submit()">
+            <option value="">كل الأنواع</option>
+            <option value="New" selected="@(ViewBag.FilterStudentType == "New")">جديد</option>
+            <option value="Returning" selected="@(ViewBag.FilterStudentType == "Returning")">مستمر</option>
+            <option value="Foreign" selected="@(ViewBag.FilterStudentType == "Foreign")">وافد</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="cityId" class="form-select" onchange="this.form.submit()">
+            <option value="">كل المدن</option>
+            @foreach (var city in ViewBag.Cities)
+            {
+                <option value="@city.ID" selected="@(ViewBag.FilterCityId == city.ID)">@city.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <input type="date" name="from" class="form-control" value="@ViewBag.FilterFrom?.ToString("yyyy-MM-dd")" onchange="this.form.submit()">
+    </div>
+    <div class="col-md-2">
+        <input type="date" name="to" class="form-control" value="@ViewBag.FilterTo?.ToString("yyyy-MM-dd")" onchange="this.form.submit()">
+    </div>
+    <div class="col-md-2">
+        <a asp-action="AllApplications" class="btn btn-secondary w-100">مسح</a>
+    </div>
+</form>
+
+<div class="table-responsive bg-white rounded shadow-sm">
+    <table class="table table-hover mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>الطالب</th>
+                <th>الرقم القومي</th>
+                <th>الكلية</th>
+                <th>المدينة</th>
+                <th>النوع</th>
+                <th>السكن</th>
+                <th>الحالة</th>
+                <th>التحقق</th>
+                <th>تاريخ التقديم</th>
+                <th>تاريخ المراجعة</th>
+                <th>المراجع</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var app in Model)
+            {
+                <tr>
+                    <td>@app.ID</td>
+                    <td>@app.StudentName</td>
+                    <td>@app.NationalID</td>
+                    <td>@app.Faculty</td>
+                    <td>@app.CityName</td>
+                    <td>@(app.StudentType == "New" ? "جديد" : app.StudentType == "Returning" ? "مستمر" : "وافد")</td>
+                    <td>@app.HousingType</td>
+                    <td>
+                        <span class="badge bg-@(app.Status switch { "Pending" => "secondary", "UnderReview" => "primary", "Accepted" => "success", "Rejected" => "danger", "Allocated" => "dark", "Waitlist" => "warning", _ => "light" })">
+                            @(app.Status switch { "Pending" => "معلق", "UnderReview" => "قيد المراجعة", "Accepted" => "مقبول", "Rejected" => "مرفوض", "Allocated" => "تم التسكين", "Waitlist" => "قائمة انتظار", _ => app.Status })
+                        </span>
+                    </td>
+                    <td><span class="badge bg-@(app.ServerVerificationStatus == "Verified" ? "success" : app.ServerVerificationStatus == "VerifiedWithDiff" ? "warning" : app.ServerVerificationStatus == "NotFound" ? "danger" : "secondary")">@app.ServerVerificationStatus</span></td>
+                    <td>@app.CreatedAt.ToString("yyyy-MM-dd")</td>
+                    <td>@app.ReviewedAt?.ToString("yyyy-MM-dd")</td>
+                    <td>@app.ReviewedByName</td>
+                    <td>
+                        <a asp-action="ReviewApplication" asp-route-id="@app.ID" class="btn btn-primary btn-sm">فتح</a>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="13" class="text-center text-muted py-4">لا توجد طلبات</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (ViewBag.TotalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination justify-content-center">
+            @for (int i = 1; i <= ViewBag.TotalPages; i++)
+            {
+                <li class="page-item @(i == ViewBag.Page ? "active" : "")">
+                    <a class="page-link" href="@Url.Action("AllApplications", new { page = i, status = ViewBag.FilterStatus, studentType = ViewBag.FilterStudentType, cityId = ViewBag.FilterCityId, from = ViewBag.FilterFrom?.ToString("yyyy-MM-dd"), to = ViewBag.FilterTo?.ToString("yyyy-MM-dd") })">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

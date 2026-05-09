@@ -1,0 +1,81 @@
+@model List<UniStay.Models.HousingInstructionAttachment>
+@{
+    ViewData["Title"] = "مرفقات التعليمات";
+    var instruction = ViewBag.Instruction as UniStay.Models.HousingInstruction;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>مرفقات: @instruction?.Title</h2>
+    <a asp-action="Instructions" class="btn btn-secondary">رجوع</a>
+</div>
+
+<div class="card shadow-sm mb-3">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">رفع ملف جديد</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="UploadInstructionAttachment" asp-route-instructionId="@instruction?.ID" method="post" enctype="multipart/form-data">
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <input type="file" name="file" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="fileName" class="form-control" placeholder="اسم الملف (اختياري)">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">رفع</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive bg-white rounded shadow-sm">
+    <table class="table table-hover mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>اسم الملف</th>
+                <th>النوع</th>
+                <th>الترتيب</th>
+                <th>الحالة</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var att in Model)
+            {
+                <tr>
+                    <td>@att.ID</td>
+                    <td>
+                        <a href="@att.FilePath" target="_blank">@att.FileName</a>
+                    </td>
+                    <td>@att.FileType</td>
+                    <td>@att.SortOrder</td>
+                    <td><span class="badge bg-@(att.IsActive == true ? "success" : "danger")">@(att.IsActive == true ? "نشط" : "غير نشط")</span></td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deleteAttachment(@att.ID)">حذف</button>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="6" class="text-center text-muted py-4">لا توجد مرفقات</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script>
+        async function deleteAttachment(id) {
+            if (!confirm('تأكيد حذف المرفق؟')) return;
+            try {
+                const response = await fetch('/Admin/DeleteInstructionAttachment/' + id, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) location.reload();
+                else alert('فشل الحذف');
+            } catch { alert('خطأ في الاتصال'); }
+        }
+    </script>
+}

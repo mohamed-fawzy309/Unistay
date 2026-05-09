@@ -1,0 +1,94 @@
+@model CoordinationRulesViewModel
+@{
+    ViewData["Title"] = "قواعد التنسيق";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-sliders"></i> قواعد التنسيق</h2>
+    </div>
+
+    <form method="get" class="row mb-4">
+        <div class="col-md-4">
+            <select name="cityId" class="form-select" onchange="this.form.submit()">
+                @foreach (var c in (IEnumerable<UniStay.Models.DormitoryCity>)ViewBag.Cities)
+                {
+                    <option value="@c.ID" selected="@(c.ID == Model.DormitoryCityID ? true : null)">@c.Name</option>
+                }
+            </select>
+        </div>
+    </form>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white"><h5 class="mb-0">القواعد الحالية</h5></div>
+                <div class="card-body">
+                    @if (!Model.Rules.Any())
+                    {
+                        <div class="alert alert-info">لا توجد قواعد بعد</div>
+                    }
+                    else
+                    {
+                        <table class="table table-hover">
+                            <thead><tr><th>الاسم</th><th>النوع</th><th>الأولوية</th><th>الوزن</th><th>نشط</th><th>تاريخ الإضافة</th></tr></thead>
+                            <tbody>
+                                @foreach (var r in Model.Rules)
+                                {
+                                    <tr>
+                                        <td>@r.RuleName</td>
+                                        <td>@r.RuleType</td>
+                                        <td>@r.Priority</td>
+                                        <td>@r.Weight</td>
+                                        <td>@(r.IsActive ? "نعم" : "لا")</td>
+                                        <td>@r.CreatedAt?.ToString("yyyy/MM/dd")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white"><h5 class="mb-0">إضافة قاعدة</h5></div>
+                <div class="card-body">
+                    <form asp-action="ConfigureRules" method="post">
+                        <input type="hidden" asp-for="DormitoryCityID" />
+                        <div class="mb-3">
+                            <label class="form-label">اسم القاعدة</label>
+                            <input asp-for="NewRule.RuleName" class="form-control" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">النوع</label>
+                            <select asp-for="NewRule.RuleType" class="form-select">
+                                <option value="Distance">المسافة</option>
+                                <option value="Grade">الدرجات</option>
+                                <option value="Age">العمر</option>
+                                <option value="Bonus">مكافأة</option>
+                                <option value="Special">حالة خاصة</option>
+                            </select>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">الأولوية</label>
+                                <input asp-for="NewRule.Priority" class="form-control" type="number" min="1" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">الوزن</label>
+                                <input asp-for="NewRule.Weight" class="form-control" type="number" step="0.1" />
+                            </div>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input asp-for="NewRule.IsActive" class="form-check-input" />
+                            <label class="form-check-label">نشط</label>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-circle"></i> إضافة</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

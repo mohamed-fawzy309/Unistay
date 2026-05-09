@@ -1,0 +1,74 @@
+@model AllocationBedViewModel
+@{
+    ViewData["Title"] = "اختيار السرير";
+}
+
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">التسكين</a></li>
+            <li class="breadcrumb-item"><a asp-action="SelectBuilding" asp-route-appId="@Model.ApplicationID">اختيار المبنى</a></li>
+            <li class="breadcrumb-item"><a asp-action="SelectRoom" asp-route-buildingId="@Model.BuildingID" asp-route-roomId="@Model.RoomID" asp-route-appId="@Model.ApplicationID">اختيار الغرفة</a></li>
+            <li class="breadcrumb-item active">اختيار السرير</li>
+        </ol>
+    </nav>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">@Model.BuildingName - غرفة @Model.RoomNumber (الدور @Model.FloorNumber)</h5>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h5>الأسرة في الغرفة @Model.RoomNumber</h5>
+            <div class="row">
+                @foreach (var bed in Model.Beds)
+                {
+                    <div class="col-md-3 mb-3">
+                        @if (bed.IsOccupied)
+                        {
+                            <div class="card border-danger">
+                                <div class="card-body text-center">
+                                    <h3><i class="bi bi-person-fill text-danger"></i></h3>
+                                    <h6>سرير @bed.BedNumber</h6>
+                                    <small class="text-muted">@bed.OccupiedByStudentName</small>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="card border-success cursor-pointer" onclick="confirmAllocation(@Model.RoomID, @bed.BedNumber)">
+                                <div class="card-body text-center">
+                                    <h3><i class="bi bi-person-plus text-success"></i></h3>
+                                    <h6>سرير @bed.BedNumber</h6>
+                                    <small class="text-success">متاح</small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmAllocation(roomId, bedNumber) {
+            if (!confirm('تأكيد تسكين هذا السرير؟')) return;
+            $.post('@Url.Action("Confirm")', {
+                applicationId: @Model.ApplicationID,
+                cityRoomId: roomId,
+                bedNumber: bedNumber
+            }, function (res) {
+                if (res.success) {
+                    alert(res.message);
+                    window.location.href = '@Url.Action("Index")';
+                } else {
+                    alert(res.message);
+                }
+            });
+        }
+    </script>
+}

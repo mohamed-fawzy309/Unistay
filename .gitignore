@@ -1,0 +1,134 @@
+# =========================
+# ASP.NET Core / .NET 9
+# =========================
+
+## Ignore Visual Studio temporary files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+artifacts/
+
+## Rider / VS Code
+.idea/
+.vscode/
+
+## ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+## IIS Express
+iisexpress/
+*.vspscc
+*.vssscc
+applicationhost.config
+
+## Logs
+logs/
+*.log
+
+## SQL Server
+*.mdf
+*.ldf
+
+## Entity Framework
+Migrations/*.Designer.cs
+*.dbmdl
+*.jfm
+*.publishsettings
+
+## User secrets
+secrets.json
+
+## NuGet
+*.nupkg
+packages/
+.nuget/packages/
+
+## Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+## LibMan
+wwwroot/lib/
+
+## Environment files
+.env
+.env.*
+appsettings.Development.json
+
+## Publish output
+publish/
+*.pubxml
+*.publishproj
+
+## OS files
+.DS_Store
+Thumbs.db
+
+## Resharper
+_ReSharper*/
+*.DotSettings.user
+
+## Coverage
+coverage/
+*.coverage
+*.coveragexml
+
+## Temp files
+tmp/
+temp/
+
+## Generated files
+Generated/
+*.generated.cs
+
+## Static web assets
+obj/Debug/net9.0/staticwebassets/
+obj/Release/net9.0/staticwebassets/
+
+## Azure
+ServiceDependencies/
+ServiceDependencies.Local.json
+
+## Docker
+docker-compose.override.yml
+
+## Certificate files
+*.pfx
+*.key
+*.pem
+
+## JetBrains
+*.iml
+
+## SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+## Cache
+.cache/
+*.cache
+
+## Optional uploads folder
+wwwroot/uploads/
+
+## Optional exports
+wwwroot/exports/
+wwwroot/reports/
+
+## Optional compiled Tailwind
+wwwroot/css/output.css

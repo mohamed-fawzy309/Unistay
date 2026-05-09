@@ -1,0 +1,170 @@
+@model UniStay.Models.Student
+@{
+    ViewData["Title"] = "بيانات الطالب";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>@Model.FullName</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal">تعديل البيانات</button>
+</div>
+
+<div class="row g-3">
+    <!-- البيانات الأساسية -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0">البيانات الأساسية</h5></div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr><td class="fw-bold" style="width:140px">الرقم القومي</td><td>@Model.NationalID</td></tr>
+                    <tr><td class="fw-bold">الاسم</td><td>@Model.FullName</td></tr>
+                    <tr><td class="fw-bold">تاريخ الميلاد</td><td>@Model.BirthDate</td></tr>
+                    <tr><td class="fw-bold">النوع</td><td>@(Model.Gender == "Male" ? "ذكر" : "أنثى")</td></tr>
+                    <tr><td class="fw-bold">الديانة</td><td>@Model.Religion</td></tr>
+                    <tr><td class="fw-bold">الجنسية</td><td>@Model.Nationality</td></tr>
+                    <tr><td class="fw-bold">البريد</td><td>@Model.Email</td></tr>
+                    <tr><td class="fw-bold">التليفون</td><td>@Model.Phone</td></tr>
+                    <tr><td class="fw-bold">العنوان</td><td>@Model.Address</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- البيانات الأكاديمية -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-success text-white"><h5 class="mb-0">البيانات الأكاديمية</h5></div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr><td class="fw-bold" style="width:140px">الكلية</td><td>@Model.Faculty</td></tr>
+                    <tr><td class="fw-bold">الفرقة</td><td>@Model.AcademicYear</td></tr>
+                    <tr><td class="fw-bold">التقدير</td><td>@Model.GradePercentage%</td></tr>
+                    <tr><td class="fw-bold">المسافة</td><td>@Model.DistanceFromUniv كم</td></tr>
+                    <tr><td class="fw-bold">حالة مرضية</td><td>@(Model.HasMedicalCondition == true ? "نعم" : "لا")</td></tr>
+                    <tr><td class="fw-bold">الوصف</td><td>@Model.MedicalDescription</td></tr>
+                    <tr><td class="fw-bold">مسجل</td><td>@(Model.IsEnrolled == true ? "نعم" : Model.IsEnrolled == false ? "لا" : "—")</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <!-- السكن الحالي -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white"><h5 class="mb-0">السكن الحالي</h5></div>
+            <div class="card-body">
+                @{
+                    var activeAllocation = Model.Allocations?.FirstOrDefault(a => a.Status == "Active");
+                }
+                @if (activeAllocation != null)
+                {
+                    <table class="table table-sm table-borderless">
+                        <tr><td class="fw-bold" style="width:140px">المبنى</td><td>@activeAllocation.CityRoom?.CityBuilding?.BuildingName</td></tr>
+                        <tr><td class="fw-bold">الغرفة</td><td>@activeAllocation.CityRoom?.RoomNumber</td></tr>
+                        <tr><td class="fw-bold">السرير</td><td>@activeAllocation.BedNumber</td></tr>
+                        <tr><td class="fw-bold">من</td><td>@activeAllocation.StartDate?.ToString("yyyy-MM-dd")</td></tr>
+                        <tr><td class="fw-bold">إلى</td><td>@activeAllocation.EndDate?.ToString("yyyy-MM-dd")</td></tr>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">لا يوجد سكن حالي</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- الطلبات -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark"><h5 class="mb-0">الطلبات</h5></div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>#</th><th>العام</th><th>الحالة</th><th>التاريخ</th></tr></thead>
+                    <tbody>
+                        @foreach (var app in Model.Applications.OrderByDescending(a => a.CreatedAt))
+                        {
+                            <tr>
+                                <td>@app.ID</td>
+                                <td>@app.AcademicYear</td>
+                                <td><span class="badge bg-@(app.Status switch { "Pending" => "secondary", "UnderReview" => "primary", "Accepted" => "success", "Rejected" => "danger", "Allocated" => "dark", _ => "light" })">@app.Status</span></td>
+                                <td>@app.CreatedAt?.ToString("yyyy-MM-dd")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form asp-action="EditStudent" asp-route-id="@Model.ID" method="post" class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تعديل بيانات الطالب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">الاسم</label>
+                        <input name="FullName" class="form-control" value="@Model.FullName" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">الكلية</label>
+                        <input name="Faculty" class="form-control" value="@Model.Faculty">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">الفرقة</label>
+                        <input name="AcademicYear" type="number" class="form-control" value="@Model.AcademicYear">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">التليفون</label>
+                        <input name="Phone" class="form-control" value="@Model.Phone">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">البريد</label>
+                        <input name="Email" type="email" class="form-control" value="@Model.Email">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">المحافظة</label>
+                        <input name="Governorate" class="form-control" value="@Model.Governorate">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">المدينة</label>
+                        <input name="City" class="form-control" value="@Model.City">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">العنوان</label>
+                        <textarea name="Address" class="form-control">@Model.Address</textarea>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">التقدير %</label>
+                        <input name="GradePercentage" type="number" step="0.01" class="form-control" value="@Model.GradePercentage">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label">المسافة (كم)</label>
+                        <input name="DistanceFromUniv" type="number" step="0.01" class="form-control" value="@Model.DistanceFromUniv">
+                    </div>
+                    <div class="col-12 mb-3">
+                        <div class="form-check">
+                            <input name="HasMedicalCondition" class="form-check-input" type="checkbox" value="true" checked="@(Model.HasMedicalCondition == true)">
+                            <label class="form-check-label">حالة مرضية</label>
+                        </div>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label">وصف الحالة المرضية</label>
+                        <textarea name="MedicalDescription" class="form-control">@Model.MedicalDescription</textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
+            </div>
+        </form>
+    </div>
+</div>

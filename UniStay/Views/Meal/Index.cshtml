@@ -1,0 +1,194 @@
+@model UniStay.ViewModels.Meal.MealIndexViewModel
+@{
+    ViewData["Title"] = "إدارة الوجبات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title"><i class="bi bi-cup-hot"></i> إدارة الوجبات</h2>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="filter-bar row g-3 align-items-end mb-4">
+    <div class="col-md-4">
+        <label class="form-label small">المدينة</label>
+        <select name="cityId" class="form-select" onchange="this.form.submit()">
+            <option value="">-- اختر المدينة --</option>
+            @foreach (var c in Model.Cities)
+            {
+                <option value="@c.ID" selected="@(c.ID == Model.DormitoryCityID)">@c.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small">التاريخ</label>
+        <input name="date" type="date" class="form-control" value="@Model.SelectedDate?.ToString("yyyy-MM-dd")" onchange="this.form.submit()">
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        @if (Model.DormitoryCityID > 0)
+        {
+            <form asp-action="GenerateMeals" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="dormitoryCityId" value="@Model.DormitoryCityID" />
+                <button type="submit" class="btn btn-success"><i class="bi bi-plus-circle"></i> توليد الوجبات لليوم</button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (Model.DormitoryCityID > 0)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card bg-white">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-cup-hot"></i></div>
+                    <div>
+                        <div class="value">@Model.TotalMeals</div>
+                        <div class="label">إجمالي الوجبات</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-white">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle"></i></div>
+                    <div>
+                        <div class="value">@Model.ConsumedCount</div>
+                        <div class="label">تم الاستهلاك</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-white">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-x-circle"></i></div>
+                    <div>
+                        <div class="value">@Model.CancelledCount</div>
+                        <div class="label">ملغي</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-white">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-ban"></i></div>
+                    <div>
+                        <div class="value">@Model.BlockedCount</div>
+                        <div class="label">محظور</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">قائمة الوجبات</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive animate-fade-in">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>الطالب</th>
+                            <th>الرقم القومي</th>
+                            <th>نوع الوجبة</th>
+                            <th>السعر</th>
+                            <th>الحالة</th>
+                            <th>سبب الإلغاء</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Meals.Any())
+                        {
+                            <tr><td colspan="8" class="text-center text-muted py-4">لا توجد وجبات لهذا اليوم</td></tr>
+                        }
+                        @foreach (var m in Model.Meals)
+                        {
+                            <tr>
+                                <td>@m.ID</td>
+                                <td>@m.StudentName</td>
+                                <td>@m.NationalID</td>
+                                <td>@m.MealType</td>
+                                <td>@m.Price.ToString("N2")</td>
+                                <td>
+                                    @if (m.IsConsumed)
+                                    {
+                                        <span class="badge-success">تم الاستهلاك</span>
+                                    }
+                                    else if (!m.IsActive)
+                                    {
+                                        <span class="badge-danger">ملغي</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-info">نشط</span>
+                                    }
+                                </td>
+                                <td>@m.CancelReason</td>
+                                <td>
+                                    @if (m.IsActive && !m.IsConsumed)
+                                    {
+                                        <button class="btn btn-sm btn-outline-danger" onclick="cancelIndividual(@m.StudentID, @Model.DormitoryCityID)"><i class="bi bi-x-circle"></i></button>
+                                        <button class="btn btn-sm btn-outline-warning" onclick="blockStudent(@m.StudentID, @Model.DormitoryCityID)"><i class="bi bi-ban"></i></button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function cancelIndividual(studentId, cityId) {
+            var fromDate = prompt('تاريخ البداية (yyyy-MM-dd):');
+            if (!fromDate) return;
+            var toDate = prompt('تاريخ النهاية (yyyy-MM-dd):');
+            if (!toDate) return;
+            var reason = prompt('سبب الإلغاء:');
+            $.post('@Url.Action("CancelIndividual")', {
+                studentID: studentId,
+                dormitoryCityID: cityId,
+                fromDate: fromDate,
+                toDate: toDate,
+                reason: reason
+            }, function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        }
+
+        function blockStudent(studentId, cityId) {
+            var fromDate = prompt('تاريخ البداية (yyyy-MM-dd):');
+            if (!fromDate) return;
+            var toDate = prompt('تاريخ النهاية (yyyy-MM-dd):');
+            if (!toDate) return;
+            var reason = prompt('سبب الحظر:');
+            $.post('@Url.Action("Block")', {
+                studentID: studentId,
+                dormitoryCityID: cityId,
+                fromDate: fromDate,
+                toDate: toDate,
+                reason: reason
+            }, function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        }
+    </script>
+}

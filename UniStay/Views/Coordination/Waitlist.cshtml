@@ -1,0 +1,68 @@
+@model WaitlistViewModel
+@{
+    ViewData["Title"] = "قائمة الانتظار";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-clock-history"></i> قائمة الانتظار</h2>
+    </div>
+
+    <form method="get" class="row mb-4">
+        <div class="col-md-4">
+            <select name="cityId" class="form-select" onchange="this.form.submit()">
+                @foreach (var c in (IEnumerable<UniStay.Models.DormitoryCity>)ViewBag.Cities)
+                {
+                    <option value="@c.ID" selected="@(c.ID == Model.DormitoryCityID ? true : null)">@c.Name</option>
+                }
+            </select>
+        </div>
+    </form>
+
+    @if (Model.TotalWaitlisted > 0)
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">إجمالي قائمة الانتظار: @Model.TotalWaitlisted</h5>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr><th>#</th><th>الاسم</th><th>الرقم القومي</th><th>الدرجة</th><th>الترتيب</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var w in Model.Waitlisted)
+                        {
+                            <tr>
+                                <td>@w.ID</td>
+                                <td>@w.StudentName</td>
+                                <td>@w.NationalID</td>
+                                <td>@w.TotalScore?.ToString("N2")</td>
+                                <td>@w.Rank</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @if (Model.TotalPages > 1)
+                {
+                    <nav><ul class="pagination">
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.Page ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Waitlist", new { cityId = Model.DormitoryCityID, page = i })">@i</a>
+                            </li>
+                        }
+                    </ul></nav>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">لا يوجد طلاب في قائمة الانتظار</div>
+    }
+</div>

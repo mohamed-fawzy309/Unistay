@@ -1,0 +1,125 @@
+@model List<UniStay.Models.HousingInstruction>
+@{
+    ViewData["Title"] = "التعليمات والإرشادات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>التعليمات والإرشادات</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">إضافة تعليمات</button>
+</div>
+
+@foreach (var inst in Model)
+{
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">@inst.Title</h5>
+            <div class="d-flex gap-2">
+                <a asp-action="InstructionAttachments" asp-route-instructionId="@inst.ID" class="btn btn-outline-info btn-sm">المرفقات</a>
+                <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-@inst.ID">تعديل</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <p>@Html.Raw(inst.Content?.Replace("\n", "<br>"))</p>
+            <div class="d-flex gap-3 text-muted small">
+                <span>النوع: @inst.InstructionType</span>
+                <span>الترتيب: @inst.SortOrder</span>
+                <span>المدينة: @(inst.DormitoryCity?.Name ?? "عامة")</span>
+                <span>المرفقات: @inst.HousingInstructionAttachments?.Count</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal-@inst.ID" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form asp-action="EditInstruction" method="post" class="modal-content">
+                <input type="hidden" name="ID" value="@inst.ID">
+                <div class="modal-header"><h5 class="modal-title">تعديل @inst.Title</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">العنوان</label>
+                        <input name="Title" class="form-control" value="@inst.Title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">المحتوى</label>
+                        <textarea name="Content" class="form-control" rows="5">@inst.Content</textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">النوع</label>
+                            <select name="InstructionType" class="form-select">
+                                <option value="General" selected="@(inst.InstructionType == "General")">عامة</option>
+                                <option value="New" selected="@(inst.InstructionType == "New")">جدد</option>
+                                <option value="Returning" selected="@(inst.InstructionType == "Returning")">قدامى</option>
+                                <option value="Foreign" selected="@(inst.InstructionType == "Foreign")">وافدون</option>
+                                <option value="Rules" selected="@(inst.InstructionType == "Rules")">لوائح</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">الترتيب</label>
+                            <input name="SortOrder" type="number" class="form-control" value="@inst.SortOrder">
+                        </div>
+                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@(inst.IsActive == true)">
+                                <label class="form-check-label">فعال</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">لا توجد تعليمات مضافة بعد</div>
+}
+
+<!-- Add Modal -->
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form asp-action="Instructions" method="post" class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">إضافة تعليمات جديدة</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">المدينة</label>
+                    <select name="DormitoryCityID" class="form-select">
+                        <option value="">عامة (كل المدن)</option>
+                        @foreach (var c in ViewBag.Cities)
+                        {
+                            <option value="@c.ID">@c.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">العنوان <span class="text-danger">*</span></label>
+                    <input name="Title" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">المحتوى <span class="text-danger">*</span></label>
+                    <textarea name="Content" class="form-control" rows="5" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">النوع <span class="text-danger">*</span></label>
+                    <select name="InstructionType" class="form-select">
+                        <option value="General">عامة</option>
+                        <option value="New">جدد</option>
+                        <option value="Returning">قدامى</option>
+                        <option value="Foreign">وافدون</option>
+                        <option value="Rules">لوائح</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary">إضافة</button>
+            </div>
+        </form>
+    </div>
+</div>

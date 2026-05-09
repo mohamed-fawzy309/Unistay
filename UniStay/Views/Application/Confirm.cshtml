@@ -1,0 +1,26 @@
+﻿@{
+    ViewData["Title"] = "تم استلام طلبك";
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow text-center p-5">
+                <h1 class="text-success display-1 mb-4">✓</h1>
+                <h3>تم استلام طلبك بنجاح</h3>
+                <h4 class="text-muted mt-3">رقم الطلب: <strong>@ViewBag.ApplicationNumber</strong></h4>
+
+                <div class="alert alert-info mt-4">
+                    <strong>اسم المستخدم:</strong> @ViewBag.NationalID<br>
+                    <small>استخدم هذا الرقم القومي لتسجيل الدخول</small>
+                </div>
+
+                <p class="lead">تم إرسال رسالة تأكيد إلى بريدك الإلكتروني.</p>
+                <p>ستتلقى إشعاراً عندما تتم مراجعة طلبك.</p>
+
+                <a href="/" class="btn btn-primary mt-4">العودة للصفحة الرئيسية</a>
+            </div>
+        </div>
+    </div>
+</div>

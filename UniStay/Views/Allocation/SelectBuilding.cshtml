@@ -1,0 +1,43 @@
+@model AllocationBuildingViewModel
+@{
+    ViewData["Title"] = "اختيار المبنى";
+}
+
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">التسكين</a></li>
+            <li class="breadcrumb-item active">اختيار المبنى</li>
+        </ol>
+    </nav>
+
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-person"></i> @Model.StudentName</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>المدينة:</strong> @Model.CityName</p>
+            <p><strong>العام الدراسي:</strong> @Model.AcademicYear</p>
+        </div>
+    </div>
+
+    <div class="row">
+        @foreach (var b in Model.Buildings)
+        {
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title"><i class="bi bi-building"></i> @b.BuildingName</h5>
+                        <p class="text-muted">@b.BuildingType</p>
+                        <p><span class="badge bg-info">@b.FloorCount أدوار</span></p>
+                        <p><span class="badge bg-success">@b.AvailableBeds سرير متاح</span></p>
+                        <a asp-action="SelectFloor" asp-route-buildingId="@b.ID" asp-route-appId="@Model.ApplicationID"
+                           class="btn btn-primary mt-2">
+                            <i class="bi bi-arrow-left"></i> اختيار
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

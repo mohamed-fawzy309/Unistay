@@ -1,0 +1,245 @@
+@model UniStay.ViewModels.Permissions.AssignPermissionsViewModel
+@{
+    ViewData["Title"] = "تعيين الصلاحيات";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var cityRoles = ViewBag.CityRoles as List<UniStay.ViewModels.Permissions.CityRoleRowViewModel> ?? new();
+    var availCities = ViewBag.AvailableCities as List<UniStay.ViewModels.Permissions.SelectItem> ?? new();
+}
+
+@section Scripts {
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+$(function(){
+
+    // حفظ الصلاحيات
+    $('#btnSavePerms').on('click', function(){
+        const perms = [];
+        $('.perm-row').each(function(){
+            const pid = parseInt($(this).data('pid'));
+            perms.push({
+                permissionID: pid,
+                canView:   $(this).find('.chk-view').prop('checked'),
+                canCreate: $(this).find('.chk-create').prop('checked'),
+                canEdit:   $(this).find('.chk-edit').prop('checked'),
+                canDelete: $(this).find('.chk-delete').prop('checked'),
+            });
+        });
+
+        $.ajax({
+            url: '/Permissions/Assign',
+            method: 'POST',
+            contentType: 'application/json',
+            headers: { 'X-CSRF-TOKEN': $('[name=__RequestVerificationToken]').val(),
+                       'RequestVerificationToken': $('[name=__RequestVerificationToken]').val() },
+            data: JSON.stringify({ userID: @Model.UserID, permissions: perms }),
+            success: r => {
+                if(r.success) toast('تم حفظ الصلاحيات','success');
+                else toast('حدث خطأ','danger');
+            },
+            error: () => toast('حدث خطأ في الاتصال','danger')
+        });
+    });
+
+    // تحديد الكل في مجموعة
+    $(document).on('change','.chk-all-group',function(){
+        const grp=$(this).closest('.perm-group');
+        const checked=$(this).prop('checked');
+        grp.find('.chk-view,.chk-create,.chk-edit,.chk-delete').prop('checked',checked);
+    });
+
+    // إزالة دور مدينة
+    $(document).on('click','.btn-remove-role',function(){
+        if(!confirm('إزالة هذا الدور؟')) return;
+        const csid=$(this).data('id');
+        $.post('/Permissions/RemoveCityRole',{cityStaffId:csid,userId:@Model.UserID,__RequestVerificationToken:$('[name=__RequestVerificationToken]').val()})
+         .done(r=>{ if(r.success) location.reload(); else toast(r.message,'danger'); });
+    });
+
+    function toast(msg,type='success'){
+        const t=$(`<div class="toast align-items-center text-bg-${type} border-0 position-fixed bottom-0 end-0 m-3 show" style="z-index:9999">
+            <div class="d-flex"><div class="toast-body">${msg}</div>
+            <button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`);
+        $('body').append(t); setTimeout(()=>t.remove(),3500);
+    }
+});
+</script>
+}
+
+@Html.AntiForgeryToken()
+
+<div class="container-fluid py-3">
+
+    @* Header *@
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a asp-action="Users" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-right"></i> رجوع
+        </a>
+        <div>
+            <h5 class="mb-0 fw-bold"><i class="bi bi-shield-lock me-2 text-primary"></i>تعيين الصلاحيات</h5>
+            <small class="text-muted">@Model.UserName — @Model.UserEmail</small>
+        </div>
+        @if (Model.IsSuperAdmin)
+        {
+            <span class="badge text-white ms-2" style="background:linear-gradient(90deg,#7c3aed,#db2777)">SuperAdmin — كل الصلاحيات ممنوحة</span>
+        }
+    </div>
+
+    @if (TempData["Success"] != null)
+    { <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]<button class="btn-close" data-bs-dismiss="alert"></button></div> }
+    @if (TempData["Error"] != null)
+    { <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle-fill me-2"></i>@TempData["Error"]<button class="btn-close" data-bs-dismiss="alert"></button></div> }
+
+    <div class="row g-4">
+
+        @* ══ عمود الصلاحيات ══ *@
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-shield-check me-2"></i>الصلاحيات</span>
+                    @if (!Model.IsSuperAdmin)
+                    {
+                        <button id="btnSavePerms" class="btn btn-light btn-sm">
+                            <i class="bi bi-floppy me-1"></i>حفظ الصلاحيات
+                        </button>
+                    }
+                </div>
+                <div class="card-body p-0">
+                    @if (Model.IsSuperAdmin)
+                    {
+                        <div class="p-4 text-center text-muted">
+                            <i class="bi bi-shield-fill-check fs-1 text-success"></i>
+                            <p class="mt-2">هذا المستخدم SuperAdmin — يملك كل الصلاحيات تلقائياً</p>
+                        </div>
+                    }
+                    else if (!Model.Groups.Any())
+                    {
+                        <div class="p-4 text-center text-muted">لا توجد مجموعات صلاحيات في قاعدة البيانات</div>
+                    }
+                    else
+                    {
+                        @foreach (var group in Model.Groups)
+                        {
+                            <div class="perm-group border-bottom">
+                                <div class="d-flex align-items-center gap-2 p-3 bg-light">
+                                    <input type="checkbox" class="form-check-input chk-all-group" title="تحديد الكل">
+                                    <span class="fw-semibold">@group.GroupName</span>
+                                    @if (!string.IsNullOrEmpty(group.Description))
+                                    { <small class="text-muted">— @group.Description</small> }
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>الصلاحية</th>
+                                                <th class="text-center" style="width:80px">عرض</th>
+                                                <th class="text-center" style="width:80px">إضافة</th>
+                                                <th class="text-center" style="width:80px">تعديل</th>
+                                                <th class="text-center" style="width:80px">حذف</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var perm in group.Permissions)
+                                            {
+                                                <tr class="perm-row" data-pid="@perm.PermissionID">
+                                                    <td>
+                                                        <div class="fw-semibold small">@perm.DisplayName</div>
+                                                        <code class="text-muted" style="font-size:.7rem">@perm.PermissionKey</code>
+                                                    </td>
+                                                    <td class="text-center"><input type="checkbox" class="form-check-input chk-view"   @(perm.CanView   ? "checked" : "")></td>
+                                                    <td class="text-center"><input type="checkbox" class="form-check-input chk-create" @(perm.CanCreate ? "checked" : "")></td>
+                                                    <td class="text-center"><input type="checkbox" class="form-check-input chk-edit"   @(perm.CanEdit   ? "checked" : "")></td>
+                                                    <td class="text-center"><input type="checkbox" class="form-check-input chk-delete" @(perm.CanDelete ? "checked" : "")></td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ══ عمود أدوار المدن ══ *@
+        <div class="col-lg-4">
+
+            @* الأدوار الحالية *@
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-header bg-info text-white">
+                    <i class="bi bi-geo-alt me-2"></i>أدوار المدن
+                </div>
+                <div class="card-body p-0">
+                    @if (!cityRoles.Any())
+                    {
+                        <div class="p-3 text-muted text-center small">لا يوجد أدوار</div>
+                    }
+                    else
+                    {
+                        <ul class="list-group list-group-flush">
+                            @foreach (var cr in cityRoles)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-semibold small">@cr.CityName</div>
+                                        <span class="badge bg-light text-dark border">@cr.RoleDisplayName</span>
+                                        @if (cr.IsPrimary) { <span class="badge bg-success ms-1" style="font-size:.65rem">رئيسي</span> }
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-danger btn-remove-role" data-id="@cr.CityStaffID">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+            </div>
+
+            @* إضافة دور جديد *@
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-secondary text-white">
+                    <i class="bi bi-plus-circle me-2"></i>تعيين دور في مدينة
+                </div>
+                <div class="card-body">
+                    <form asp-action="AssignCityRole" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="UserID" value="@Model.UserID" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">المدينة</label>
+                            <select name="DormitoryCityID" class="form-select" required>
+                                <option value="">اختر مدينة...</option>
+                                @foreach (var c in availCities)
+                                {
+                                    <option value="@c.Value">@c.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">الدور</label>
+                            <select name="RoleInCity" class="form-select" required>
+                                <option value="">اختر دوراً...</option>
+                                <option value="Manager">مدير المدينة</option>
+                                <option value="Accountant">محاسب</option>
+                                <option value="MealStaff">موظف تغذية</option>
+                                <option value="HousingStaff">موظف إسكان</option>
+                                <option value="ApplicationReviewer">مراجع طلبات</option>
+                                <option value="MaintenanceStaff">موظف صيانة</option>
+                                <option value="SecurityStaff">موظف أمن</option>
+                            </select>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" name="IsPrimary" value="true" id="isPrimary" checked>
+                            <input type="hidden" name="IsPrimary" value="false" />
+                            <label class="form-check-label" for="isPrimary">دور رئيسي</label>
+                        </div>
+                        <button type="submit" class="btn btn-secondary w-100">
+                            <i class="bi bi-plus-lg me-1"></i>تعيين
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

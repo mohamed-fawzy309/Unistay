@@ -1,0 +1,777 @@
+﻿@{
+    ViewData["Title"] = "UniStay - الصفحة الرئيسية";
+    var announcements = ViewBag.Announcements as List<UniStay.Models.Announcement>;
+    var cities = ViewBag.Cities as List<UniStay.Models.DormitoryCity>;
+}
+
+@if (TempData.ContainsKey("RegistrationSuccess"))
+{
+    <div id="successToast" style="
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        background: rgba(16,185,129,.15);
+        border: 1px solid rgba(16,185,129,.35);
+        color: #10b981;
+        font-family: 'Tajawal', sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        padding: 1rem 1.75rem;
+        border-radius: 12px;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 8px 32px rgba(0,0,0,.3);
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        animation: toast-in .45s cubic-bezier(.22,1,.36,1) both;
+        max-width: 90vw;
+        text-align: center;
+                ">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2" style="flex-shrink:0">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        @TempData["RegistrationSuccess"]
+    </div>
+
+    <style>
+        @@keyframes toast-in {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0);    }
+        }
+        @@keyframes toast-out {
+            from { opacity: 1; transform: translateX(-50%) translateY(0);    }
+            to   { opacity: 0; transform: translateX(-50%) translateY(20px); }
+        }
+    </style>
+
+    <script>
+        setTimeout(() => {
+            const t = document.getElementById('successToast');
+            if (t) {
+                t.style.animation = 'toast-out .4s ease forwards';
+                setTimeout(() => t.remove(), 400);
+            }
+        }, 4000);
+    </script>
+}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>UniStay — المدينة الجامعية</title>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --red: #e63946;
+            --red-dark: #b52530;
+            --red-dim: rgba(230,57,70,.15);
+            --black: #080b10;
+            --black-2: #0f1319;
+            --black-3: #161c26;
+            --black-4: #1e2736;
+            --border: #1e2736;
+            --text: #e8eaf0;
+            --muted: #6b7a99;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--black); color: var(--text); overflow-x: hidden; }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--black); }
+        ::-webkit-scrollbar-thumb { background: var(--red-dark); border-radius: 3px; }
+
+        /* ══════════════════════════════
+           NAVBAR
+        ══════════════════════════════ */
+        .navbar {
+            background: rgba(8,11,16,.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(230,57,70,.12);
+            padding: .9rem 0;
+            position: fixed; top: 0; width: 100%; z-index: 1000;
+            transition: all .3s;
+        }
+        .navbar.scrolled {
+            background: rgba(8,11,16,.97);
+            box-shadow: 0 4px 30px rgba(0,0,0,.5);
+        }
+        .navbar-brand {
+            font-size: 1.5rem; font-weight: 900; letter-spacing: .02em;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .nav-link { color: var(--muted) !important; font-weight: 500; font-size: .9rem; transition: color .2s; padding: .4rem .9rem !important; }
+        .nav-link:hover { color: #fff !important; }
+        .btn-nav-login {
+            background: transparent; border: 1px solid var(--red);
+            color: var(--red) !important; border-radius: 8px;
+            padding: .35rem 1.1rem !important; font-size: .88rem; font-weight: 600;
+            transition: all .25s;
+        }
+        .btn-nav-login:hover { background: var(--red); color: #fff !important; }
+        .btn-nav-reg {
+            background: var(--red); border: 1px solid var(--red);
+            color: #fff !important; border-radius: 8px;
+            padding: .35rem 1.1rem !important; font-size: .88rem; font-weight: 600;
+            transition: all .25s; margin-right: .4rem;
+        }
+        .btn-nav-reg:hover { background: var(--red-dark); border-color: var(--red-dark); }
+
+        /* ══════════════════════════════
+           HERO
+        ══════════════════════════════ */
+        .hero {
+            min-height: 100vh;
+            display: flex; align-items: center;
+            position: relative; overflow: hidden;
+            padding: 7rem 0 4rem;
+        }
+        .hero::before {
+            content: ''; position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(230,57,70,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(230,57,70,.05) 1px, transparent 1px);
+            background-size: 55px 55px;
+            animation: gridMove 25s linear infinite;
+        }
+        @@keyframes gridMove { from { transform: translateY(0); } to { transform: translateY(55px); } }
+
+        .orb { position: absolute; border-radius: 50%; filter: blur(90px); pointer-events: none; }
+        .o1 { width: 600px; height: 600px; background: rgba(230,57,70,.08); top: -150px; left: -150px; animation: orb1 12s ease-in-out infinite alternate; }
+        .o2 { width: 500px; height: 500px; background: rgba(10,20,50,.4); bottom: -100px; right: -100px; animation: orb1 9s ease-in-out infinite alternate-reverse; }
+        .o3 { width: 350px; height: 350px; background: rgba(230,57,70,.05); top: 40%; right: 20%; animation: orb1 15s ease-in-out infinite alternate; }
+        @@keyframes orb1 { from { transform: translate(0,0) scale(1); } to { transform: translate(40px,30px) scale(1.12); } }
+
+        .shape { position: absolute; border: 1px solid rgba(230,57,70,.1); pointer-events: none; }
+        .s1 { width: 140px; height: 140px; top: 12%; right: 8%; animation: spin 30s linear infinite; }
+        .s2 { width: 90px;  height: 90px;  bottom: 18%; left: 10%; animation: spin 20s linear infinite reverse; }
+        .s3 { width: 60px;  height: 60px;  top: 55%; left: 6%;    animation: spin 35s linear infinite; }
+        @@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+        .hero-line {
+            position: absolute; left: 50%; top: 0; bottom: 0;
+            width: 1px; background: linear-gradient(to bottom, transparent, rgba(230,57,70,.2), transparent);
+            pointer-events: none;
+        }
+        .hero-content { position: relative; z-index: 5; text-align: center; }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: rgba(230,57,70,.1); border: 1px solid rgba(230,57,70,.25);
+            color: var(--red); border-radius: 50px;
+            padding: .35rem 1rem; font-size: .8rem; font-weight: 600; letter-spacing: .06em;
+            margin-bottom: 1.8rem;
+            animation: fadeUp .7s .1s both;
+        }
+        .hero-title {
+            font-size: clamp(2.4rem,7vw,5rem);
+            font-weight: 900; line-height: 1.1;
+            margin-bottom: 1.4rem;
+            animation: fadeUp .7s .2s both;
+        }
+        .hero-title .red {
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero-sub {
+            font-size: clamp(1rem,2.5vw,1.2rem); color: var(--muted);
+            max-width: 600px; margin: 0 auto 2.5rem; line-height: 1.8;
+            animation: fadeUp .7s .35s both;
+        }
+        .hero-btns {
+            display: flex; align-items: center; justify-content: center;
+            gap: 1rem; flex-wrap: wrap;
+            animation: fadeUp .7s .5s both;
+        }
+        .btn-primary-red {
+            background: linear-gradient(135deg,var(--red),var(--red-dark));
+            border: none; color: #fff; border-radius: 12px;
+            padding: .85rem 2.2rem; font-family: 'Tajawal', sans-serif;
+            font-size: 1rem; font-weight: 700; cursor: pointer;
+            position: relative; overflow: hidden; text-decoration: none;
+            display: inline-flex; align-items: center; gap: .6rem;
+            transition: transform .2s, box-shadow .2s;
+        }
+        .btn-primary-red::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
+            transition: left .5s;
+        }
+        .btn-primary-red:hover::before { left: 150%; }
+        .btn-primary-red:hover { transform: translateY(-3px); box-shadow: 0 10px 35px rgba(230,57,70,.4); color: #fff; }
+        .btn-outline-red {
+            background: transparent; border: 1px solid rgba(230,57,70,.4);
+            color: var(--text); border-radius: 12px;
+            padding: .85rem 2.2rem; font-family: 'Tajawal', sans-serif;
+            font-size: 1rem; font-weight: 600; cursor: pointer; text-decoration: none;
+            display: inline-flex; align-items: center; gap: .6rem;
+            transition: all .25s;
+        }
+        .btn-outline-red:hover { border-color: var(--red); color: var(--red); transform: translateY(-3px); }
+
+        .stats-row {
+            display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;
+            margin-top: 4rem;
+            animation: fadeUp .7s .65s both;
+        }
+        .stat-item { text-align: center; }
+        .stat-num {
+            font-size: 2rem; font-weight: 900;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            display: block;
+        }
+        .stat-label { font-size: .78rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-top: .2rem; }
+
+        @@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ══════════════════════════════
+           SHARED SECTION BASE
+        ══════════════════════════════ */
+        .section     { padding: 6rem 0; }
+        .section-alt { padding: 6rem 0; background: var(--black-2); }
+        .section-tag {
+            display: inline-block;
+            background: var(--red-dim); border: 1px solid rgba(230,57,70,.2);
+            color: var(--red); border-radius: 50px;
+            padding: .3rem .9rem; font-size: .78rem; font-weight: 600; letter-spacing: .1em;
+            text-transform: uppercase; margin-bottom: 1rem;
+        }
+        .section-title { font-size: clamp(1.8rem,4vw,2.8rem); font-weight: 800; margin-bottom: .8rem; }
+        .section-sub   { color: var(--muted); font-size: 1rem; max-width: 520px; margin: 0 auto; line-height: 1.8; }
+
+        /* ══════════════════════════════
+           ANNOUNCEMENTS
+        ══════════════════════════════ */
+        .ann-card {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 18px; padding: 1.75rem;
+            height: 100%; position: relative; overflow: hidden;
+            transition: transform .3s, border-color .3s, box-shadow .3s;
+        }
+        .ann-card::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(230,57,70,.04), transparent);
+            opacity: 0; transition: opacity .3s;
+        }
+        .ann-card:hover { transform: translateY(-6px); border-color: rgba(230,57,70,.3); box-shadow: 0 20px 50px rgba(0,0,0,.4); }
+        .ann-card:hover::before { opacity: 1; }
+        .ann-card-title { font-size: 1rem; font-weight: 700; margin-bottom: .6rem; }
+        .ann-card-body  { color: var(--muted); font-size: .87rem; line-height: 1.75; margin-bottom: 1rem; }
+        .ann-badge {
+            display: inline-block;
+            background: var(--red-dim); border: 1px solid rgba(230,57,70,.2);
+            color: var(--red); border-radius: 50px;
+            padding: .2rem .75rem; font-size: .75rem; font-weight: 600;
+        }
+        .ann-date { color: var(--muted); font-size: .75rem; margin-top: .6rem; display: block; }
+
+        .btn-view-all {
+            background: transparent; border: 1px solid var(--border);
+            color: var(--muted); border-radius: 10px;
+            padding: .45rem 1.2rem; font-family: 'Tajawal', sans-serif;
+            font-size: .85rem; font-weight: 600; text-decoration: none;
+            transition: all .25s; display: inline-flex; align-items: center; gap: .4rem;
+        }
+        .btn-view-all:hover { border-color: var(--red); color: var(--red); }
+
+        /* ══════════════════════════════
+           CITIES
+        ══════════════════════════════ */
+        .city-card {
+            background: var(--black-3);
+            border: 1px solid var(--border);
+            border-radius: 18px; padding: 1.75rem;
+            height: 100%; text-align: center; position: relative; overflow: hidden;
+            transition: transform .3s, border-color .3s, box-shadow .3s;
+        }
+        .city-card:hover { transform: translateY(-6px); border-color: rgba(230,57,70,.3); box-shadow: 0 20px 50px rgba(0,0,0,.4); }
+        .city-icon {
+            width: 52px; height: 52px; border-radius: 13px;
+            background: var(--red-dim); border: 1px solid rgba(230,57,70,.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: var(--red);
+            margin: 0 auto 1rem;
+        }
+        .city-name   { font-size: 1rem; font-weight: 700; margin-bottom: .5rem; }
+        .city-type {
+            display: inline-block;
+            background: rgba(255,255,255,.05); border: 1px solid var(--border);
+            color: var(--muted); border-radius: 50px;
+            padding: .2rem .75rem; font-size: .75rem; font-weight: 500;
+        }
+        .city-location { color: var(--muted); font-size: .8rem; margin-top: .5rem; }
+        .btn-city-details {
+            display: inline-flex; align-items: center; gap: .35rem;
+            background: transparent; border: 1px solid rgba(230,57,70,.3);
+            color: var(--red); border-radius: 9px;
+            padding: .4rem 1rem; font-family: 'Tajawal', sans-serif;
+            font-size: .82rem; font-weight: 600; text-decoration: none;
+            margin-top: 1rem; transition: all .25s;
+        }
+        .btn-city-details:hover { background: var(--red); color: #fff; }
+
+        /* ══════════════════════════════
+           FEATURES
+        ══════════════════════════════ */
+        .feat-card {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 18px; padding: 2rem;
+            transition: transform .3s, border-color .3s, box-shadow .3s;
+            height: 100%; position: relative; overflow: hidden;
+        }
+        .feat-card::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(230,57,70,.04), transparent);
+            opacity: 0; transition: opacity .3s;
+        }
+        .feat-card:hover { transform: translateY(-6px); border-color: rgba(230,57,70,.3); box-shadow: 0 20px 50px rgba(0,0,0,.4); }
+        .feat-card:hover::before { opacity: 1; }
+        .feat-icon {
+            width: 52px; height: 52px; border-radius: 13px;
+            background: var(--red-dim); border: 1px solid rgba(230,57,70,.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; color: var(--red); margin-bottom: 1.2rem;
+        }
+        .feat-title { font-size: 1.05rem; font-weight: 700; margin-bottom: .6rem; }
+        .feat-desc  { color: var(--muted); font-size: .88rem; line-height: 1.8; }
+
+        /* ══════════════════════════════
+           HOW IT WORKS
+        ══════════════════════════════ */
+        .step-card {
+            background: var(--black-3);
+            border: 1px solid var(--border);
+            border-radius: 18px; padding: 2rem 1.5rem;
+            text-align: center; position: relative;
+            transition: transform .3s, border-color .3s;
+        }
+        .step-card:hover { transform: translateY(-5px); border-color: rgba(230,57,70,.3); }
+        .step-num {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--red), var(--red-dark));
+            color: #fff; font-size: 1.2rem; font-weight: 800;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.2rem;
+            box-shadow: 0 6px 20px rgba(230,57,70,.35);
+        }
+        .step-title { font-size: 1rem; font-weight: 700; margin-bottom: .5rem; }
+        .step-desc  { color: var(--muted); font-size: .85rem; line-height: 1.7; }
+        .step-arrow { display: flex; align-items: center; justify-content: center; color: rgba(230,57,70,.3); font-size: 1.4rem; padding-top: 1rem; }
+
+        /* ══════════════════════════════
+           CTA
+        ══════════════════════════════ */
+        .cta-section { padding: 6rem 0; position: relative; overflow: hidden; }
+        .cta-card {
+            background: linear-gradient(135deg, var(--black-3), var(--black-4));
+            border: 1px solid rgba(230,57,70,.2);
+            border-radius: 24px; padding: 4rem 2rem;
+            text-align: center; position: relative; overflow: hidden;
+        }
+        .cta-card::before {
+            content: ''; position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+            width: 400px; height: 400px; border-radius: 50%;
+            background: rgba(230,57,70,.06); filter: blur(60px); pointer-events: none;
+        }
+        .cta-title { font-size: clamp(1.6rem,4vw,2.4rem); font-weight: 800; margin-bottom: .8rem; }
+        .cta-sub   { color: var(--muted); font-size: 1rem; margin-bottom: 2.2rem; line-height: 1.8; }
+        .cta-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+        /* ══════════════════════════════
+           FOOTER
+        ══════════════════════════════ */
+        footer {
+            background: var(--black-2);
+            border-top: 1px solid var(--border);
+            padding: 2.5rem 0; text-align: center;
+        }
+        .footer-brand {
+            font-size: 1.3rem; font-weight: 900;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: .5rem;
+        }
+        .footer-text { color: var(--muted); font-size: .82rem; }
+        .footer-text span { color: var(--red); }
+
+        /* ══════════════════════════════
+           SCROLL REVEAL
+        ══════════════════════════════ */
+        .reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s, transform .7s; }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+
+        /* ══════════════════════════════
+           MOBILE
+        ══════════════════════════════ */
+        @@media (max-width: 768px) {
+            .stats-row { gap: 2rem; }
+            .step-arrow { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ══ NAVBAR ══ -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#"><img src="~/images/Unistay_logo.png" alt="UniStay" style="height:38px"></a>
+            <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav mx-auto gap-1">
+                    <li class="nav-item"><a class="nav-link" href="#announcements">الإعلانات</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#cities">المدن الجامعية</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#features">المميزات</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#how">كيف يعمل</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#cta">ابدأ الآن</a></li>
+                </ul>
+                <div class="d-flex gap-2 mt-2 mt-lg-0">
+                    <a href="/Home/Dates" class="nav-link btn-nav-login">مواعيد التقدم</a>
+                    <a href="/Home/Accept" class="nav-link btn-nav-reg">استعلام عن القبول</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ══ HERO ══ -->
+    <section class="hero">
+        <div class="orb o1"></div>
+        <div class="orb o2"></div>
+        <div class="orb o3"></div>
+        <div class="shape s1"></div>
+        <div class="shape s2"></div>
+        <div class="shape s3"></div>
+        <div class="hero-line"></div>
+
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i class="fa-solid fa-bolt"></i>
+                    نظام إدارة السكن الجامعي الأذكى
+                </div>
+
+                <h1 class="hero-title">
+                    مرحباً بك في<br />
+                    <span class="red">UniStay</span>
+                </h1>
+
+                <p class="hero-sub">
+                    منصة متكاملة لإدارة المدينة الجامعية — من تقديم الطلبات وتخصيص الغرف
+                    إلى متابعة المدفوعات وطلبات الصيانة، كل شيء في مكان واحد.
+                </p>
+
+                <div class="hero-btns">
+                    <a href="/Application/Apply" class="btn-primary-red">
+                        <i class="fa-solid fa-user-plus"></i>
+                        سجّل كطالب جديد
+                    </a>
+                    <a href="/StudentAccount/Login" class="btn-outline-red">
+                        <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        تسجيل الدخول
+                    </a>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <span class="stat-num" data-target="1200">0</span>
+                        <div class="stat-label">طالب مسجّل</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-num" data-target="350">0</span>
+                        <div class="stat-label">غرفة متاحة</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-num" data-target="98">0</span>
+                        <div class="stat-label" style="white-space:nowrap">% نسبة الرضا</div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-num" data-target="24">0</span>
+                        <div class="stat-label">ساعة دعم</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ ANNOUNCEMENTS ══ -->
+    @if (announcements != null && announcements.Any())
+    {
+        <section class="section" id="announcements">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center mb-5 reveal">
+                    <div>
+                        <span class="section-tag">الإعلانات</span>
+                        <h2 class="section-title mb-0">آخر الإعلانات</h2>
+                    </div>
+                    <a asp-action="Announcements" class="btn-view-all">
+                        عرض الكل
+                        <i class="fa-solid fa-chevron-left" style="font-size:.7rem"></i>
+                    </a>
+                </div>
+
+                <div class="row g-4">
+                    @foreach (var ann in announcements)
+                    {
+                        <div class="col-md-4 reveal">
+                            <div class="ann-card">
+                                <div class="ann-card-title">@ann.Title</div>
+                                <div class="ann-card-body">
+                                    @(ann.Body?.Length > 150 ? ann.Body[..150] + "…" : ann.Body)
+                                </div>
+                                <span class="ann-badge">@ann.AnnouncementType</span>
+                                <span class="ann-date">
+                                    <i class="fa-regular fa-clock" style="margin-left:.3rem"></i>
+                                    @ann.PublishedAt?.ToString("yyyy-MM-dd")
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
+    }
+
+    <!-- ══ CITIES ══ -->
+    @if (cities != null && cities.Any())
+    {
+        <section class="section-alt" id="cities">
+            <div class="container">
+                <div class="d-flex justify-content-between align-items-center mb-5 reveal">
+                    <div>
+                        <span class="section-tag">الأماكن</span>
+                        <h2 class="section-title mb-0">المدن الجامعية</h2>
+                    </div>
+                    <a asp-action="Cities" class="btn-view-all">
+                        عرض الكل
+                        <i class="fa-solid fa-chevron-left" style="font-size:.7rem"></i>
+                    </a>
+                </div>
+
+                <div class="row g-4">
+                    @foreach (var city in cities)
+                    {
+                        <div class="col-md-3 col-sm-6 reveal">
+                            <div class="city-card">
+                                <div class="city-icon">
+                                    <i class="fa-solid fa-building-columns"></i>
+                                </div>
+                                <div class="city-name">@city.Name</div>
+                                <span class="city-type">@city.CityType</span>
+                                @if (!string.IsNullOrEmpty(city.Location))
+                                {
+                                    <div class="city-location">
+                                        <i class="fa-solid fa-location-dot" style="margin-left:.3rem;color:var(--red)"></i>
+                                        @city.Location
+                                    </div>
+                                }
+                                <a asp-action="CityDetails" asp-route-id="@city.ID" class="btn-city-details">
+                                    <i class="fa-solid fa-arrow-left" style="font-size:.75rem"></i>
+                                    التفاصيل
+                                </a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
+    }
+
+    <!-- ══ FEATURES ══ -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="text-center mb-5 reveal">
+                <span class="section-tag">المميزات</span>
+                <h2 class="section-title">كل ما تحتاجه في مكان واحد</h2>
+                <p class="section-sub">صمّمنا UniStay ليكون سهل الاستخدام ومتكامل الخدمات لكل طالب ومسؤول</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feat-card">
+                        <div class="feat-icon"><i class="fa-solid fa-bed"></i></div>
+                        <div class="feat-title">تخصيص الغرف</div>
+                        <div class="feat-desc">نظام ذكي لتخصيص الغرف والأسرّة بناءً على تفضيلات الطالب وتوفّر الأماكن تلقائياً.</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feat-card">
+                        <div class="feat-icon"><i class="fa-solid fa-file-circle-check"></i></div>
+                        <div class="feat-title">تقديم الطلبات</div>
+                        <div class="feat-desc">قدّم طلب الإقامة إلكترونياً وتابع حالته في الوقت الفعلي من خلال لوحة التحكم.</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feat-card">
+                        <div class="feat-icon"><i class="fa-solid fa-credit-card"></i></div>
+                        <div class="feat-title">إدارة المدفوعات</div>
+                        <div class="feat-desc">سجّل مدفوعاتك واستلم إيصالات إلكترونية فورية مع تتبع كامل لسجلّ المعاملات.</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feat-card">
+                        <div class="feat-icon"><i class="fa-solid fa-wrench"></i></div>
+                        <div class="feat-title">طلبات الصيانة</div>
+                        <div class="feat-desc">أبلغ عن أي عطل أو مشكلة وتابع حالة الإصلاح خطوة بخطوة حتى الحلّ.</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feat-card">
+                        <div class="feat-icon"><i class="fa-solid fa-utensils"></i></div>
+                        <div class="feat-title">نظام الوجبات</div>
+                        <div class="feat-desc">احجز وجباتك اليومية وشاهد القائمة الأسبوعية مسبقاً لتنظيم يومك بشكل أفضل.</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4 reveal">
+                    <div class="feat-card">
+                        <div class="feat-icon"><i class="fa-solid fa-bell"></i></div>
+                        <div class="feat-title">الإعلانات الفورية</div>
+                        <div class="feat-desc">استقبل إعلانات الإدارة والتنبيهات المهمة فوراً دون الحاجة للمتابعة اليدوية.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ HOW IT WORKS ══ -->
+    <section class="section-alt" id="how">
+        <div class="container">
+            <div class="text-center mb-5 reveal">
+                <span class="section-tag">كيف يعمل</span>
+                <h2 class="section-title">ابدأ في 3 خطوات بسيطة</h2>
+                <p class="section-sub">سجّل وقدّم طلبك واستلم غرفتك — الأمر أبسط مما تتخيّل</p>
+            </div>
+
+            <div class="row align-items-center g-4">
+                <div class="col-md-3 col-sm-6 reveal">
+                    <div class="step-card">
+                        <div class="step-num">١</div>
+                        <div class="step-title">أنشئ حسابك</div>
+                        <div class="step-desc">سجّل بياناتك ورقمك القومي في دقيقتين</div>
+                    </div>
+                </div>
+                <div class="col-md-1 d-none d-md-flex step-arrow reveal">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </div>
+                <div class="col-md-3 col-sm-6 reveal">
+                    <div class="step-card">
+                        <div class="step-num">٢</div>
+                        <div class="step-title">قدّم طلبك</div>
+                        <div class="step-desc">اختر نوع الغرفة والفصل الدراسي وأرسل الطلب</div>
+                    </div>
+                </div>
+                <div class="col-md-1 d-none d-md-flex step-arrow reveal">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </div>
+                <div class="col-md-3 col-sm-6 reveal">
+                    <div class="step-card">
+                        <div class="step-num">٣</div>
+                        <div class="step-title">استلم غرفتك</div>
+                        <div class="step-desc">بعد القبول ستصلك تفاصيل غرفتك وبيانات الدخول</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ CTA ══ -->
+    <section class="cta-section" id="cta">
+        <div class="container">
+            <div class="cta-card reveal">
+                <h2 class="cta-title">
+                    جاهز للانضمام إلى<br />
+                    <span style="background:linear-gradient(135deg,#ff6b7a,var(--red));-webkit-background-clip:text;-webkit-text-fill-color:transparent">
+                        مجتمع UniStay؟
+                    </span>
+                </h2>
+                <p class="cta-sub">
+                    انضم لآلاف الطلاب الذين يديرون إقامتهم الجامعية بسهولة وذكاء.<br />
+                    التسجيل مجاني وسريع.
+                </p>
+                <div class="cta-buttons">
+                    <a href="/Application/Apply" class="btn-primary-red">
+                        <i class="fa-solid fa-user-plus"></i>
+                        سجّل الآن مجاناً
+                    </a>
+                    <a href="/StudentAccount/Login" class="btn-outline-red">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        لديّ حساب بالفعل
+                    </a>
+                </div>
+
+                <div style="margin-top:2rem">
+                    <a href="/Account/Login"
+                       style="font-size:.78rem;color:var(--muted);text-decoration:none;transition:color .2s;display:inline-flex;align-items:center;gap:.35rem"
+                       onmouseover="this.style.color='var(--red)'"
+                       onmouseout="this.style.color='var(--muted)'">
+                        <i class="fa-solid fa-user-shield"></i>
+                        دخول لوحة التحكم الإدارية
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══ FOOTER ══ -->
+    <footer>
+        <div class="container">
+            <div class="footer-brand">UniStay</div>
+            <div class="footer-text">
+                نظام إدارة السكن الجامعي &nbsp;·&nbsp;
+                <span>جميع الحقوق محفوظة</span> &nbsp;·&nbsp;
+                &copy; 2025
+            </div>
+        </div>
+    </footer>
+
+    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ── Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            document.querySelector('.navbar').classList.toggle('scrolled', scrollY > 40);
+        });
+
+        // ── Counter animation
+        const counters = document.querySelectorAll('[data-target]');
+        const countObserver = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (!e.isIntersecting) return;
+                const el  = e.target;
+                const end = +el.dataset.target;
+                const dur = 1800, step = 16;
+                const inc = end / (dur / step);
+                let cur = 0;
+                const timer = setInterval(() => {
+                    cur = Math.min(cur + inc, end);
+                    el.textContent = Math.floor(cur).toLocaleString('ar-EG');
+                    if (cur >= end) clearInterval(timer);
+                }, step);
+                countObserver.unobserve(el);
+            });
+        }, { threshold: .5 });
+        counters.forEach(c => countObserver.observe(c));
+
+        // ── Scroll reveal
+        const revealObserver = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.classList.add('visible');
+                    revealObserver.unobserve(e.target);
+                }
+            });
+        }, { threshold: .12 });
+        document.querySelectorAll('.reveal').forEach((el, i) => {
+            el.style.transitionDelay = (i % 4) * .08 + 's';
+            revealObserver.observe(el);
+        });
+    </script>
+</body>
+</html>

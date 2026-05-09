@@ -1,0 +1,131 @@
+@model MealReportViewModel
+@{
+    ViewData["Title"] = "تقرير الوجبات";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-earmark-bar-graph"></i> تقرير الوجبات</h2>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label">من تاريخ</label>
+                    <input name="fromDate" type="date" class="form-control" value="@Model.FromDate?.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">إلى تاريخ</label>
+                    <input name="toDate" type="date" class="form-control" value="@Model.ToDate?.ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">المدينة</label>
+                    <select name="cityId" class="form-select">
+                        <option value="">الكل</option>
+                        @foreach (var c in Model.Cities)
+                        {
+                            <option value="@c.ID" selected="@(c.ID == Model.DormitoryCityID)">@c.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">نوع الوجبة</label>
+                    <select name="mealType" class="form-select">
+                        <option value="">الكل</option>
+                        <option value="Lunch" selected="@(Model.MealType == "Lunch")">غداء</option>
+                        <option value="Dinner" selected="@(Model.MealType == "Dinner")">عشاء</option>
+                        <option value="Ramadan" selected="@(Model.MealType == "Ramadan")">رمضان</option>
+                        <option value="Christian" selected="@(Model.MealType == "Christian")">مسيحيين</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> عرض التقرير</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h6>تم الاستهلاك</h6>
+                    <h3 class="text-success">@Model.TotalConsumed</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <h6>ملغي</h6>
+                    <h3 class="text-danger">@Model.TotalCancelled</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h6>إجمالي الوجبات</h6>
+                    <h3 class="text-primary">@Model.TotalServed</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">تفاصيل التقرير</h5>
+        </div>
+        <div class="card-body">
+            @if (!Model.Records.Any())
+            {
+                <div class="alert alert-info">لا توجد نتائج للبحث</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>نوع الوجبة</th>
+                                <th>إجمالي الوجبات</th>
+                                <th>تم الاستهلاك</th>
+                                <th>ملغي</th>
+                                <th>إجمالي الإيرادات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in Model.Records)
+                            {
+                                <tr>
+                                    <td>@r.Date.ToString("yyyy-MM-dd")</td>
+                                    <td>@r.MealType</td>
+                                    <td>@r.BookedCount</td>
+                                    <td>@r.ConsumedCount</td>
+                                    <td>@r.CancelledCount</td>
+                                    <td>@r.TotalRevenue.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                if (Model.TotalPages > 1)
+                {
+                    <nav>
+                        <ul class="pagination">
+                            @for (int i = 1; i <= Model.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == Model.Page ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("Report", new { fromDate = Model.FromDate?.ToString("yyyy-MM-dd"), toDate = Model.ToDate?.ToString("yyyy-MM-dd"), cityId = Model.DormitoryCityID, mealType = Model.MealType, page = i })">@i</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>

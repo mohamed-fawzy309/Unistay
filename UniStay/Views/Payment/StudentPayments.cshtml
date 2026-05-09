@@ -1,0 +1,164 @@
+@model StudentPaymentsViewModel
+@{
+    ViewData["Title"] = "مدفوعات الطالب";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-credit-card"></i> مدفوعات @Model.StudentName</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+            <i class="bi bi-plus-circle"></i> تسجيل دفعة
+        </button>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h6>المدفوع</h6>
+                    <h3 class="text-success">@Model.TotalPaid.ToString("N2")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <h6>المستحق</h6>
+                    <h3 class="text-danger">@Model.TotalDue.ToString("N2")</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-info">
+                <div class="card-body text-center">
+                    <h6>المتبقي</h6>
+                    <h3 class="text-info">@Model.Balance.ToString("N2")</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>النوع</th>
+                        <th>المبلغ</th>
+                        <th>المدفوع</th>
+                        <th>الحالة</th>
+                        <th>طريقة الدفع</th>
+                        <th>رقم الإيصال</th>
+                        <th>التاريخ</th>
+                        <th>المسجل</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model.Payments)
+                    {
+                        <tr>
+                            <td>@p.ID</td>
+                            <td>@p.PaymentType</td>
+                            <td>@p.Amount.ToString("N2")</td>
+                            <td>@p.PaidAmount.ToString("N2")</td>
+                            <td>
+                                @switch (p.Status)
+                                {
+                                    case "Completed": <span class="badge bg-success">مكتمل</span>; break;
+                                    case "Partial": <span class="badge bg-warning">جزئي</span>; break;
+                                    case "Pending": <span class="badge bg-secondary">معلق</span>; break;
+                                    case "Overdue": <span class="badge bg-danger">متأخر</span>; break;
+                                    default: <span class="badge bg-secondary">@p.Status</span>; break;
+                                }
+                            </td>
+                            <td>@p.PaymentMethod</td>
+                            <td>@p.ReceiptNumber</td>
+                            <td>@p.RecordedAt?.ToString("yyyy/MM/dd")</td>
+                            <td>@p.RecordedByName</td>
+                            <td>
+                                <a asp-action="Receipt" asp-route-id="@p.ID" class="btn btn-sm btn-info"><i class="bi bi-receipt"></i></a>
+                                @if (p.Status != "Overdue")
+                                {
+                                    <button class="btn btn-sm btn-danger" onclick="markOverdue(@p.ID)"><i class="bi bi-exclamation-triangle"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="recordPaymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="recordPaymentForm">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">تسجيل دفعة</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="studentId" value="@Model.StudentID" />
+                    <input type="hidden" name="academicYear" />
+                    <div class="mb-3">
+                        <label class="form-label">نوع الدفعة</label>
+                        <select name="paymentType" class="form-select" required>
+                            <option value="HousingFee">رسوم سكن</option>
+                            <option value="MealFee">رسوم وجبات</option>
+                            <option value="SecurityDeposit">تأمين</option>
+                            <option value="Fine">غرامة</option>
+                            <option value="Other">أخرى</option>
+                        </select>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">المبلغ</label>
+                            <input name="amount" class="form-control" type="number" step="0.01" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">المدفوع</label>
+                            <input name="paidAmount" class="form-control" type="number" step="0.01" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">طريقة الدفع</label>
+                        <select name="paymentMethod" class="form-select" required>
+                            <option value="Cash">نقداً</option>
+                            <option value="BankTransfer">تحويل بنكي</option>
+                            <option value="Card">بطاقة</option>
+                            <option value="Online">أونلاين</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check"></i> تسجيل</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#recordPaymentForm').submit(function (e) {
+            e.preventDefault();
+            $.post('@Url.Action("Record")', $(this).serialize(), function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        });
+
+        function markOverdue(id) {
+            if (!confirm('تأكيد وضع الدفعة كمتأخرة؟')) return;
+            $.post('@Url.Action("MarkOverdue")', { paymentId: id }, function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        }
+    </script>
+}

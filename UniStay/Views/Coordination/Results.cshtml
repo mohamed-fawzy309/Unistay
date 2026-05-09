@@ -1,0 +1,119 @@
+@model CoordinationResultsViewModel
+@{
+    ViewData["Title"] = "نتائج التنسيق";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-table"></i> نتائج التنسيق</h2>
+    </div>
+
+    <form method="get" class="row mb-4">
+        <div class="col-md-4">
+            <select name="cityId" class="form-select" onchange="this.form.submit()">
+                @foreach (var c in (IEnumerable<UniStay.Models.DormitoryCity>)ViewBag.Cities)
+                {
+                    <option value="@c.ID" selected="@(c.ID == Model.DormitoryCityID ? true : null)">@c.Name</option>
+                }
+            </select>
+        </div>
+    </form>
+
+    @if (Model.Total > 0)
+    {
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-primary">
+                    <div class="card-body text-center">
+                        <h6>الإجمالي</h6>
+                        <h3>@Model.Total</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <h6>مقبول</h6>
+                        <h3 class="text-success">@Model.AcceptedCount</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-warning">
+                    <div class="card-body text-center">
+                        <h6>انتظار</h6>
+                        <h3 class="text-warning">@Model.WaitlistCount</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-danger">
+                    <div class="card-body text-center">
+                        <h6>مرفوض</h6>
+                        <h3 class="text-danger">@Model.RejectedCount</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الاسم</th>
+                            <th>الرقم القومي</th>
+                            <th>الكلية</th>
+                            <th>الدرجة</th>
+                            <th>الترتيب</th>
+                            <th>الحالة</th>
+                            <th>تاريخ المعالجة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Results)
+                        {
+                            <tr>
+                                <td>@r.ID</td>
+                                <td>@r.StudentName</td>
+                                <td>@r.NationalID</td>
+                                <td>@r.Faculty</td>
+                                <td>@r.TotalScore?.ToString("N2")</td>
+                                <td>@r.Rank</td>
+                                <td>
+                                    @switch (r.Status)
+                                    {
+                                        case "Accepted": <span class="badge bg-success">مقبول</span>; break;
+                                        case "Waitlist": <span class="badge bg-warning">انتظار</span>; break;
+                                        case "Rejected": <span class="badge bg-danger">مرفوض</span>; break;
+                                        default: <span class="badge bg-secondary">@r.Status</span>; break;
+                                    }
+                                </td>
+                                <td>@r.ProcessedAt?.ToString("yyyy/MM/dd")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @if (Model.TotalPages > 1)
+                {
+                    <nav>
+                        <ul class="pagination">
+                            @for (int i = 1; i <= Model.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == Model.Page ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("Results", new { cityId = Model.DormitoryCityID, page = i })">@i</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">لا توجد نتائج تنسيق بعد</div>
+    }
+</div>

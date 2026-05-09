@@ -1,0 +1,231 @@
+@model UniStay.ViewModels.Permissions.AuditLogViewModel
+@{
+    ViewData["Title"] = "سجل التدقيق";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+@section Scripts {
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css"/>
+<script>
+$(function(){
+    $('#auditTable').DataTable({
+        language: {
+            search:"بحث:", lengthMenu:"عرض _MENU_",
+            info:"_START_-_END_ من _TOTAL_",
+            paginate:{next:"التالي",previous:"السابق"},
+            zeroRecords:"لا توجد نتائج"
+        },
+        order:[[0,'desc']],
+        columnDefs:[{orderable:false, targets:[5,6]}]
+    });
+
+    // عرض التفاصيل في Modal
+    $(document).on('click','.btn-details', function(){
+        const old=$(this).data('old') || '—';
+        const nw=$(this).data('new') || '—';
+        try { $('#oldValPre').text(JSON.stringify(JSON.parse(old), null, 2)); } catch{ $('#oldValPre').text(old); }
+        try { $('#newValPre').text(JSON.stringify(JSON.parse(nw),  null, 2)); } catch{ $('#newValPre').text(nw); }
+        new bootstrap.Modal('#detailsModal').show();
+    });
+});
+</script>
+}
+
+<div class="container-fluid py-3">
+
+    @* بطاقات الإحصاءات *@
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 text-white h-100" style="background:linear-gradient(135deg,#1e3a5f,#2563eb)">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-2 fw-bold">@Model.TotalCount</div>
+                        <div class="small opacity-75">إجمالي السجلات</div>
+                    </div>
+                    <i class="bi bi-clock-history fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 text-white h-100" style="background:linear-gradient(135deg,#065f46,#10b981)">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-2 fw-bold">@Model.TodayCount</div>
+                        <div class="small opacity-75">سجلات اليوم</div>
+                    </div>
+                    <i class="bi bi-calendar-check fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 text-white h-100" style="background:linear-gradient(135deg,#92400e,#f59e0b)">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fs-2 fw-bold">@Model.WeekCount</div>
+                        <div class="small opacity-75">سجلات الأسبوع</div>
+                    </div>
+                    <i class="bi bi-bar-chart fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Header *@
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>سجل التدقيق</h5>
+            <small class="text-muted">تتبع كل العمليات التي تمت على النظام</small>
+        </div>
+    </div>
+
+    @* فلتر البحث *@
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-light fw-semibold">
+            <i class="bi bi-funnel me-2"></i>فلترة السجلات
+        </div>
+        <div class="card-body">
+            <form method="get" asp-action="AuditLog">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">نوع المستخدم</label>
+                        <select name="UserType" class="form-select form-select-sm">
+                            <option value="">الكل</option>
+                            <option value="Staff"   @@(Model.Filter.UserType=="Staff"   ?"selected":"")>موظف</option>
+                            <option value="Student" @@(Model.Filter.UserType=="Student" ?"selected":"")>طالب</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">الإجراء</label>
+                        <input name="Action" class="form-control form-control-sm"
+                               placeholder="مثال: User.Create" value="@Model.Filter.Action" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">الجدول</label>
+                        <input name="TableName" class="form-control form-control-sm"
+                               placeholder="مثال: SystemUser" value="@Model.Filter.TableName" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">ID المستخدم</label>
+                        <input name="UserID" type="number" class="form-control form-control-sm"
+                               value="@Model.Filter.UserID" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">من تاريخ</label>
+                        <input name="From" type="date" class="form-control form-control-sm"
+                               value="@Model.Filter.From?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold">إلى تاريخ</label>
+                        <input name="To" type="date" class="form-control form-control-sm"
+                               value="@Model.Filter.To?.ToString("yyyy-MM-dd")" />
+                    </div>
+                </div>
+                <div class="mt-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-search me-1"></i>بحث
+                    </button>
+                    <a asp-action="AuditLog" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-x-circle me-1"></i>مسح الفلتر
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @* الجدول *@
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <table id="auditTable" class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>المستخدم</th>
+                        <th>الإجراء</th>
+                        <th>الجدول / السجل</th>
+                        <th>المدينة</th>
+                        <th>IP</th>
+                        <th>التاريخ</th>
+                        <th>تفاصيل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.Logs)
+                    {
+                        <tr>
+                            <td class="text-muted small">@log.ID</td>
+                            <td>
+                                <div class="fw-semibold small">@log.UserDisplayName</div>
+                                <span class="badge bg-light text-dark border" style="font-size:.65rem">@log.UserType</span>
+                            </td>
+                            <td>
+                                <span class="badge text-white bg-@log.ActionCategory">@log.ActionDisplay</span>
+                                <br><code class="text-muted" style="font-size:.65rem">@log.Action</code>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(log.TableName))
+                                {
+                                    <span class="badge bg-light text-dark border">@log.TableName</span>
+                                }
+                                @if (log.RecordID.HasValue)
+                                {
+                                    <small class="text-muted ms-1">#@log.RecordID</small>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(log.CityName))
+                                { <span class="badge bg-info text-white">@log.CityName</span> }
+                                else
+                                { <span class="text-muted small">—</span> }
+                            </td>
+                            <td><small class="text-muted">@(log.IPAddress ?? "—")</small></td>
+                            <td><small>@log.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small></td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(log.OldValues) || !string.IsNullOrEmpty(log.NewValues))
+                                {
+                                    <button class="btn btn-sm btn-outline-secondary btn-details"
+                                            data-old="@log.OldValues" data-new="@log.NewValues"
+                                            title="عرض التفاصيل">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                }
+                                else
+                                { <span class="text-muted small">—</span> }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@* Modal التفاصيل *@
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title"><i class="bi bi-eye me-2"></i>تفاصيل التغيير</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-danger">القيم القديمة</label>
+                        <pre id="oldValPre" class="bg-light p-3 rounded small" style="max-height:300px;overflow:auto"></pre>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-success">القيم الجديدة</label>
+                        <pre id="newValPre" class="bg-light p-3 rounded small" style="max-height:300px;overflow:auto"></pre>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>

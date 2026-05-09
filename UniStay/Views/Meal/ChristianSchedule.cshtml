@@ -1,0 +1,140 @@
+@model MealScheduleViewModel
+@{
+    ViewData["Title"] = Model.ViewTitle;
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-cross"></i> @Model.ViewTitle</h2>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label">المدينة</label>
+                    <select name="cityId" class="form-select" onchange="this.form.submit()">
+                        <option value="">-- اختر المدينة --</option>
+                        @foreach (var c in ViewBag.Cities as List<UniStay.ViewModels.Meal.CityLookup> ?? new())
+                        {
+                            <option value="@c.ID" selected="@(c.ID == Model.DormitoryCityID)">@c.Name</option>
+                        }
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.DormitoryCityID > 0)
+    {
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">المواعيد الحالية</h5>
+                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#addModal"><i class="bi bi-plus-lg"></i> إضافة موعد</button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>التاريخ</th>
+                                <th>الوصف</th>
+                                <th>السعر الخاص</th>
+                                <th>الحالة</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Schedules.Any())
+                            {
+                                <tr><td colspan="6" class="text-center">لا توجد مواعيد مضافة</td></tr>
+                            }
+                            @foreach (var s in Model.Schedules)
+                            {
+                                <tr>
+                                    <td>@s.ID</td>
+                                    <td>@s.ScheduleDate.ToString("yyyy-MM-dd")</td>
+                                    <td>@s.Description</td>
+                                    <td>@(s.SpecialPrice?.ToString("N2") ?? "-")</td>
+                                    <td>
+                                        @if (s.IsActive)
+                                        {
+                                            <span class="badge bg-success">نشط</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">غير نشط</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-warning" onclick="toggleSchedule(@s.ID)"><i class="bi bi-toggle-on"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteSchedule(@s.ID)"><i class="bi bi-trash"></i></button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="addModal" tabindex="-1">
+            <div class="modal-dialog">
+                <form asp-action="ChristianSchedule" method="post" class="modal-content">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="DormitoryCityID" value="@Model.DormitoryCityID" />
+                    <input type="hidden" name="MealType" value="Christian" />
+                    <div class="modal-header">
+                        <h5 class="modal-title">إضافة موعد</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">التاريخ <span class="text-danger">*</span></label>
+                            <input name="ScheduleDate" type="date" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">الوصف</label>
+                            <input name="Description" class="form-control" placeholder="وصف الموعد">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">السعر الخاص</label>
+                            <input name="SpecialPrice" type="number" step="0.01" class="form-control" placeholder="اترك فارغاً للسعر الافتراضي">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary">حفظ</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function toggleSchedule(id) {
+            $.post('@Url.Action("ToggleScheduleActive")', { id: id }, function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        }
+
+        function deleteSchedule(id) {
+            if (!confirm('تأكيد الحذف؟')) return;
+            $.post('@Url.Action("DeleteSchedule")', { id: id }, function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        }
+    </script>
+}

@@ -1,0 +1,141 @@
+@model InventoryReportViewModel
+@{
+    ViewData["Title"] = "تقرير المخازن";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-file-earmark-bar-graph"></i> تقرير المخازن</h2>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body text-center">
+                    <h6>إجمالي الأصناف</h6>
+                    <h3 class="text-primary">@Model.TotalItems</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body text-center">
+                    <h6>متاح</h6>
+                    <h3 class="text-success">@Model.TotalAvailable</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body text-center">
+                    <h6>مسلم للطلاب</h6>
+                    <h3 class="text-warning">@Model.TotalAssigned</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-danger">
+                <div class="card-body text-center">
+                    <h6>قيمة الخصومات</h6>
+                    <h3 class="text-danger">@Model.TotalDeductions.ToString("N2")</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">إجمالي قيمة المخزون: @Model.TotalValue.ToString("N2")</h5>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white"><h5 class="mb-0">سجل التوزيع</h5></div>
+        <div class="card-body">
+            @if (!Model.Assignments.Any())
+            {
+                <div class="alert alert-info">لا يوجد سجل توزيع</div>
+            }
+            else
+            {
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الطالب</th>
+                            <th>الرقم القومي</th>
+                            <th>الصنف</th>
+                            <th>الكمية</th>
+                            <th>الحالة</th>
+                            <th>الخصم</th>
+                            <th>تاريخ التوزيع</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in Model.Assignments)
+                        {
+                            <tr>
+                                <td>@a.ID</td>
+                                <td>@a.StudentName</td>
+                                <td>@a.NationalID</td>
+                                <td>@a.ItemName</td>
+                                <td>@a.Quantity</td>
+                                <td>
+                                    @if (a.IsReturned)
+                                    {
+                                        <span class="badge bg-success">تم الإرجاع</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">مع الطالب</span>
+                                    }
+                                </td>
+                                <td>@a.DeductionAmount?.ToString("N2")</td>
+                                <td>@a.AssignedAt?.ToString("yyyy/MM/dd")</td>
+                                <td>
+                                    @if (!a.IsReturned)
+                                    {
+                                        <button class="btn btn-sm btn-info" onclick="returnItem(@a.ID)"><i class="bi bi-arrow-return-left"></i></button>
+                                        <button class="btn btn-sm btn-danger" onclick="deduct(@a.ID)"><i class="bi bi-cash"></i></button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                if (Model.TotalPages > 1)
+                {
+                    <nav><ul class="pagination">
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.Page ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Report", new { page = i })">@i</a>
+                            </li>
+                        }
+                    </ul></nav>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function returnItem(id) {
+            var condition = prompt('حالة الصنف عند الإرجاع:');
+            $.post('@Url.Action("Return")', { studentInventoryID: id, condition: condition }, function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        }
+
+        function deduct(id) {
+            var amount = prompt('قيمة الخصم:');
+            if (!amount || isNaN(amount)) return;
+            $.post('@Url.Action("RecordDeduction")', { studentInventoryId: id, amount: parseFloat(amount) }, function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        }
+    </script>
+}

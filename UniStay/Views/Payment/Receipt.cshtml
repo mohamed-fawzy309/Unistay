@@ -1,0 +1,41 @@
+@model ReceiptViewModel
+@{
+    ViewData["Title"] = "إيصال دفع";
+}
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card" id="receipt">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4>إيصال دفع</h4>
+                    <h6>UniStay</h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <h5>رقم الإيصال: @Model.ReceiptNumber</h5>
+                    </div>
+                    <table class="table table-bordered">
+                        <tr><th>اسم الطالب</th><td>@Model.StudentName</td></tr>
+                        <tr><th>الرقم القومي</th><td>@Model.NationalID</td></tr>
+                        <tr><th>نوع الدفعة</th><td>@Model.PaymentType</td></tr>
+                        <tr><th>المبلغ</th><td>@Model.Amount.ToString("N2")</td></tr>
+                        <tr><th>المدفوع</th><td>@Model.PaidAmount.ToString("N2")</td></tr>
+                        <tr><th>طريقة الدفع</th><td>@Model.PaymentMethod</td></tr>
+                        <tr><th>العام الدراسي</th><td>@Model.AcademicYear</td></tr>
+                        <tr><th>التاريخ</th><td>@Model.RecordedAt?.ToString("yyyy/MM/dd HH:mm")</td></tr>
+                        <tr><th>المسجل بواسطة</th><td>@Model.RecordedByName</td></tr>
+                    </table>
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <p><strong>ملاحظات:</strong> @Model.Notes</p>
+                    }
+                </div>
+                <div class="card-footer text-center">
+                    <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> طباعة</button>
+                    <a asp-action="StudentPayments" asp-route-studentId="@Model.StudentID" class="btn btn-secondary">عودة</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,526 @@
+﻿@model UniStay.ViewModels.Application.ApplicationViewModel
+@{
+    ViewData["Title"] = "تقديم طلب سكن جامعي";
+    Layout = "~/Views/Shared/_LoginLayout.cshtml"; // نستخدم لياوت بسيط أو مخصص للفرم
+}
+
+<!-- استدعاء مكتبة Flatpickr للتاريخ -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/ar.js"></script>
+
+<style>
+    body {
+        background-color: #f4f6f9;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .apply-container {
+        max-width: 1200px;
+        margin: 30px auto;
+    }
+
+    /* Sidebar Styling */
+    .steps-sidebar {
+        position: sticky;
+        top: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        padding: 20px;
+        height: fit-content;
+    }
+
+    .step-item {
+        padding: 10px 15px;
+        margin-bottom: 5px;
+        border-radius: 6px;
+        color: #6c757d;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+        .step-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .step-item.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        .step-item.completed {
+            color: #198754;
+        }
+
+    /* Form Styling */
+    .form-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        padding: 30px;
+        margin-bottom: 20px;
+        border-top: 4px solid #0d6efd;
+    }
+
+    .section-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #eee;
+        display: flex;
+        align-items: center;
+    }
+
+        .section-title i {
+            margin-left: 10px;
+            color: #0d6efd;
+        }
+
+    .form-label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #495057;
+    }
+
+    .required-field::after {
+        content: " *";
+        color: red;
+    }
+
+    .hidden-section {
+        display: none;
+        animation: fadeIn 0.5s;
+    }
+    @@keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
+    }
+
+    .alert-custom {
+        background-color: #fff3cd;
+        border-right: 5px solid #ffc107;
+        color: #856404;
+        padding: 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="container apply-container">
+    <div class="row">
+        <!-- Sidebar Steps -->
+        <div class="col-lg-3 d-none d-lg-block">
+            <div class="steps-sidebar">
+                <h5 class="mb-4 text-primary">خطوات التقديم</h5>
+                <div class="step-item active" onclick="scrollToSection('studentData')">1. البيانات الشخصية</div>
+                <div class="step-item" onclick="scrollToSection('academicData')">2. البيانات الدراسية</div>
+                <div class="step-item" onclick="scrollToSection('guardianData')">3. بيانات ولي الأمر</div>
+                <div class="step-item" onclick="scrollToSection('housingData')">4. نوع السكن والطلبات</div>
+                <div class="step-item" onclick="scrollToSection('accountData')">5. إنشاء الحساب</div>
+
+                <hr class="my-4">
+                <div class="alert alert-sm alert-info">
+                    <small>⚠️ تأكد من صحة البيانات قبل الإرسال، حيث سيتم استخدامها في التنسيق.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Form -->
+        <div class="col-lg-9">
+            <form asp-action="Apply" method="post" id="applicationForm">
+                @Html.AntiForgeryToken()
+
+                <!-- Tabs for New/Returning -->
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-body p-2 bg-light rounded">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="IsReturningStudent" id="tabNew" value="false" checked onchange="toggleStudentType(false)">
+                            <label class="btn btn-outline-primary" for="tabNew">طالب جديد (أول مرة)</label>
+
+                            <input type="radio" class="btn-check" name="IsReturningStudent" id="tabReturning" value="true" onchange="toggleStudentType(true)">
+                            <label class="btn btn-outline-primary" for="tabReturning">طالب مستمر (تجديد)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 1: Student Data -->
+                <div id="studentData" class="form-card">
+                    <div class="section-title"><i class="bi bi-person-badge"></i> البيانات الشخصية للطالب</div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="NationalID" class="form-label required-field"></label>
+                            <input asp-for="NationalID" class="form-control" placeholder="14 رقم" maxlength="14" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                            <span asp-validation-for="NationalID" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="FullName" class="form-label required-field"></label>
+                            <input asp-for="FullName" class="form-control" />
+                            <span asp-validation-for="FullName" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label asp-for="BirthDate" class="form-label required-field"></label>
+                            <input asp-for="BirthDate" class="form-control flatpickr" placeholder="اختر تاريخ الميلاد" />
+                            <span asp-validation-for="BirthDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">العمر (تلقائي)</label>
+                            <input type="text" id="calculatedAge" class="form-control bg-light" readonly />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Gender" class="form-label required-field"></label>
+                            <select asp-for="Gender" class="form-select">
+                                <option value="">-- اختر --</option>
+                                <option value="Male">ذكر</option>
+                                <option value="Female">أنثى</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Religion" class="form-label required-field"></label>
+                            <select asp-for="Religion" class="form-select">
+                                <option value="">-- اختر --</option>
+                                <option value="Muslim">مسلم</option>
+                                <option value="Christian">مسيحي</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Nationality" class="form-label required-field"></label>
+                            <select asp-for="Nationality" class="form-select">
+                                <option value="Egyptian">مصري</option>
+                                <option value="Foreign">وافد</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Governorate" class="form-label required-field"></label>
+                            <select asp-for="Governorate" class="form-select" id="governorateSelect">
+                                <option value="">-- المحافظة --</option>
+                                <!-- يمكن ملؤها بـ JS -->
+                                <option value="Cairo">القاهرة</option>
+                                <option value="Giza">الجيزة</option>
+                                <option value="Assuit">أسيوط</option>
+                                <!-- ... باقي المحافظات -->
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="City" class="form-label required-field"></label>
+                            <input asp-for="City" class="form-control" placeholder="المركز / المدينة" />
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Address" class="form-label required-field"></label>
+                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label required-field"></label>
+                            <input asp-for="Email" type="email" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Phone" class="form-label required-field"></label>
+                            <input asp-for="Phone" class="form-control" placeholder="01xxxxxxxxx" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Academic Data -->
+                <div id="academicData" class="form-card">
+                    <div class="section-title"><i class="bi bi-book"></i> البيانات الأكاديمية</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Faculty" class="form-label required-field"></label>
+                            <select asp-for="Faculty" class="form-select">
+                                <option value="">-- اختر الكلية --</option>
+                                <option value="Engineering">الهندسة</option>
+                                <option value="Medicine">الطب</option>
+                                <option value="Science">العلوم</option>
+                                <option value="Commerce">التجارة</option>
+                                <option value="Arts">الآداب</option>
+                                <!-- ... -->
+                            </select>
+                        </div>
+
+                        <!-- يظهر فقط للطلاب المستمرين -->
+                        <div class="col-md-6" id="studentCodeDiv" style="display:none;">
+                            <label asp-for="StudentCode" class="form-label">رقم شئون الطالب <span class="text-danger">*</span></label>
+                            <input asp-for="StudentCode" class="form-control" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="AcademicYear" class="form-label"></label>
+                            <select asp-for="AcademicYear" class="form-select">
+                                <option value="">-- الفرقة --</option>
+                                <option value="1">الأولى</option>
+                                <option value="2">الثانية</option>
+                                <option value="3">الثالثة</option>
+                                <option value="4">الرابعة</option>
+                                <option value="5">الخامسة (طب/هندسة)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="GradePercentage" class="form-label required-field">التقدير العام (%)</label>
+                            <input asp-for="GradePercentage" type="number" step="0.01" class="form-control" placeholder="مثال: 85.5" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="DistanceFromUniv" class="form-label">البعد عن الجامعة (كم)</label>
+                            <input asp-for="DistanceFromUniv" type="number" class="form-control" />
+                            <small class="text-muted">يؤثر في أولوية التنسيق</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Guardian Data -->
+                <div id="guardianData" class="form-card">
+                    <div class="section-title"><i class="bi bi-people"></i> بيانات ولي الأمر (الأب)</div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="FatherName" class="form-label required-field"></label>
+                            <input asp-for="FatherName" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="FatherJob" class="form-label"></label>
+                            <input asp-for="FatherJob" class="form-control" />
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="FatherAddress" class="form-label"></label>
+                            <input asp-for="FatherAddress" class="form-control" />
+                        </div>
+
+                        <div class="col-12 mt-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isFatherDeceased" asp-for="IsFatherDeceased" onchange="toggleMotherFields()">
+                                <label class="form-check-label text-danger" for="isFatherDeceased">الأب متوفى (إظهار بيانات الأم / ولي الأمر البديل)</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Mother/Guardian Fields -->
+                    <div id="motherFields" class="hidden-section mt-4 p-3 bg-light rounded border">
+                        <h6 class="text-primary mb-3">بيانات الأم / ولي الأمر البديل</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="GuardianName" class="form-label"></label>
+                                <input asp-for="GuardianName" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="GuardianNationalID" class="form-label"></label>
+                                <input asp-for="GuardianNationalID" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="GuardianRelation" class="form-label">صلة القرابة</label>
+                                <select asp-for="GuardianRelation" class="form-select">
+                                    <option value="Mother">الأم</option>
+                                    <option value="Uncle">العم</option>
+                                    <option value="Other">آخر</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="GuardianAddress" class="form-label"></label>
+                                <input asp-for="GuardianAddress" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Housing Preferences -->
+                <div id="housingData" class="form-card">
+                    <div class="section-title"><i class="bi bi-house-door"></i> تفاصيل السكن والطلبات الخاصة</div>
+
+                    <div class="alert-custom">
+                        <strong>ملاحظة هامة:</strong> اختيار نوع السكن (مميز/عادي) يخضع للسعة المتاحة ولوائح التنسيق.
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="HousingType" class="form-label required-field">نوع السكن المطلوب</label>
+                            <select asp-for="HousingType" class="form-select">
+                                <option value="Standard">عادي (مشترك)</option>
+                                <option value="Premium">مميز (عدد أقل)</option>
+                                <option value="VIP">VIP (غرفة مفردة/ثنائية)</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">حالة السكن السابق</label>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" asp-for="HasPreviousHousing" value="true">
+                                <label class="form-check-label">سكن لي سابقاً</label>
+                            </div>
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" asp-for="HasPreviousHousing" value="false" checked>
+                                <label class="form-check-label">لا</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" asp-for="HasFamilyAbroad">
+                                <label class="form-check-label" asp-for="HasFamilyAbroad">أسرة مقيمة بالخارج (يمنح أولوية)</label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" asp-for="HasMedicalCondition" id="medicalCheck" onchange="toggleMedicalDesc()">
+                                <label class="form-check-label text-danger" asp-for="HasMedicalCondition">حالة مرضية خاصة / إعاقة</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 hidden-section" id="medicalDescDiv">
+                            <label asp-for="MedicalDescription" class="form-label">تفاصيل الحالة المرضية</label>
+                            <textarea asp-for="MedicalDescription" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5: Account & Declaration -->
+                <div id="accountData" class="form-card border-success">
+                    <div class="section-title text-success"><i class="bi bi-shield-lock"></i> إنشاء حساب الدخول والإقرار</div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Password" class="form-label required-field"></label>
+                            <input asp-for="Password" type="password" class="form-control" minlength="8" />
+                            <small class="text-muted">8 أحرف على الأقل (حروف + أرقام)</small>
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ConfirmPassword" class="form-label required-field"></label>
+                            <input asp-for="ConfirmPassword" type="password" class="form-control" />
+                            <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <div class="form-check p-3 border rounded bg-light">
+                                <input class="form-check-input" type="checkbox" asp-for="Declaration" id="declarationCheck">
+                                <label class="form-check-label fw-bold" for="declarationCheck">
+                                    أقر أنا الطالب/ة بصحة جميع البيانات المدخلة أعلاه، وأتحمل المسؤولية الكاملة عن أي مخالفة. كما أوافق على لوائح المدن الجامعية وقوانينها.
+                                </label>
+                                <span asp-validation-for="Declaration" class="text-danger d-block mt-2"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="text-center mb-5">
+                    <button type="submit" class="btn btn-primary btn-lg px-5 shadow">
+                        <i class="bi bi-check-circle me-2"></i> تسجيل طلب السكن
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        // تهيئة Flatpickr للتاريخ
+        flatpickr(".flatpickr", {
+            locale: "ar",
+            dateFormat: "Y-m-d",
+            maxDate: "today",
+            onChange: function(selectedDates, dateStr, instance) {
+                calculateAge(dateStr);
+            }
+        });
+
+        // حساب العمر
+        function calculateAge(birthDateStr) {
+            if(!birthDateStr) return;
+            const birthDate = new Date(birthDateStr);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            document.getElementById('calculatedAge').value = age + " سنة";
+        }
+
+        // إظهار حقول الأم
+        function toggleMotherFields() {
+            const isChecked = document.getElementById('isFatherDeceased').checked;
+            const div = document.getElementById('motherFields');
+            div.style.display = isChecked ? 'block' : 'none';
+
+            // تفعيل/تعطيل الحقول المطلوبة
+            const inputs = div.querySelectorAll('input');
+            inputs.forEach(input => {
+                if(isChecked) input.removeAttribute('disabled');
+                else {
+                    input.setAttribute('disabled', 'true');
+                    input.value = '';
+                }
+            });
+        }
+
+        // إظهار وصف الحالة المرضية
+        function toggleMedicalDesc() {
+            const isChecked = document.getElementById('medicalCheck').checked;
+            document.getElementById('medicalDescDiv').style.display = isChecked ? 'block' : 'none';
+        }
+
+        // التبديل بين طالب جديد ومستمر
+        function toggleStudentType(isReturning) {
+            const codeDiv = document.getElementById('studentCodeDiv');
+            const codeInput = codeDiv.querySelector('input');
+
+            if (isReturning) {
+                codeDiv.style.display = 'block';
+                codeInput.required = true;
+            } else {
+                codeDiv.style.display = 'none';
+                codeInput.required = false;
+                codeInput.value = '';
+            }
+        }
+
+        // Scroll Smooth
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Highlight Active Step on Scroll
+        window.addEventListener('scroll', () => {
+            let current = '';
+            const sections = ['studentData', 'academicData', 'guardianData', 'housingData', 'accountData'];
+
+            sections.forEach(section => {
+                const element = document.getElementById(section);
+                const rect = element.getBoundingClientRect();
+                if (rect.top <= 150) {
+                    current = section;
+                }
+            });
+
+            document.querySelectorAll('.step-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('onclick').includes(current)) {
+                    item.classList.add('active');
+                }
+            });
+        });
+    </script>
+}

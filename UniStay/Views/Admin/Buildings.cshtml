@@ -1,0 +1,139 @@
+@model List<UniStay.ViewModels.Admin.BuildingRowViewModel>
+@{
+    ViewData["Title"] = "المباني";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>المباني</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">إضافة مبنى</button>
+</div>
+
+<form method="get" class="row g-2 mb-3 bg-white p-3 rounded shadow-sm">
+    <div class="col-md-3">
+        <select name="cityId" class="form-select" onchange="this.form.submit()">
+            <option value="">كل المدن</option>
+            @foreach (var city in ViewBag.Cities)
+            {
+                <option value="@city.ID" selected="@(ViewBag.FilterCityId == city.ID)">@city.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <a asp-action="Rooms" class="btn btn-outline-info">إدارة الغرف</a>
+    </div>
+</form>
+
+<div class="table-responsive bg-white rounded shadow-sm">
+    <table class="table table-hover mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>المبنى</th>
+                <th>المدينة</th>
+                <th>النوع</th>
+                <th>الأدوار</th>
+                <th>الغرف</th>
+                <th>الحالة</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var b in Model)
+            {
+                <tr>
+                    <td>@b.ID</td>
+                    <td>@b.BuildingName</td>
+                    <td>@b.CityName</td>
+                    <td>@b.BuildingType</td>
+                    <td>@b.FloorCount</td>
+                    <td>@b.RoomCount</td>
+                    <td><span class="badge bg-@(b.IsActive ? "success" : "danger")">@(b.IsActive ? "نشط" : "غير نشط")</span></td>
+                    <td>
+                        <a asp-action="Rooms" asp-route-buildingId="@b.ID" class="btn btn-outline-info btn-sm">الغرف</a>
+                        <a asp-action="BuildingLayout" asp-route-id="@b.ID" class="btn btn-outline-success btn-sm">الكروكي</a>
+                        <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-@b.ID">تعديل</button>
+                    </td>
+                </tr>
+
+                <div class="modal fade" id="editModal-@b.ID" tabindex="-1">
+                    <div class="modal-dialog">
+                        <form asp-action="EditBuilding" method="post" class="modal-content">
+                            <input type="hidden" name="ID" value="@b.ID">
+                            <div class="modal-header"><h5 class="modal-title">تعديل @b.BuildingName</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">اسم المبنى</label>
+                                    <input name="BuildingName" class="form-control" value="@b.BuildingName" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">النوع</label>
+                                    <select name="BuildingType" class="form-select">
+                                        <option value="Standard" selected="@(b.BuildingType == "Standard")">عادي</option>
+                                        <option value="Premium" selected="@(b.BuildingType == "Premium")">ممتاز</option>
+                                        <option value="VIP" selected="@(b.BuildingType == "VIP")">VIP</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">عدد الأدوار</label>
+                                    <input name="FloorCount" type="number" class="form-control" value="@b.FloorCount">
+                                </div>
+                                <div class="form-check">
+                                    <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@b.IsActive">
+                                    <label class="form-check-label">نشط</label>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                <button type="submit" class="btn btn-primary">حفظ</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="8" class="text-center text-muted py-4">لا توجد مباني</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog">
+        <form asp-action="Buildings" method="post" class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">إضافة مبنى</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">المدينة <span class="text-danger">*</span></label>
+                    <select name="DormitoryCityID" class="form-select">
+                        @foreach (var city in ViewBag.Cities)
+                        {
+                            <option value="@city.ID">@city.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">اسم المبنى <span class="text-danger">*</span></label>
+                    <input name="BuildingName" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">النوع <span class="text-danger">*</span></label>
+                    <select name="BuildingType" class="form-select">
+                        <option value="Standard">عادي</option>
+                        <option value="Premium">ممتاز</option>
+                        <option value="VIP">VIP</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">عدد الأدوار</label>
+                    <input name="FloorCount" type="number" class="form-control" value="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary">إضافة</button>
+            </div>
+        </form>
+    </div>
+</div>

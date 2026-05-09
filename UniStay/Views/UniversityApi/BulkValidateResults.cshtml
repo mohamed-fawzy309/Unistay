@@ -1,0 +1,71 @@
+﻿@using UniStay.Services.Interfaces
+@model BulkValidateViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "نتائج التحقق الجماعي";
+    var results = ViewBag.Results as    BulkValidationResult;
+    var details = ViewBag.Details as List<ValidationDetailViewModel> ?? new List<ValidationDetailViewModel>();
+}
+<h4><i class="bi bi-clipboard-check"></i> نتائج التحقق الجماعي</h4>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3>@ViewBag.TotalCount</h3>
+                <div>إجمالي الأرقام</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3>@ViewBag.ValidCount</h3>
+                <div>مطابق تماماً</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <h3>@(ViewBag.TotalCount - ViewBag.ValidCount)</h3>
+                <div>اختلافات / غير موجود</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-sm table-bordered">
+        <thead class="table-light">
+            <tr>
+                <th>الرقم القومي</th>
+                <th>الحالة المحلية</th>
+                <th>حالة السيرفر</th>
+                <th>النتيجة</th>
+                <th>آخر تحقق</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var d in details)
+            {
+                <tr class="@(d.Status == "مطابق" ? "table-success" : (d.Status == "اختلافات" ? "table-warning" : "table-danger"))">
+                    <td dir="ltr">@d.NationalID</td>
+                    <td>@(d.LocalExists ? "✅ موجود" : "❌ غير مسجل")</td>
+                    <td>@(d.ServerFound ? "✅ موجود" : "❌ غير موجود")</td>
+                    <td>
+                        <span class="badge @(d.Status == "مطابق" ? "bg-success" : (d.Status == "اختلافات" ? "bg-warning text-dark" : "bg-danger"))">
+                            @d.Status
+                        </span>
+                    </td>
+                    <td>@(d.LastSync?.ToString("yyyy-MM-dd HH:mm") ?? "—")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="mt-4">
+    <a asp-action="BulkValidate" class="btn btn-primary">تحقق جديد</a>
+    <a asp-action="ValidationLog" class="btn btn-outline-secondary">عرض السجل الكامل</a>
+</div>

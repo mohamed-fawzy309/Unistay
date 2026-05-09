@@ -1,0 +1,110 @@
+@{
+    ViewData["Title"] = "لوحة التحكم";
+}
+
+@* FIX 1: TempData messages يظهروا في الـ Home بعد redirect من صفحات تانية *@
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        @TempData["Warning"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-12">
+        @* FIX 2: إزالة الـ emoji من الـ heading — غير احترافي في نظام رسمي *@
+        <h3 class="mb-4">مرحباً، @ViewBag.StudentName</h3>
+    </div>
+
+    <!-- بطاقة الحالة الحالية -->
+    <div class="col-md-4 mb-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h5 class="text-muted">حالة طلبك الأخير</h5>
+                @* FIX 3: text-@ViewBag.LatestStatusColor ممكن يطلع class غير موجود لو القيمة null أو غريبة *@
+                <h2 class="my-3 text-@(ViewBag.LatestStatusColor ?? "secondary")">
+                    @(ViewBag.LatestStatus ?? "لا يوجد طلبات حالية")
+                </h2>
+                <a asp-controller="Student" asp-action="ApplicationStatus" class="btn btn-outline-primary btn-sm">
+                    تفاصيل الطلب
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- روابط سريعة -->
+    <div class="col-md-8 mb-4">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card bg-primary text-white h-100">
+                    <div class="card-body">
+                        <h5><i class="bi bi-calendar-check"></i> مواعيد التقديم</h5>
+                        <p class="small mb-3">تحقق من مواعيد فتح وغلق التقديم للمدن الجامعية.</p>
+                        @* FIX 4: إضافة asp-controller لتجنب ambiguity *@
+                        <a asp-controller="Student" asp-action="ApplicationSchedule" class="btn btn-light btn-sm text-primary">
+                            عرض المواعيد
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-success text-white h-100">
+                    <div class="card-body">
+                        <h5><i class="bi bi-file-earmark-text"></i> بيان الحالة</h5>
+                        <p class="small mb-3">اطلع على بياناتك الكاملة وحالة التسكين والغياب.</p>
+                        <a asp-controller="Student" asp-action="StatusReport" class="btn btn-light btn-sm text-success">
+                            عرض البيان
+                        </a>
+                    </div>
+                </div>
+            </div>
+            @if (ViewBag.IsAccepted == true && ViewBag.IsAllocated != true && ViewBag.HasReservation != true)
+            {
+                <div class="col-md-6">
+                    <div class="card bg-warning text-dark h-100">
+                        <div class="card-body">
+                            <h5><i class="bi bi-house-door"></i> اختيار الغرفة</h5>
+                            <p class="small mb-3">تم قبول طلبك! اختر غرفتك الآن من المباني المتاحة.</p>
+                            <a asp-controller="Student" asp-action="SelectRoom" class="btn btn-dark btn-sm">
+                                اختر غرفتك
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (ViewBag.HasReservation == true && ViewBag.IsAllocated != true)
+            {
+                <div class="col-md-6">
+                    <div class="card bg-danger text-white h-100">
+                        <div class="card-body">
+                            <h5><i class="bi bi-credit-card"></i> إتمام الدفع</h5>
+                            <p class="small mb-3">لديك حجز مؤقت. قم بالدفع خلال 24 ساعة لتأكيد التسكين.</p>
+                            <a asp-controller="Student" asp-action="Payment" class="btn btn-light btn-sm text-danger">
+                                إتمام الدفع
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="col-md-6">
+                <div class="card bg-info text-white h-100">
+                    <div class="card-body">
+                        <h5><i class="bi bi-book"></i> الإرشادات</h5>
+                        <p class="small mb-3">تحميل نماذج التعديل وقراءة لوائح السكن.</p>
+                        <a asp-controller="Student" asp-action="Instructions" class="btn btn-light btn-sm text-info">
+                            قراءة المزيد
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

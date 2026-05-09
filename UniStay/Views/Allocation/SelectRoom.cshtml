@@ -1,0 +1,52 @@
+@model AllocationRoomViewModel
+@{
+    ViewData["Title"] = "اختيار الغرفة";
+}
+
+<div class="container-fluid py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">التسكين</a></li>
+            <li class="breadcrumb-item"><a asp-action="SelectBuilding" asp-route-appId="@Model.ApplicationID">اختيار المبنى</a></li>
+            <li class="breadcrumb-item"><a asp-action="SelectFloor" asp-route-buildingId="@Model.BuildingID" asp-route-appId="@Model.ApplicationID">اختيار الدور</a></li>
+            <li class="breadcrumb-item active">اختيار الغرفة</li>
+        </ol>
+    </nav>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">@Model.BuildingName - الدور @Model.FloorNumber</h5>
+        </div>
+    </div>
+
+    <div class="row">
+        @foreach (var r in Model.Rooms)
+        {
+            var avail = r.AvailableBeds;
+            <div class="col-md-4 mb-3">
+                <div class="card @(avail > 0 ? "border-success" : "border-secondary")">
+                    <div class="card-body">
+                        <h5 class="card-title">غرفة @r.RoomNumber</h5>
+                        <p>
+                            <span class="badge bg-secondary">@r.RoomType</span>
+                            @if (r.HasAC) { <span class="badge bg-info">تكييف</span> }
+                            @if (r.HasBalcony) { <span class="badge bg-warning">بلكونة</span> }
+                        </p>
+                        <p>الأسرة: @r.BedsCount | المشغول: @r.CurrentOccupancy | المتاح: @avail</p>
+                        @if (avail > 0)
+                        {
+                            <a asp-action="SelectBed" asp-route-roomId="@r.ID" asp-route-appId="@Model.ApplicationID"
+                               class="btn btn-success">
+                                <i class="bi bi-eye"></i> عرض الأسرة
+                            </a>
+                        }
+                        else
+                        {
+                            <button class="btn btn-secondary" disabled>ممتلئة</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

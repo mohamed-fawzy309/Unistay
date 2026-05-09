@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - بوابة الطالب</title>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            width: 260px;
+            background: #2c3e50;
+            color: #ecf0f1;
+            height: 100vh;
+            position: fixed;
+            right: 0;
+            overflow-y: auto;
+        }
+
+        .main-content {
+            margin-right: 260px;
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+
+        .nav-link {
+            color: #bdc3c7 !important;
+            padding: 12px 20px;
+        }
+
+            .nav-link:hover, .nav-link.active {
+                background: #34495e;
+                color: white !important;
+            }
+
+        .menu-header {
+            padding: 10px 20px;
+            background: #1a252f;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Student -->
+    <nav class="sidebar">
+        <div class="p-4 text-center border-bottom">
+            <h4 class="text-white">بوابة الطالب</h4>
+            <small>UniStay - جامعة أسيوط</small>
+        </div>
+
+        <div class="p-3">
+            <ul class="nav flex-column">
+                <li class="menu-header text-light">التقدم والالتحاق</li>
+                <li><a class="nav-link" asp-controller="Student" asp-action="ApplicationSchedule"><i class="bi bi-calendar"></i> مواعيد التقديم</a></li>
+                <li><a class="nav-link" asp-controller="Student" asp-action="Instructions"><i class="bi bi-info-circle"></i> إرشادات وإقرارات</a></li>
+                <li><a class="nav-link" asp-controller="Student" asp-action="EditProfile"><i class="bi bi-pencil"></i> تعديل البيانات</a></li>
+                <li><a class="nav-link" asp-controller="Student" asp-action="StatusReport"><i class="bi bi-file-earmark-text"></i> بيان الحالة</a></li>
+                <li><a class="nav-link" asp-controller="Student" asp-action="ApplicationStatus"><i class="bi bi-graph-up"></i> الاستعلام عن القبول</a></li>
+
+                @if (ViewBag.IsAllocated == true)
+                {
+                    <li class="menu-header text-light mt-3">الخدمات</li>
+                    <li><a class="nav-link" asp-controller="Student" asp-action="RequestAbsence"><i class="bi bi-door-open"></i> طلب إذن غياب</a></li>
+                    <li><a class="nav-link" asp-controller="Student" asp-action="Payments"><i class="bi bi-currency-dollar"></i> الرسوم والمدفوعات</a></li>
+                    <li><a class="nav-link" asp-controller="Student" asp-action="Violations"><i class="bi bi-exclamation-triangle"></i> المخالفات والغرامات</a></li>
+                    <li><a class="nav-link" href="#"><i class="bi bi-fork-knife"></i> الوجبات</a></li>
+                }
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Top Bar -->
+    <nav class="navbar navbar-dark bg-success shadow" style="margin-right:260px;">
+        <div class="container-fluid">
+            <span class="navbar-brand">مرحباً، @ViewBag.StudentName</span>
+            <div>
+                <a asp-controller="StudentAccount" asp-action="ChangePassword" class="text-white mx-3">تغيير كلمة المرور</a>
+                <a asp-controller="StudentAccount" asp-action="Logout" class="btn btn-light btn-sm">تسجيل خروج</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content p-4">
+        @RenderBody()
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

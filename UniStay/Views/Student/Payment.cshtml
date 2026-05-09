@@ -1,0 +1,153 @@
+@model UniStay.Models.Allocation
+@{
+    ViewData["Title"] = "إتمام الدفع";
+    var deadline = (DateTime)ViewBag.Deadline;
+    var remaining = (int)ViewBag.RemainingSeconds;
+    var amount = (decimal)ViewBag.Amount;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0"><i class="bi bi-credit-card text-danger me-2"></i> إتمام الدفع</h3>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-clock me-2"></i> المهلة المتبقية
+            </div>
+            <div class="card-body text-center py-4">
+                <div id="countdown" class="display-4 fw-bold text-danger mb-2" style="font-family:monospace;direction:ltr">
+                    <span id="hours">00</span>:<span id="minutes">00</span>:<span id="seconds">00</span>
+                </div>
+                <p class="text-muted mb-0">متبقي من الـ 24 ساعة لإتمام الدفع</p>
+                <div class="progress mt-3" style="height:6px">
+                    <div id="progressBar" class="progress-bar bg-danger" role="progressbar" style="width:100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-receipt me-2"></i> تفاصيل الحجز
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-6 text-muted">المبنى</div>
+                    <div class="col-6 fw-bold">@Model.CityRoom?.CityBuilding?.BuildingName</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6 text-muted">الغرفة</div>
+                    <div class="col-6 fw-bold">@Model.CityRoom?.RoomNumber</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6 text-muted">رقم السرير</div>
+                    <div class="col-6 fw-bold">@Model.BedNumber</div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-6 text-muted">الدور</div>
+                    <div class="col-6 fw-bold">@Model.CityRoom?.FloorNumber</div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-6 text-muted fs-5">المبلغ المطلوب</div>
+                    <div class="col-6 fw-bold fs-5 text-danger">@(amount.ToString("N2")) ج.م</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-success text-white">
+                <i class="bi bi-credit-card-2-front me-2"></i> محاكاة الدفع
+            </div>
+            <div class="card-body text-center py-4">
+                <div class="mb-4">
+                    <i class="bi bi-credit-card" style="font-size:4rem;color:#6c757d"></i>
+                </div>
+                <p class="text-muted mb-3">هذه محاكاة لعملية الدفع. اضغط على الزر لتأكيد الدفع.</p>
+                @Html.AntiForgeryToken()
+                <button id="btnPay" class="btn btn-success btn-lg w-100" onclick="processPayment()">
+                    <i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م
+                </button>
+                <div id="paymentResult" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const totalSeconds = @remaining;
+        const deadlineMs = new Date('@deadline.ToString("o")').getTime();
+
+        function updateCountdown() {
+            const now = Date.now();
+            const diff = Math.max(0, Math.floor((deadlineMs - now) / 1000));
+
+            if (diff <= 0) {
+                document.getElementById('countdown').innerHTML = '<span class="text-muted fs-4">انتهت المهلة</span>';
+                document.getElementById('btnPay').disabled = true;
+                document.getElementById('btnPay').innerHTML = '<i class="bi bi-x-circle me-2"></i> انتهت المهلة';
+                document.getElementById('progressBar').style.width = '0%';
+                document.getElementById('progressBar').classList.remove('bg-danger');
+                document.getElementById('progressBar').classList.add('bg-secondary');
+                location.reload();
+                return;
+            }
+
+            const hours = String(Math.floor(diff / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+            const secs = String(diff % 60).padStart(2, '0');
+
+            document.getElementById('hours').textContent = hours;
+            document.getElementById('minutes').textContent = minutes;
+            document.getElementById('seconds').textContent = secs;
+
+            const pct = (diff / totalSeconds) * 100;
+            document.getElementById('progressBar').style.width = pct + '%';
+        }
+
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+
+        async function processPayment() {
+            const btn = document.getElementById('btnPay');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> جاري المعالجة...';
+
+            try {
+                const token = document.querySelector('[name=__RequestVerificationToken]').value;
+                const response = await fetch('@Url.Action("ProcessPayment", "Student")', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token,
+                    }
+                });
+                const r = await response.json();
+
+                if (r.success) {
+                    document.getElementById('paymentResult').innerHTML =
+                        '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>' + r.message + '</div>';
+                    btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تم الدفع بنجاح';
+                    setTimeout(() => window.location.href = '@Url.Action("Home", "Student")', 2000);
+                } else {
+                    if (r.expired) {
+                        location.reload();
+                    } else {
+                        document.getElementById('paymentResult').innerHTML =
+                            '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>' + r.message + '</div>';
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م';
+                    }
+                }
+            } catch {
+                document.getElementById('paymentResult').innerHTML =
+                    '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i> حدث خطأ في الاتصال</div>';
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م';
+            }
+        }
+    </script>
+}

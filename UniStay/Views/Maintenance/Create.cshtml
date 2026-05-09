@@ -1,0 +1,126 @@
+@model UniStay.ViewModels.Maintenance.CreateMaintenanceViewModel
+@{
+    ViewData["Title"] = "طلب صيانة جديد";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title"><i class="bi bi-plus-circle"></i> طلب صيانة جديد</h2>
+    <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> العودة</a>
+</div>
+
+<div class="filter-bar p-4">
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">الطالب <span class="text-danger">*</span></label>
+                <input type="text" id="studentSearch" class="form-control mb-2" placeholder="بحث بالاسم أو الرقم القومي...">
+                <select asp-for="StudentID" class="form-select" required>
+                    <option value="">-- اختر الطالب --</option>
+                    @foreach (var s in (IEnumerable<UniStay.ViewModels.Maintenance.StudentLookupItem>)ViewBag.Students)
+                    {
+                        <option value="@s.ID">@s.FullName - @s.NationalID</option>
+                    }
+                </select>
+                <span asp-validation-for="StudentID" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">المدينة الجامعية <span class="text-danger">*</span></label>
+                <select asp-for="DormitoryCityID" class="form-select" id="citySelect" required onchange="loadRooms(this.value)">
+                    <option value="">-- اختر المدينة --</option>
+                    @foreach (var c in (IEnumerable<UniStay.ViewModels.Maintenance.CityLookupItem>)ViewBag.Cities)
+                    {
+                        <option value="@c.ID">@c.Name</option>
+                    }
+                </select>
+                <span asp-validation-for="DormitoryCityID" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">الغرفة <span class="text-danger">*</span></label>
+                <select asp-for="CityRoomID" class="form-select" id="roomSelect" required>
+                    <option value="">-- اختر المدينة أولاً --</option>
+                </select>
+                <span asp-validation-for="CityRoomID" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">التصنيف</label>
+                <select asp-for="Category" class="form-select">
+                    <option value="">-- اختر التصنيف --</option>
+                    <option value="كهرباء">كهرباء</option>
+                    <option value="سباكة">سباكة</option>
+                    <option value="أثاث">أثاث</option>
+                    <option value="تكييف">تكييف</option>
+                    <option value="أبواب ونوافذ">أبواب ونوافذ</option>
+                    <option value="دهانات">دهانات</option>
+                    <option value="نظافة">نظافة</option>
+                    <option value="أخرى">أخرى</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label">الأولوية <span class="text-danger">*</span></label>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input asp-for="Priority" type="radio" value="Low" class="form-check-input" id="priorityLow">
+                        <label class="form-check-label" for="priorityLow">منخفضة</label>
+                    </div>
+                    <div class="form-check">
+                        <input asp-for="Priority" type="radio" value="Medium" class="form-check-input" id="priorityMedium" checked>
+                        <label class="form-check-label" for="priorityMedium">متوسطة</label>
+                    </div>
+                    <div class="form-check">
+                        <input asp-for="Priority" type="radio" value="High" class="form-check-input" id="priorityHigh">
+                        <label class="form-check-label" for="priorityHigh">عالية</label>
+                    </div>
+                </div>
+                <span asp-validation-for="Priority" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">وصف المشكلة <span class="text-danger">*</span></label>
+            <textarea asp-for="Description" class="form-control" rows="4" required></textarea>
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i> إرسال الطلب</button>
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        function loadRooms(cityId) {
+            if (!cityId) {
+                $('#roomSelect').empty().append('<option value="">-- اختر المدينة أولاً --</option>');
+                return;
+            }
+            $.get('@Url.Action("GetRoomsByCity", "Maintenance")', { cityId: cityId }, function (data) {
+                var sel = $('#roomSelect');
+                sel.empty().append('<option value="">-- اختر الغرفة --</option>');
+                data.forEach(function (r) {
+                    sel.append('<option value="' + r.id + '">' + r.buildingName + ' - دور ' + r.floorNumber + ' - غرفة ' + r.roomNumber + ' (' + (r.bedsCount - r.currentOccupancy) + ' متاح)</option>');
+                });
+            });
+        }
+
+        $(function () {
+            $('#studentSearch').on('input', function () {
+                var term = $(this).val();
+                if (term.length < 2) return;
+                $.get('@Url.Action("GetStudents", "Maintenance")', { term: term }, function (data) {
+                    var sel = $('[name="StudentID"]');
+                    sel.empty().append('<option value="">-- اختر الطالب --</option>');
+                    data.forEach(function (s) {
+                        sel.append('<option value="' + s.id + '">' + s.fullName + ' - ' + s.nationalID + '</option>');
+                    });
+                });
+            });
+        });
+    </script>
+}

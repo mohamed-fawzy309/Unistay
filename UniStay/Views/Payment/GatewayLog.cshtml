@@ -1,0 +1,80 @@
+@model PaymentGatewayLogViewModel
+@{
+    ViewData["Title"] = "سجل بوابة الدفع";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-arrow-left-right"></i> سجل بوابة الدفع</h2>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>رقم العملية</th>
+                        <th>الطالب</th>
+                        <th>البوابة</th>
+                        <th>المبلغ</th>
+                        <th>الحالة</th>
+                        <th>التاريخ</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.Logs)
+                    {
+                        <tr>
+                            <td>@log.ID</td>
+                            <td>@log.TransactionID</td>
+                            <td>@log.StudentName</td>
+                            <td>@log.GatewayType</td>
+                            <td>@log.Amount?.ToString("N2")</td>
+                            <td>
+                                @switch (log.Status)
+                                {
+                                    case "Confirmed": <span class="badge bg-success">مؤكد</span>; break;
+                                    case "Pending": <span class="badge bg-warning">معلق</span>; break;
+                                    case "Failed": <span class="badge bg-danger">فشل</span>; break;
+                                    default: <span class="badge bg-secondary">@log.Status</span>; break;
+                                }
+                            </td>
+                            <td>@log.CreatedAt?.ToString("yyyy/MM/dd HH:mm")</td>
+                            <td>
+                                @if (log.Status == "Pending")
+                                {
+                                    <button class="btn btn-sm btn-success" onclick="confirmOnline(@log.ID)"><i class="bi bi-check"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav><ul class="pagination">
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.Page ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("GatewayLog", new { status = Model.FilterStatus, page = i })">@i</a>
+                        </li>
+                    }
+                </ul></nav>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function confirmOnline(id) {
+            if (!confirm('تأكيد الدفعة؟')) return;
+            $.post('@Url.Action("ConfirmOnline")', { logId: id }, function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        }
+    </script>
+}

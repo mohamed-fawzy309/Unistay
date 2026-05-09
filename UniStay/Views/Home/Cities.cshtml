@@ -1,0 +1,31 @@
+@model List<UniStay.Models.DormitoryCity>
+@{
+    ViewData["Title"] = "المدن الجامعية";
+}
+
+<h2 class="mb-4">المدن الجامعية</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">لا توجد مدن جامعية متاحة</div>
+}
+
+<div class="row">
+    @foreach (var city in Model)
+    {
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title">@city.Name</h5>
+                    <p class="mb-1"><strong>النوع:</strong> @city.CityType</p>
+                    @if (!string.IsNullOrEmpty(city.Location))
+                    {
+                        <p class="mb-1"><strong>الموقع:</strong> @city.Location</p>
+                    }
+                    <p class="mb-1"><strong>عدد المباني:</strong> @city.CityBuildings.Count</p>
+                    <a asp-action="CityDetails" asp-route-id="@city.ID" class="btn btn-outline-primary btn-sm mt-2">التفاصيل</a>
+                </div>
+            </div>
+        </div>
+    }
+</div>

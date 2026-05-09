@@ -1,0 +1,184 @@
+@model UniStay.Models.Application
+@{
+    ViewData["Title"] = "مراجعة الطلب";
+    var student = Model.Student;
+}
+
+<h2 class="mb-4">مراجعة الطلب #@Model.ID</h2>
+
+<form asp-action="ReviewApplication" method="post">
+    <input type="hidden" name="id" value="@Model.ID" />
+
+    <!-- القسم 1: بيانات الطالب -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white" data-bs-toggle="collapse" href="#studentData" role="button">
+            <h5 class="mb-0">بيانات الطالب</h5>
+        </div>
+        <div class="collapse show" id="studentData">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-2"><strong>الاسم:</strong> @student.FullName</div>
+                    <div class="col-md-4 mb-2"><strong>الرقم القومي:</strong> @student.NationalID</div>
+                    <div class="col-md-4 mb-2"><strong>تاريخ الميلاد:</strong> @student.BirthDate</div>
+                    <div class="col-md-4 mb-2"><strong>النوع:</strong> @(student.Gender == "Male" ? "ذكر" : "أنثى")</div>
+                    <div class="col-md-4 mb-2"><strong>الديانة:</strong> @student.Religion</div>
+                    <div class="col-md-4 mb-2"><strong>الجنسية:</strong> @student.Nationality</div>
+                    <div class="col-md-4 mb-2"><strong>البريد:</strong> @student.Email</div>
+                    <div class="col-md-4 mb-2"><strong>التليفون:</strong> @student.Phone</div>
+                    <div class="col-md-4 mb-2"><strong>الكلية:</strong> @student.Faculty</div>
+                    <div class="col-md-4 mb-2"><strong>الفرقة:</strong> @student.AcademicYear</div>
+                    <div class="col-md-4 mb-2"><strong>التقدير:</strong> @student.GradePercentage%</div>
+                    <div class="col-md-4 mb-2"><strong>المسافة:</strong> @student.DistanceFromUniv كم</div>
+                    <div class="col-md-4 mb-2"><strong>المحافظة:</strong> @student.Governorate</div>
+                    <div class="col-md-4 mb-2"><strong>العنوان:</strong> @student.Address</div>
+                    <div class="col-md-4 mb-2"><strong>حالة مرضية:</strong> @(student.HasMedicalCondition == true ? "نعم" : "لا")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- القسم 2: التحقق من السيرفر -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">التحقق من سيرفر الجامعة</h5>
+        </div>
+        <div class="card-body">
+            <div id="verificationResult" class="mb-3">
+                @if (Model.ServerVerificationStatus == "NotChecked")
+                {
+                    <div class="alert alert-secondary">لم يتم التحقق بعد</div>
+                }
+                else if (Model.ServerVerificationStatus == "Verified")
+                {
+                    <div class="alert alert-success">✅ مطابق تماماً — تم التحقق</div>
+                }
+                else if (Model.ServerVerificationStatus == "VerifiedWithDiff")
+                {
+                    <div class="alert alert-warning">⚠️ موجود مع اختلافات</div>
+                }
+                else if (Model.ServerVerificationStatus == "NotFound")
+                {
+                    <div class="alert alert-danger">❌ غير موجود في سيرفر الجامعة</div>
+                }
+            </div>
+            <button type="button" class="btn btn-info" onclick="verifyFromServer(@Model.ID)">
+                <i class="bi bi-search"></i> تحقق من سيرفر الجامعة الآن
+            </button>
+            <div id="comparisonTable" class="mt-3" style="display:none"></div>
+        </div>
+    </div>
+
+    <!-- القسم 3: قرار الموظف -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">اتخاذ القرار</h5>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label fw-bold">القرار</label>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="Decision" value="Accepted" id="decAccept">
+                        <label class="form-check-label" for="decAccept">قبول مبدئي</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="Decision" value="Rejected" id="decReject">
+                        <label class="form-check-label" for="decReject">رفض</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="Decision" value="UnderReview" id="decReview">
+                        <label class="form-check-label" for="decReview">إبقاء قيد المراجعة</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3" id="rejectionReasonGroup" style="display:none">
+                <label class="form-label fw-bold">سبب الرفض <span class="text-danger">*</span></label>
+                <textarea name="RejectionReason" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">ملاحظات داخلية</label>
+                <textarea name="AdminNotes" class="form-control" rows="2">@Model.AdminNotes</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="bi bi-check-circle"></i> حفظ القرار
+            </button>
+            <a asp-action="PendingApplications" class="btn btn-secondary">رجوع</a>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        // إظهار/إخفاء سبب الرفض
+        document.querySelectorAll('input[name="Decision"]').forEach(r => {
+            r.addEventListener('change', function () {
+                document.getElementById('rejectionReasonGroup').style.display =
+                    this.value === 'Rejected' ? 'block' : 'none';
+            });
+        });
+
+        // التحقق من السيرفر (AJAX)
+        async function verifyFromServer(applicationId) {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerHTML = 'جاري التحقق...';
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                    || document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Admin/VerifyFromServer/' + applicationId, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    let statusHtml = '';
+                    let statusClass = 'secondary';
+                    if (result.status === 'Verified') { statusHtml = '✅ مطابق تماماً'; statusClass = 'success'; }
+                    else if (result.status === 'VerifiedWithDiff') { statusHtml = '⚠️ موجود مع اختلافات'; statusClass = 'warning'; }
+                    else if (result.status === 'NotFound') { statusHtml = '❌ غير موجود'; statusClass = 'danger'; }
+
+                    document.getElementById('verificationResult').innerHTML =
+                        `<div class="alert alert-${statusClass}">${statusHtml}</div>`;
+
+                    // جدول المقارنة
+                    if (result.comparison && Object.keys(result.comparison).length > 0) {
+                        let tableHtml = `<h6 class="mt-3">جدول المقارنة</h6>
+                            <table class="table table-bordered">
+                                <thead class="table-dark">
+                                    <tr><th>الحقل</th><th>النظام المحلي</th><th>سيرفر الجامعة</th><th>الحالة</th></tr>
+                                </thead><tbody>`;
+
+                        for (const [field, diff] of Object.entries(result.comparison)) {
+                            const match = diff.local == diff.server;
+                            tableHtml += `<tr>
+                                <td>${field}</td>
+                                <td>${diff.local ?? '-'}</td>
+                                <td>${diff.server ?? '-'}</td>
+                                <td>${match ? '✅' : '⚠️'}</td>
+                            </tr>`;
+                        }
+                        tableHtml += '</tbody></table>';
+                        document.getElementById('comparisonTable').innerHTML = tableHtml;
+                        document.getElementById('comparisonTable').style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                document.getElementById('verificationResult').innerHTML =
+                    '<div class="alert alert-danger">فشل الاتصال بسيرفر الجامعة</div>';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-search"></i> تحقق من سيرفر الجامعة الآن';
+            }
+        }
+    </script>
+}

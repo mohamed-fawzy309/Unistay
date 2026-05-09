@@ -1,0 +1,151 @@
+@model UniStay.Models.Absence
+@{
+    ViewData["Title"] = "طلب إذن غياب / تصريح";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-door-open"></i> تقديم طلب إذن خروج أو إجازة</h5>
+            </div>
+            <div class="card-body p-4">
+
+                @if (TempData["Success"] != null)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @TempData["Success"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                @* FIX 1: عرض validation errors من الـ ModelState *@
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <li>@error.ErrorMessage</li>
+                            }
+                        </ul>
+                    </div>
+                }
+
+                <form asp-controller="Student" asp-action="RequestAbsence" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label asp-for="AbsenceType" class="form-label fw-bold">نوع الطلب</label>
+                        @* FIX 2: "Absence" و"Permission" و"Holiday" و"Emergency" هي القيم المعرفة في الـ DB schema *@
+                        <select asp-for="AbsenceType" class="form-select" required>
+                            <option value="">-- اختر نوع الطلب --</option>
+                            <option value="Permission">تصريح خروج (يوم واحد)</option>
+                            <option value="Holiday">إجازة (عدة أيام)</option>
+                            <option value="Emergency">ظروف طارئة</option>
+                        </select>
+                        <span asp-validation-for="AbsenceType" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="AbsenceDate" class="form-label">من تاريخ *</label>
+                            @* FIX 3: min = اليوم لمنع اختيار تواريخ في الماضي *@
+                            <input asp-for="AbsenceDate" type="date" class="form-control"
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            <span asp-validation-for="AbsenceDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="ToDate" class="form-label">حتى تاريخ *</label>
+                            <input asp-for="ToDate" type="date" class="form-control"
+                                   min="@DateTime.Today.ToString("yyyy-MM-dd")" required />
+                            <span asp-validation-for="ToDate" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Reason" class="form-label">السبب *</label>
+                        <textarea asp-for="Reason" class="form-control" rows="3"
+                                  maxlength="500" required placeholder="اكتب سبب الطلب بالتفصيل..."></textarea>
+                        <span asp-validation-for="Reason" class="text-danger small"></span>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="isGuardianRequest"
+                               onchange="toggleGuardianFields()">
+                        <label class="form-check-label fw-bold text-primary" for="isGuardianRequest">
+                            هل هذا الطلب مقدم من ولي الأمر؟
+                        </label>
+                    </div>
+
+                    @* FIX 4: style="display:none" بدل class="hidden-section" اللي مش معرفة في Bootstrap *@
+                    <div id="guardianFields" class="p-3 bg-light rounded border mb-3" style="display:none">
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-info-circle"></i>
+                            يرجى إدخال بيانات ولي الأمر المقدِّم للطلب
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">اسم ولي الأمر *</label>
+                                @* FIX 5: إضافة asp-for بدل name فقط لربط الـ validation *@
+                                <input asp-for="GuardianName" class="form-control"
+                                       placeholder="الاسم بالكامل" />
+                                <span asp-validation-for="GuardianName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">صلة القرابة *</label>
+                                <input asp-for="GuardianRelation" class="form-control"
+                                       placeholder="أب / أم / أخ ..." />
+                                <span asp-validation-for="GuardianRelation" class="text-danger small"></span>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">رقم تليفون ولي الأمر *</label>
+                                <input asp-for="GuardianPhone" class="form-control"
+                                       placeholder="01xxxxxxxxx" />
+                                <span asp-validation-for="GuardianPhone" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-send"></i> إرسال الطلب
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function toggleGuardianFields() {
+            const isChecked = document.getElementById('isGuardianRequest').checked;
+            const div = document.getElementById('guardianFields');
+            div.style.display = isChecked ? 'block' : 'none';
+
+            // FIX 6: تحديث الـ required على inputs ولو كانوا مخفيين
+            const inputs = div.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.required = isChecked;
+            });
+        }
+
+        // FIX 7: التحقق إن ToDate >= AbsenceDate قبل الإرسال
+        document.querySelector('form').addEventListener('submit', function (e) {
+            const fromDate = document.querySelector('[name="AbsenceDate"]').value;
+            const toDate = document.querySelector('[name="ToDate"]').value;
+            if (fromDate && toDate && toDate < fromDate) {
+                e.preventDefault();
+                alert('تاريخ النهاية يجب أن يكون بعد أو مساوياً لتاريخ البداية');
+            }
+        });
+
+        // FIX 8: تحديث min الـ ToDate تلقائياً لما يتغير AbsenceDate
+        document.querySelector('[name="AbsenceDate"]').addEventListener('change', function () {
+            document.querySelector('[name="ToDate"]').min = this.value;
+        });
+    </script>
+}

@@ -1,0 +1,993 @@
+@{
+    ViewData["Title"] = "استعلام عن القبول - UniStay";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>استعلام عن القبول — UniStay</title>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --red: #e63946;
+            --red-dark: #b52530;
+            --red-dim: rgba(230,57,70,.15);
+            --black: #080b10;
+            --black-2: #0f1319;
+            --black-3: #161c26;
+            --black-4: #1e2736;
+            --border: #1e2736;
+            --text: #e8eaf0;
+            --muted: #6b7a99;
+            --success: #10b981;
+            --success-dim: rgba(16,185,129,.15);
+            --warn: #f59e0b;
+            --warn-light: #fbbf24;
+            --warn-dim: rgba(245,158,11,.15);
+            --danger: #ef4444;
+            --danger-dim: rgba(239,68,68,.12);
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--black);
+            color: var(--text);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--black);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--red-dark);
+            border-radius: 3px;
+        }
+
+        /* ══════════════════════════════
+                   BG DECORATIONS
+                ══════════════════════════════ */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background-image: linear-gradient(rgba(230,57,70,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(230,57,70,.045) 1px, transparent 1px);
+            background-size: 55px 55px;
+            animation: gridMove 25s linear infinite;
+        }
+        @@keyframes gridMove {
+            from
+
+        {
+            transform: translateY(0);
+        }
+
+        to {
+            transform: translateY(55px);
+        }
+
+        }
+
+        .bg-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(230,57,70,.07) 0%, transparent 70%);
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 0;
+            animation: glowDrift 9s ease-in-out infinite alternate;
+        }
+        @@keyframes glowDrift {
+            from
+
+        {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        to {
+            transform: translateX(-50%) translateY(45px);
+        }
+
+        }
+
+        /* ══════════════════════════════
+                   NAVBAR
+                ══════════════════════════════ */
+        .navbar {
+            background: rgba(8,11,16,.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(230,57,70,.12);
+            padding: .9rem 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            transition: all .3s;
+        }
+
+            .navbar.scrolled {
+                background: rgba(8,11,16,.97);
+                box-shadow: 0 4px 30px rgba(0,0,0,.5);
+            }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+
+        .nav-link {
+            color: var(--muted) !important;
+            font-weight: 500;
+            font-size: .9rem;
+            transition: color .2s;
+            padding: .4rem .9rem !important;
+            text-decoration: none;
+        }
+
+            .nav-link:hover {
+                color: #fff !important;
+            }
+
+        /* ══════════════════════════════
+                   PAGE HEADER
+                ══════════════════════════════ */
+        .page-header {
+            padding: 8rem 0 3.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-header-content {
+            position: relative;
+            z-index: 2;
+            animation: fadeDown .65s cubic-bezier(.22,1,.36,1) both;
+        }
+
+        .page-badge {
+            display: inline-block;
+            background: var(--red-dim);
+            border: 1px solid rgba(230,57,70,.25);
+            color: var(--red);
+            border-radius: 50px;
+            padding: .3rem 1rem;
+            font-size: .78rem;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .page-title {
+            font-size: clamp(1.9rem,5vw,3rem);
+            font-weight: 900;
+            margin-bottom: .7rem;
+            line-height: 1.2;
+        }
+
+            .page-title span {
+                background: linear-gradient(135deg,#ff6b7a,var(--red));
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+        .page-sub {
+            color: var(--muted);
+            font-size: 1.05rem;
+            max-width: 560px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        /* ══════════════════════════════
+                   SEARCH CARD
+                ══════════════════════════════ */
+        .section {
+            padding: 0 0 5rem;
+        }
+
+        .search-card {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 2.5rem;
+            max-width: 520px;
+            margin: 0 auto;
+            box-shadow: 0 24px 64px rgba(0,0,0,.4);
+            position: relative;
+            z-index: 2;
+            animation: fadeUp .65s cubic-bezier(.22,1,.36,1) .1s both;
+        }
+
+        .field-label {
+            display: block;
+            font-size: .82rem;
+            font-weight: 700;
+            color: var(--muted);
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            margin-bottom: .55rem;
+        }
+
+            .field-label em {
+                font-style: normal;
+                font-size: .78rem;
+                font-weight: 400;
+                text-transform: none;
+                letter-spacing: 0;
+            }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            top: 50%;
+            right: 1rem;
+            transform: translateY(-50%);
+            color: var(--muted);
+            pointer-events: none;
+            transition: color .25s;
+        }
+
+        .field-input {
+            width: 100%;
+            background: var(--black-3);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1.05rem;
+            padding: .9rem 3rem .9rem 1rem;
+            outline: none;
+            transition: border-color .25s, box-shadow .25s;
+            direction: ltr;
+            text-align: right;
+            letter-spacing: .08em;
+        }
+
+            .field-input::placeholder {
+                color: var(--muted);
+                direction: rtl;
+                letter-spacing: 0;
+                font-size: .92rem;
+            }
+
+            .field-input:focus {
+                border-color: rgba(230,57,70,.55);
+                box-shadow: 0 0 0 3px var(--red-dim);
+            }
+
+                .field-input:focus ~ .input-icon {
+                    color: var(--red);
+                }
+
+            .field-input.invalid {
+                border-color: var(--danger);
+                box-shadow: 0 0 0 3px var(--danger-dim);
+            }
+
+        .row-hint {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: .4rem;
+        }
+
+        .field-error {
+            color: var(--danger);
+            font-size: .8rem;
+            display: none;
+            align-items: center;
+            gap: .35rem;
+        }
+
+        .char-counter {
+            font-size: .78rem;
+            color: var(--muted);
+            font-variant-numeric: tabular-nums;
+            transition: color .2s;
+        }
+
+            .char-counter.done {
+                color: var(--success);
+            }
+
+        /* ── Submit button ── */
+        .btn-inquire {
+            width: 100%;
+            margin-top: 1.75rem;
+            background: linear-gradient(135deg, var(--red), var(--red-dark));
+            border: none;
+            color: #fff;
+            border-radius: 12px;
+            padding: .9rem 1.5rem;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .6rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform .2s, box-shadow .2s;
+        }
+
+            .btn-inquire::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 60%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+                transition: left .5s;
+            }
+
+            .btn-inquire:hover::before {
+                left: 150%;
+            }
+
+            .btn-inquire:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 30px rgba(230,57,70,.4);
+            }
+
+            .btn-inquire:active:not(:disabled) {
+                transform: translateY(0);
+            }
+
+            .btn-inquire:disabled {
+                opacity: .65;
+                cursor: not-allowed;
+            }
+
+        /* Spinner inside button */
+        .btn-spinner {
+            width: 18px;
+            height: 18px;
+            border: 2.5px solid rgba(255,255,255,.35);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .65s linear infinite;
+            display: none;
+        }
+
+        .btn-inquire.loading .btn-spinner {
+            display: block;
+        }
+
+        .btn-inquire.loading .btn-text {
+            opacity: .65;
+        }
+        @@keyframes spin {
+            to
+
+        {
+            transform: rotate(360deg);
+        }
+
+        }
+
+        /* ── Back link ── */
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: .5rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: 10px;
+            padding: .6rem 1.4rem;
+            font-family: 'Tajawal', sans-serif;
+            font-size: .9rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all .25s;
+        }
+
+            .btn-back:hover {
+                border-color: var(--red);
+                color: var(--red);
+            }
+
+        /* ══════════════════════════════
+                   RESULT AREA
+                ══════════════════════════════ */
+        #resultArea {
+            max-width: 520px;
+            margin: 1.75rem auto 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .result-card {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 16px 48px rgba(0,0,0,.45);
+            animation: fadeUp .5s cubic-bezier(.22,1,.36,1) both;
+        }
+
+        /* Result header variants */
+        .result-header {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+            .result-header.accepted {
+                background: var(--success-dim);
+                border-bottom: 1px solid rgba(16,185,129,.2);
+            }
+
+            .result-header.under_review {
+                background: var(--warn-dim);
+                border-bottom: 1px solid rgba(245,158,11,.25);
+            }
+
+        .result-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            flex-shrink: 0;
+        }
+
+            .result-icon.accepted {
+                background: var(--success-dim);
+            }
+
+            .result-icon.under_review {
+                background: var(--warn-dim);
+            }
+
+        .result-title {
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 900;
+            font-size: 1.15rem;
+        }
+
+            .result-title.accepted {
+                color: var(--success);
+            }
+
+            .result-title.under_review {
+                color: var(--warn-light);
+            }
+
+        .result-subtitle {
+            color: var(--muted);
+            font-size: .88rem;
+            margin-top: .15rem;
+        }
+
+        /* Status pill */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            font-weight: 700;
+            font-size: .8rem;
+            padding: .3rem .85rem;
+            border-radius: 20px;
+            margin-right: auto;
+        }
+
+            .status-pill.accepted {
+                background: var(--success-dim);
+                color: var(--success);
+                border: 1px solid rgba(16,185,129,.3);
+            }
+
+            .status-pill.under_review {
+                background: var(--warn-dim);
+                color: var(--warn-light);
+                border: 1px solid rgba(245,158,11,.35);
+            }
+
+        .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: blink 1.4s ease-in-out infinite;
+        }
+        @@keyframes blink {
+            0%,100%
+
+        {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: .2;
+        }
+
+        }
+
+        /* Review notice banner */
+        .review-notice {
+            margin: 0 1.5rem 1.25rem;
+            background: var(--warn-dim);
+            border: 1px solid rgba(245,158,11,.3);
+            border-radius: 10px;
+            padding: .9rem 1.1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: .75rem;
+        }
+
+        .review-notice-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            margin-top: .05rem;
+        }
+
+        .review-notice-text {
+            font-size: .88rem;
+            color: var(--warn-light);
+            line-height: 1.75;
+        }
+
+            .review-notice-text strong {
+                font-weight: 700;
+                display: block;
+                margin-bottom: .15rem;
+            }
+
+        /* Info grid */
+        .info-grid {
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        @@media (max-width: 480px) {
+            .info-grid
+
+        {
+            grid-template-columns: 1fr;
+        }
+
+        }
+
+        .info-item {
+            background: var(--black-3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: .85rem 1rem;
+        }
+
+        .info-label {
+            font-size: .72rem;
+            color: var(--muted);
+            font-weight: 600;
+            letter-spacing: .06em;
+            margin-bottom: .3rem;
+        }
+
+        .info-value {
+            font-weight: 700;
+            font-size: .97rem;
+            color: var(--text);
+        }
+
+            .info-value.red {
+                color: var(--red);
+            }
+
+            .info-value.green {
+                color: var(--success);
+            }
+
+            .info-value.amber {
+                color: var(--warn-light);
+            }
+
+        /* Not-found / error card */
+        .notfound-card {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 2.75rem;
+            text-align: center;
+            animation: fadeUp .45s cubic-bezier(.22,1,.36,1) both;
+        }
+
+        .notfound-icon {
+            font-size: 3rem;
+            display: block;
+            margin-bottom: 1rem;
+        }
+
+        .notfound-card h3 {
+            font-weight: 800;
+            font-size: 1.15rem;
+            color: var(--text);
+            margin-bottom: .5rem;
+        }
+
+        .notfound-card p {
+            color: var(--muted);
+            font-size: .9rem;
+            line-height: 1.8;
+        }
+
+        /* ══════════════════════════════
+                   FOOTER
+                ══════════════════════════════ */
+        footer {
+            background: var(--black-2);
+            border-top: 1px solid var(--border);
+            padding: 2rem 0;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .footer-text {
+            color: var(--muted);
+            font-size: .82rem;
+        }
+
+            .footer-text span {
+                color: var(--red);
+            }
+
+        /* ══════════════════════════════
+                   ANIMATIONS
+                ══════════════════════════════ */
+        @@keyframes fadeDown {
+            from
+
+        {
+            opacity: 0;
+            transform: translateY(-22px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        }
+        @@keyframes fadeUp {
+            from
+
+        {
+            opacity: 0;
+            transform: translateY(22px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        }
+
+        @@media (max-width: 768px) {
+            .page-title
+
+        {
+            font-size: 1.8rem;
+        }
+
+        }
+        @@media (max-width: 576px) {
+            .search-card
+
+        {
+            padding: 1.75rem 1.25rem;
+        }
+
+        }</style>
+</head>
+<body>
+
+    <!-- Ambient layers -->
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <!-- ══ NAVBAR ══ -->
+    <nav class="navbar" id="navbar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand" href="/"><img src="~/images/Unistay_logo.png" alt="UniStay" style="height:38px"></a>
+            <a href="/" class="nav-link">
+                <i class="fa-solid fa-house" style="font-size:.8rem;margin-left:.3rem"></i>
+                الرئيسية
+            </a>
+        </div>
+    </nav>
+
+    <!-- ══ PAGE HEADER ══ -->
+    <section class="page-header">
+        <div class="container page-header-content">
+            <div class="page-badge">
+                🎓 بوابة القبول الجامعي
+            </div>
+            <h1 class="page-title">استعلام عن <span>نتيجة القبول</span></h1>
+            <p class="page-sub">أدخل رقمك القومي للاستعلام عن حالة طلب التسكين الخاص بك</p>
+        </div>
+    </section>
+
+    <!-- ══ SEARCH SECTION ══ -->
+    <section class="section">
+        <div class="container">
+
+            <div class="search-card">
+
+                <!-- Field label -->
+                <label for="nationalId" class="field-label">
+                    الرقم القومي &nbsp;<em>— 14 رقم</em>
+                </label>
+
+                <!-- Input -->
+                <div class="input-wrap">
+                    <input type="text"
+                           id="nationalId"
+                           class="field-input"
+                           placeholder="أدخل رقمك القومي المكون من 14 رقم"
+                           maxlength="14"
+                           inputmode="numeric"
+                           autocomplete="off" />
+                    <span class="input-icon">
+                        <i class="fa-regular fa-id-card"></i>
+                    </span>
+                </div>
+
+                <!-- Hints row -->
+                <div class="row-hint">
+                    <div class="field-error" id="idError">
+                        <i class="fa-solid fa-circle-exclamation" style="font-size:.8rem"></i>
+                        يرجى إدخال رقم قومي صحيح مكون من 14 رقم.
+                    </div>
+                    <div class="char-counter" id="charCounter">0 / 14</div>
+                </div>
+
+                <!-- Submit -->
+                <button class="btn-inquire" id="searchBtn" type="button" onclick="handleSearch()">
+                    <div class="btn-spinner"></div>
+                    <span class="btn-text" style="display:flex;align-items:center;gap:.5rem">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        استعلام عن نتيجة القبول
+                    </span>
+                </button>
+
+                <div class="text-center mt-3">
+                    <small style="color:var(--muted)">
+                        يجب تسجيل الدخول أولاً لمشاهدة حالة الطلب كاملة
+                    </small>
+                </div>
+            </div>
+
+            <!-- Result area -->
+            <div id="resultArea"></div>
+
+            <!-- Back link -->
+            <div class="text-center mt-5" style="position:relative;z-index:2">
+                <a href="/" class="btn-back">
+                    <i class="fa-solid fa-arrow-right"></i>
+                    العودة إلى الرئيسية
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ══ FOOTER ══ -->
+    <footer>
+        <div class="container">
+            <div class="footer-text">
+                UniStay &nbsp;·&nbsp; <span>نظام إدارة السكن الجامعي</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ── Navbar scroll
+        window.addEventListener('scroll', () => {
+            document.getElementById('navbar').classList.toggle('scrolled', scrollY > 40);
+        });
+
+        // ── Char counter + live validation
+        const input = document.getElementById('nationalId');
+        const counter = document.getElementById('charCounter');
+
+        input.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '');
+            const len = this.value.length;
+            counter.textContent = `${len} / 14`;
+            counter.classList.toggle('done', len === 14);
+            if (len === 14) {
+                this.classList.remove('invalid');
+                document.getElementById('idError').style.display = 'none';
+            }
+        });
+
+        // ── Main search handler
+        async function handleSearch() {
+            const id  = input.value.trim();
+            const err = document.getElementById('idError');
+
+            input.classList.remove('invalid');
+            err.style.display = 'none';
+
+            if (!/^\d{14}$/.test(id)) {
+                input.classList.add('invalid');
+                err.style.display = 'flex';
+                input.focus();
+                return;
+            }
+
+            const btn = document.getElementById('searchBtn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+            document.getElementById('resultArea').innerHTML = '';
+
+            try {
+                const res    = await fetch(`/Home/CheckAcceptance?id=${encodeURIComponent(id)}`);
+                const record = await res.json();
+                renderByStatus(record);
+            } catch {
+                renderError();
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
+        function renderByStatus(r) {
+            if      (r.status === 'accepted')     renderAccepted(r);
+            else if (r.status === 'under_review') renderUnderReview(r);
+            else                                  renderNotFound();
+        }
+
+        function renderAccepted(r) {
+            document.getElementById('resultArea').innerHTML = `
+            <div class="result-card">
+                <div class="result-header accepted">
+                    <div class="result-icon accepted">🎉</div>
+                    <div>
+                        <div class="result-title accepted">مبروك! تم قبولك في السكن</div>
+                        <div class="result-subtitle">${r.name ?? ''}</div>
+                    </div>
+                    <span class="status-pill accepted">
+                        <span class="pulse-dot"></span>مقبول
+                    </span>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">الاسم الكامل</div>
+                        <div class="info-value">${r.name ?? '—'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">الكلية</div>
+                        <div class="info-value red">${r.faculty ?? '—'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">الفرقة الدراسية</div>
+                        <div class="info-value">${r.grade ?? '—'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">نوع الدراسة</div>
+                        <div class="info-value">${r.studyType ?? '—'}</div>
+                    </div>
+                    <div class="info-item" style="grid-column:1/-1">
+                        <div class="info-label">كود الطالب</div>
+                        <div class="info-value green">${r.seat ?? '—'}</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function renderUnderReview(r) {
+            document.getElementById('resultArea').innerHTML = `
+            <div class="result-card">
+                <div class="result-header under_review">
+                    <div class="result-icon under_review">⏳</div>
+                    <div>
+                        <div class="result-title under_review">طلبك قيد المراجعة</div>
+                        <div class="result-subtitle">${r.name ?? ''}</div>
+                    </div>
+                    <span class="status-pill under_review">
+                        <span class="pulse-dot"></span>قيد المراجعة
+                    </span>
+                </div>
+                <div class="review-notice">
+                    <div class="review-notice-icon">📋</div>
+                    <div class="review-notice-text">
+                        <strong>ملاحظة هامة</strong>
+                        تم استلام طلبك وهو قيد المراجعة حالياً من قِبَل لجنة القبول.
+                        سيتم إشعارك فور صدور القرار النهائي. يُرجى المتابعة بشكل دوري.
+                    </div>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">الاسم الكامل</div>
+                        <div class="info-value">${r.name ?? '—'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">الكلية المتقدم إليها</div>
+                        <div class="info-value red">${r.faculty ?? '—'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">الفرقة الدراسية</div>
+                        <div class="info-value">${r.grade ?? '—'}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">نوع الدراسة</div>
+                        <div class="info-value">${r.studyType ?? '—'}</div>
+                    </div>
+                    <div class="info-item" style="grid-column:1/-1">
+                        <div class="info-label">حالة الطلب</div>
+                        <div class="info-value amber">في انتظار قرار لجنة القبول</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function renderNotFound() {
+            document.getElementById('resultArea').innerHTML = `
+            <div class="notfound-card">
+                <span class="notfound-icon">🔍</span>
+                <h3>لم يتم العثور على نتيجة</h3>
+                <p>لا يوجد سجل مرتبط بهذا الرقم القومي.<br>تأكد من صحة الرقم أو تواصل مع إدارة القبول.</p>
+            </div>`;
+        }
+
+        function renderError() {
+            document.getElementById('resultArea').innerHTML = `
+            <div class="notfound-card">
+                <span class="notfound-icon">⚠️</span>
+                <h3>حدث خطأ في الاتصال</h3>
+                <p>تعذّر الوصول إلى الخادم. يُرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.</p>
+            </div>`;
+        }
+
+        // ── Enter key shortcut
+        document.addEventListener('keydown', e => { if (e.key === 'Enter') handleSearch(); });
+    </script>
+
+</body>
+</html>

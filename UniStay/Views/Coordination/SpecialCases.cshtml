@@ -1,0 +1,127 @@
+@model SpecialCasesViewModel
+@{
+    ViewData["Title"] = "الحالات الخاصة";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-star-fill"></i> الحالات الخاصة</h2>
+    </div>
+
+    <form method="get" class="row mb-4">
+        <div class="col-md-4">
+            <select name="cityId" class="form-select" onchange="this.form.submit()">
+                @foreach (var c in (IEnumerable<UniStay.Models.DormitoryCity>)ViewBag.Cities)
+                {
+                    <option value="@c.ID" selected="@(c.ID == Model.DormitoryCityID ? true : null)">@c.Name</option>
+                }
+            </select>
+        </div>
+    </form>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white"><h5 class="mb-0">الحالات الخاصة</h5></div>
+                <div class="card-body">
+                    @if (!Model.SpecialCases.Any())
+                    {
+                        <div class="alert alert-info">لا توجد حالات خاصة</div>
+                    }
+                    else
+                    {
+                        <table class="table table-hover">
+                            <thead>
+                                <tr><th>الاسم</th><th>الرقم القومي</th><th>النوع</th><th>الوصف</th><th>الحالة</th><th>ملاحظات</th><th>تاريخ الإضافة</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in Model.SpecialCases)
+                                {
+                                    <tr>
+                                        <td>@s.StudentName</td>
+                                        <td>@s.NationalID</td>
+                                        <td>@s.CaseType</td>
+                                        <td>@s.Description</td>
+                                        <td>
+                                            @switch (s.Status)
+                                            {
+                                                case "Pending": <span class="badge bg-warning">معلق</span>; break;
+                                                case "Approved": <span class="badge bg-success">مقبول</span>; break;
+                                                case "Rejected": <span class="badge bg-danger">مرفوض</span>; break;
+                                                default: <span class="badge bg-secondary">@s.Status</span>; break;
+                                            }
+                                        </td>
+                                        <td>@s.ReviewNotes</td>
+                                        <td>@s.CreatedAt?.ToString("yyyy/MM/dd")</td>
+                                        <td>
+                                            @if (s.Status == "Pending")
+                                            {
+                                                <button class="btn btn-sm btn-success" onclick="reviewCase(@s.ID, 'Approved')"><i class="bi bi-check"></i></button>
+                                                <button class="btn btn-sm btn-danger" onclick="reviewCase(@s.ID, 'Rejected')"><i class="bi bi-x"></i></button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        if (Model.TotalPages > 1)
+                        {
+                            <nav><ul class="pagination">
+                                @for (int i = 1; i <= Model.TotalPages; i++)
+                                {
+                                    <li class="page-item @(i == Model.Page ? "active" : "")">
+                                        <a class="page-link" href="@Url.Action("SpecialCases", new { cityId = Model.DormitoryCityID, page = i })">@i</a>
+                                    </li>
+                                }
+                            </ul></nav>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white"><h5 class="mb-0">إضافة حالة خاصة</h5></div>
+                <div class="card-body">
+                    <form asp-action="AddSpecialCase" method="post" id="addSpecialCaseForm">
+                        <input type="hidden" asp-for="NewSpecialCase.ApplicationID" />
+                        <div class="mb-3">
+                            <label class="form-label">الطالب</label>
+                            <select asp-for="NewSpecialCase.StudentID" class="form-select" required>
+                                <option value="">-- اختر الطالب --</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">نوع الحالة</label>
+                            <select asp-for="NewSpecialCase.CaseType" class="form-select">
+                                <option value="Disability">إعاقة</option>
+                                <option value="Orphan">يتيم</option>
+                                <option value="LowIncome">دخل محدود</option>
+                                <option value="Medical">حالة مرضية</option>
+                                <option value="Foreign">طالب وافد</option>
+                                <option value="Other">أخرى</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">الوصف</label>
+                            <textarea asp-for="NewSpecialCase.Description" class="form-control" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-circle"></i> إضافة</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function reviewCase(id, status) {
+            var notes = prompt('ملاحظات المراجعة:');
+            $.post('@Url.Action("ReviewSpecialCase")', { id: id, status: status, reviewNotes: notes }, function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        }
+    </script>
+}

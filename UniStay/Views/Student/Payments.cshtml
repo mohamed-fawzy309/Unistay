@@ -1,0 +1,253 @@
+@model List<UniStay.Models.Payment>
+@{
+    ViewData["Title"] = "الرسوم والمدفوعات";
+    var alloc = ViewBag.Allocation as UniStay.Models.Allocation;
+    var violations = ViewBag.Violations as List<UniStay.Models.Violation> ?? new();
+    var totalDue = (decimal)ViewBag.TotalDue;
+    var totalPaid = (decimal)ViewBag.TotalPaid;
+    var monthlyFee = (decimal)ViewBag.MonthlyFee;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0"><i class="bi bi-currency-dollar text-success me-2"></i> الرسوم والمدفوعات</h3>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-danger text-white">
+            <div class="card-body text-center">
+                <div class="fs-3 fw-bold">@totalDue.ToString("N2")</div>
+                <small>إجمالي المطلوب</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-success text-white">
+            <div class="card-body text-center">
+                <div class="fs-3 fw-bold">@totalPaid.ToString("N2")</div>
+                <small>إجمالي المدفوع</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm @((totalDue - totalPaid) > 0 ? "bg-warning text-dark" : "bg-success text-white")">
+            <div class="card-body text-center">
+                <div class="fs-3 fw-bold">@((totalDue - totalPaid).ToString("N2"))</div>
+                <small>المتبقي</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Monthly Fees *@
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-calendar-month me-2"></i> الرسوم الشهرية ( @(monthlyFee.ToString("N0")) ج.م / شهر )</span>
+    </div>
+    <div class="card-body p-0">
+        @{
+            var monthlyFees = Model.Where(p => p.PaymentType == "MonthlyFee").OrderBy(p => p.RecordedAt).ToList();
+        }
+        @if (!monthlyFees.Any())
+        {
+            <div class="p-3 text-muted text-center">لا توجد رسوم شهرية</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>الشهر</th>
+                            <th>المبلغ</th>
+                            <th>الحالة</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in monthlyFees)
+                        {
+                            <tr class="@(p.Status == "Completed" ? "table-success" : p.Status == "Overdue" ? "table-danger" : "")">
+                                <td>@(p.Notes ?? "—")</td>
+                                <td>@(p.Amount.ToString("N2")) ج.م</td>
+                                <td>
+                                    @if (p.Status == "Completed")
+                                    {
+                                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>مدفوع</span>
+                                    }
+                                    else if (p.Status == "Overdue")
+                                    {
+                                        <span class="badge bg-danger"><i class="bi bi-exclamation-circle me-1"></i>متأخر</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>قيد الانتظار</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (p.Status == "Pending")
+                                    {
+                                        <button class="btn btn-sm btn-success btn-pay" data-id="@p.ID">
+                                            <i class="bi bi-credit-card me-1"></i>دفع
+                                        </button>
+                                    }
+                                    else if (p.Status == "Completed")
+                                    {
+                                        <small class="text-muted">@p.RecordedAt?.ToString("yyyy/MM/dd")</small>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@* Violation Fines *@
+@if (violations.Any(v => v.FineAmount.HasValue && v.FineAmount > 0))
+{
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-danger text-white">
+            <i class="bi bi-exclamation-triangle me-2"></i> غرامات المخالفات
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>نوع المخالفة</th>
+                            <th>الوصف</th>
+                            <th>القيمة</th>
+                            <th>الحالة</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var v in violations.Where(v => v.FineAmount.HasValue && v.FineAmount > 0))
+                        {
+                            <tr>
+                                <td>@v.ViolationType</td>
+                                <td><small class="text-muted">@(v.Description ?? "—")</small></td>
+                                <td>@(v.FineAmount?.ToString("N2")) ج.م</td>
+                                <td>
+                                    @if (v.Status == "Paid")
+                                    {
+                                        <span class="badge bg-success">مدفوع</span>
+                                    }
+                                    else if (v.Status == "Cancelled")
+                                    {
+                                        <span class="badge bg-secondary">ملغي</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">غير مدفوع</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (v.Status == "Active" && v.FineAmount > 0 && v.FinePaid == null)
+                                    {
+                                        <button class="btn btn-sm btn-danger btn-pay-fine" data-id="@v.ID">
+                                            <i class="bi bi-credit-card me-1"></i>دفع الغرامة
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@* Other Payments *@
+@{
+    var otherPayments = Model.Where(p => p.PaymentType != "MonthlyFee").ToList();
+}
+@if (otherPayments.Any())
+{
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-secondary text-white">
+            <i class="bi bi-receipt me-2"></i> مدفوعات أخرى
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>النوع</th>
+                            <th>المبلغ</th>
+                            <th>المدفوع</th>
+                            <th>الحالة</th>
+                            <th>التاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in otherPayments)
+                        {
+                            <tr>
+                                <td>@p.PaymentType</td>
+                                <td>@p.Amount.ToString("N2")</td>
+                                <td>@p.PaidAmount.ToString("N2")</td>
+                                <td>
+                                    <span class="badge bg-@(p.Status == "Completed" ? "success" : p.Status == "Overdue" ? "danger" : "warning")">
+                                        @p.Status
+                                    </span>
+                                </td>
+                                <td><small>@p.RecordedAt?.ToString("yyyy/MM/dd")</small></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@Html.AntiForgeryToken()
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+    $(function(){
+        $(document).on('click', '.btn-pay', function(){
+            var btn = $(this);
+            var id = btn.data('id');
+            if (!confirm('تأكيد دفع هذه الرسوم؟')) return;
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+            $.ajax({
+                url: '@Url.Action("PayItem", "Student")',
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': $('input[name="__RequestVerificationToken"]').val() },
+                data: { paymentId: id },
+                success: function(r) {
+                    if (r.success) location.reload();
+                    else alert(r.message);
+                },
+                error: function(xhr) { alert('خطأ ' + xhr.status); btn.prop('disabled', false).html('<i class="bi bi-credit-card me-1"></i>دفع'); }
+            });
+        });
+
+        $(document).on('click', '.btn-pay-fine', function(){
+            var btn = $(this);
+            var id = btn.data('id');
+            if (!confirm('تأكيد دفع غرامة المخالفة؟')) return;
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+            $.ajax({
+                url: '@Url.Action("PayViolationFine", "Student")',
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': $('input[name="__RequestVerificationToken"]').val() },
+                data: { violationId: id },
+                success: function(r) {
+                    if (r.success) location.reload();
+                    else alert(r.message);
+                },
+                error: function(xhr) { alert('خطأ ' + xhr.status); btn.prop('disabled', false).html('<i class="bi bi-credit-card me-1"></i>دفع الغرامة'); }
+            });
+        });
+    });
+    </script>
+}

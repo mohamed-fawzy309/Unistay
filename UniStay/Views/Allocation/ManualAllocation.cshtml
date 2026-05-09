@@ -1,0 +1,91 @@
+@model ManualAllocationViewModel
+@{
+    ViewData["Title"] = "تسكين يدوي";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-person-plus-fill"></i> تسكين يدوي</h2>
+        <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> العودة</a>
+    </div>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">بيانات التسكين</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="ManualAllocation" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">الطالب</label>
+                        <select asp-for="StudentID" class="form-select" required>
+                            <option value="">-- اختر الطالب --</option>
+                            @foreach (var s in (IEnumerable<UniStay.ViewModels.Allocation.StudentLookupViewModel>)ViewBag.Students)
+                            {
+                                <option value="@s.ID">@s.FullName - @s.NationalID</option>
+                            }
+                        </select>
+                        <span asp-validation-for="StudentID" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">العام الدراسي</label>
+                        <input asp-for="AcademicYear" class="form-control" required />
+                        <span asp-validation-for="AcademicYear" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">المدينة</label>
+                        <select id="citySelect" class="form-select" onchange="loadBuildings(this.value)">
+                            <option value="">-- اختر المدينة --</option>
+                            @foreach (var c in (IEnumerable<UniStay.ViewModels.Allocation.CityLookupViewModel>)ViewBag.Cities)
+                            {
+                                <option value="@c.ID">@c.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">المبنى</label>
+                        <select id="buildingSelect" asp-for="CityRoomID" class="form-select" onchange="loadRooms(this.value)">
+                            <option value="">-- اختر المبنى أولاً --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">رقم السرير</label>
+                        <input asp-for="BedNumber" class="form-control" type="number" min="1" max="8" />
+                        <span asp-validation-for="BedNumber" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">ملاحظات</label>
+                    <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> تسكين</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function loadBuildings(cityId) {
+            if (!cityId) return;
+            $.get('@Url.Action("GetBuildingsByCity", "Allocation")', { cityId: cityId }, function (data) {
+                var sel = $('#buildingSelect');
+                sel.empty().append('<option value="">-- اختر المبنى --</option>');
+                data.forEach(function (b) { sel.append('<option value="' + b.id + '">' + b.buildingName + '</option>'); });
+            });
+        }
+        function loadRooms(buildingId) {
+            if (!buildingId) return;
+            $.get('@Url.Action("GetRoomsByBuilding", "Allocation")', { buildingId: buildingId }, function (data) {
+                console.log('Rooms:', data);
+            });
+        }
+    </script>
+}

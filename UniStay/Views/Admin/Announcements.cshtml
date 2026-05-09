@@ -1,0 +1,204 @@
+@model List<UniStay.Models.Announcement>
+@{
+    ViewData["Title"] = "الإعلانات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>الإعلانات</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">إضافة إعلان</button>
+</div>
+
+@foreach (var ann in Model)
+{
+    <div class="card shadow-sm mb-3 @(ann.IsPublished == true ? "border-success" : "border-warning")">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <h5 class="mb-0">@ann.Title</h5>
+                <span class="badge bg-@(ann.AnnouncementType switch { "Urgent" => "danger", "General" => "primary", "Housing" => "success", "Meals" => "warning", "Financial" => "info", "Academic" => "secondary", _ => "light" })">
+                    @ann.AnnouncementType
+                </span>
+                @if (ann.IsPublished == true)
+                {
+                    <span class="badge bg-success">منشور</span>
+                }
+                else
+                {
+                    <span class="badge bg-warning text-dark">مسودة</span>
+                }
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-@(ann.IsPublished == true ? "warning" : "success")" onclick="togglePublish(@ann.ID)">
+                    @(ann.IsPublished == true ? "إلغاء النشر" : "نشر")
+                </button>
+                <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-@ann.ID">تعديل</button>
+            </div>
+        </div>
+        <div class="card-body">
+            <p>@Html.Raw(ann.Body?.Replace("\n", "<br>"))</p>
+            <div class="d-flex gap-3 text-muted small">
+                <span>النوع: @ann.AnnouncementType</span>
+                <span>الجمهور: @ann.TargetAudience</span>
+                <span>المدينة: @(ann.DormitoryCity?.Name ?? "كل المدن")</span>
+                @if (ann.PublishedAt.HasValue) { <span>نشر في: @ann.PublishedAt?.ToString("yyyy-MM-dd HH:mm")</span> }
+                @if (ann.ExpiresAt.HasValue) { <span>ينتهي: @ann.ExpiresAt?.ToString("yyyy-MM-dd")</span> }
+                <span>بواسطة: @ann.CreatedByNavigation?.Name</span>
+                @if (ann.AnnouncementAttachments?.Any() == true)
+                {
+                    <span>المرفقات: @ann.AnnouncementAttachments.Count</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal-@ann.ID" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form asp-action="EditAnnouncement" method="post" class="modal-content">
+                <input type="hidden" name="ID" value="@ann.ID">
+                <div class="modal-header"><h5 class="modal-title">تعديل الإعلان</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">العنوان</label>
+                        <input name="Title" class="form-control" value="@ann.Title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">المحتوى</label>
+                        <textarea name="Body" class="form-control" rows="5" required>@ann.Body</textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">النوع</label>
+                            <select name="AnnouncementType" class="form-select">
+                                <option value="General" selected="@(ann.AnnouncementType == "General")">عام</option>
+                                <option value="Urgent" selected="@(ann.AnnouncementType == "Urgent")">عاجل</option>
+                                <option value="Housing" selected="@(ann.AnnouncementType == "Housing")">سكن</option>
+                                <option value="Meals" selected="@(ann.AnnouncementType == "Meals")">وجبات</option>
+                                <option value="Financial" selected="@(ann.AnnouncementType == "Financial")">مالية</option>
+                                <option value="Academic" selected="@(ann.AnnouncementType == "Academic")">أكاديمي</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">الجمهور</label>
+                            <select name="TargetAudience" class="form-select">
+                                <option value="All" selected="@(ann.TargetAudience == "All")">الكل</option>
+                                <option value="Students" selected="@(ann.TargetAudience == "Students")">طلاب</option>
+                                <option value="Staff" selected="@(ann.TargetAudience == "Staff")">موظفون</option>
+                                <option value="Residents" selected="@(ann.TargetAudience == "Residents")">مقيمون</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">المدينة</label>
+                            <select name="DormitoryCityID" class="form-select">
+                                <option value="">كل المدن</option>
+                                @foreach (var c in ViewBag.Cities)
+                                {
+                                    <option value="@c.ID" selected="@(ann.DormitoryCityID == c.ID)">@c.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">تاريخ الانتهاء</label>
+                            <input name="ExpiresAt" type="date" class="form-control" value="@ann.ExpiresAt?.ToString("yyyy-MM-dd")">
+                        </div>
+                        <div class="col-md-6 mb-3 d-flex align-items-end">
+                            <div class="form-check">
+                                <input name="PublishNow" class="form-check-input" type="checkbox" value="true">
+                                <label class="form-check-label">نشر فوراً</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">لا توجد إعلانات بعد</div>
+}
+
+<!-- Add Modal -->
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <form asp-action="Announcements" method="post" enctype="multipart/form-data" class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">إضافة إعلان جديد</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">العنوان <span class="text-danger">*</span></label>
+                    <input name="Title" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">المحتوى <span class="text-danger">*</span></label>
+                    <textarea name="Body" class="form-control" rows="5" required></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">النوع</label>
+                        <select name="AnnouncementType" class="form-select">
+                            <option value="General">عام</option>
+                            <option value="Urgent">عاجل</option>
+                            <option value="Housing">سكن</option>
+                            <option value="Meals">وجبات</option>
+                            <option value="Financial">مالية</option>
+                            <option value="Academic">أكاديمي</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">الجمهور</label>
+                        <select name="TargetAudience" class="form-select">
+                            <option value="All">الكل</option>
+                            <option value="Students">طلاب</option>
+                            <option value="Staff">موظفون</option>
+                            <option value="Residents">مقيمون</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">المدينة</label>
+                        <select name="DormitoryCityID" class="form-select">
+                            <option value="">كل المدن</option>
+                            @foreach (var c in ViewBag.Cities)
+                            {
+                                <option value="@c.ID">@c.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">تاريخ الانتهاء</label>
+                        <input name="ExpiresAt" type="date" class="form-control">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">مرفقات</label>
+                        <input name="Files" type="file" class="form-control" multiple>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <div class="form-check">
+                            <input name="PublishNow" class="form-check-input" type="checkbox" value="true">
+                            <label class="form-check-label">نشر فوراً</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary">إضافة</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function togglePublish(id) {
+            try {
+                const response = await fetch('/Admin/TogglePublishAnnouncement/' + id, { method: 'POST' });
+                const result = await response.json();
+                if (result.success) location.reload();
+            } catch { alert('خطأ'); }
+        }
+    </script>
+}

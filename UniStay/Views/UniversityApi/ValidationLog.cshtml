@@ -1,0 +1,140 @@
+﻿@model List<UniversityAPISync>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "سجل التحقق من سيرفر الجامعة";
+}
+<h4><i class="bi bi-server"></i> سجل المزامنة مع سيرفر الجامعة</h4>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">الرقم القومي</label>
+                <input name="nationalId" class="form-control" value="@ViewBag.Filters?.nationalId" placeholder="14 رقم" maxlength="14" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">نوع التحقق</label>
+                <select name="syncType" class="form-select">
+                    <option value="">الكل</option>
+                    <option value="Student" selected="@(ViewBag.Filters?.syncType == "Student")">طالب</option>
+                    <option value="Staff" selected="@(ViewBag.Filters?.syncType == "Staff")">موظف</option>
+                    <option value="Grades" selected="@(ViewBag.Filters?.syncType == "Grades")">درجات</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">النتيجة</label>
+                <select name="isMatch" class="form-select">
+                    <option value="">الكل</option>
+                    <option value="true" selected="@(ViewBag.Filters?.isMatch == true)">مطابق</option>
+                    <option value="false" selected="@(ViewBag.Filters?.isMatch == false)">اختلافات</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">من تاريخ</label>
+                <input name="from" type="date" class="form-control" value="@(ViewBag.Filters?.from?.ToString("yyyy-MM-dd"))" />
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-sm table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>الوقت</th>
+                <th>الرقم القومي</th>
+                <th>النوع</th>
+                <th>الحالة</th>
+                <th>الموظف</th>
+                <th>تفاصيل</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var log in Model)
+            {
+                <tr>
+                    <td dir="ltr">@log.SyncedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td dir="ltr">@log.NationalID</td>
+                    <td>@log.SyncType</td>
+                    <td>
+                        @if (log.IsMatch == true)
+                        {
+                            <span class="badge bg-success"><i class="bi bi-check-circle"></i> مطابق</span>
+                        }
+                        else if (log.IsMatch == false)
+                        {
+                            <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> اختلافات</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">غير معروف</span>
+                        }
+                    </td>
+                    <td>@(log.SyncedByNavigation?.Name ?? "System")</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="showDetails(@log.ID)">
+                            <i class="bi bi-eye"></i> عرض
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<nav>
+    @if (ViewBag.Page > 1)
+    {
+        <a href="?page=@(ViewBag.Page - 1)&nationalId=@ViewBag.Filters?.nationalId&syncType=@ViewBag.Filters?.syncType" class="btn btn-secondary">السابق</a>
+    }
+    @if (ViewBag.HasMore)
+    {
+        <a href="?page=@(ViewBag.Page + 1)&nationalId=@ViewBag.Filters?.nationalId&syncType=@ViewBag.Filters?.syncType" class="btn btn-secondary">التالي</a>
+    }
+</nav>
+
+<!-- Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تفاصيل المقارنة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalContent">
+                جاري التحميل...
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showDetails(syncId) {
+            fetch(`/UniversityApi/GetComparison/${syncId}`)
+                .then(r => r.json())
+                .then(data => {
+                    let html = `
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary">البيانات المحلية:</h6>
+                                <pre class="bg-light p-2 small" style="max-height:200px;overflow:auto">${JSON.stringify(data.local, null, 2)}</pre>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-success">بيانات السيرفر:</h6>
+                                <pre class="bg-light p-2 small" style="max-height:200px;overflow:auto">${JSON.stringify(data.server, null, 2)}</pre>
+                            </div>
+                        </div>
+                        <hr>
+                        <h6 class="text-danger">الاختلافات:</h6>
+                        <pre class="bg-warning p-2 small">${JSON.stringify(data.differences, null, 2)}</pre>
+                    `;
+                    document.getElementById('modalContent').innerHTML = html;
+                    new bootstrap.Modal(document.getElementById('detailsModal')).show();
+                });
+        }
+    </script>
+}

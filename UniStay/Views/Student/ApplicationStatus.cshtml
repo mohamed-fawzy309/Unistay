@@ -1,0 +1,177 @@
+@model List<UniStay.Models.Application>
+@{
+    ViewData["Title"] = "حالة الطلب";
+}
+
+<h3 class="mb-4">تسلسل حالة طلباتك</h3>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-info-circle"></i>
+        لا توجد طلبات مسجلة برقمك القومي حتى الآن.
+    </div>
+}
+else
+{
+    <div class="timeline-container">
+        @foreach (var app in Model)
+        {
+            var badgeColor = app.Status switch
+            {
+                "Pending"          => "secondary",
+                "UnderReview"      => "primary",
+                "PendingDocuments" => "warning text-dark",
+                "Accepted"         => "success",
+                "Waitlist"         => "warning text-dark",
+                "Rejected"         => "danger",
+                "Cancelled"        => "dark",
+                "Allocated"        => "success",
+                _                  => "secondary"
+            };
+
+            bool step1Done = app.CreatedAt.HasValue;
+            bool step2Done = app.Status != "Pending";
+            bool step2Failed = app.Status == "Rejected" || app.Status == "Cancelled";
+            bool step3Done = app.Status == "Accepted" || app.Status == "Allocated";
+            bool step4Done = app.Status == "Allocated";
+
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold">العام الدراسي: @app.AcademicYear</span>
+                    <span class="badge bg-@badgeColor">@GetStatusText(app.Status)</span>
+                </div>
+                <div class="card-body">
+
+                    <div class="d-flex align-items-center justify-content-between mb-4 px-2">
+
+                        @* Step 1 *@
+                        <div class="text-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1
+                                        @(step1Done ? "bg-success text-white" : "bg-light border")"
+                                 style="width:36px;height:36px;font-size:14px">
+                                <i class="bi @(step1Done ? "bi-check-lg" : "bi-circle")"></i>
+                            </div>
+                            <small class="text-muted d-block" style="font-size:11px">تم الإرسال</small>
+                            @if (step1Done)
+                            {
+                                <small class="text-muted d-block" style="font-size:10px">
+                                    @app.CreatedAt!.Value.ToString("dd/MM/yyyy")
+                                </small>
+                            }
+                        </div>
+
+                        <div class="flex-grow-1 border-top mx-2 @(step2Done ? "border-success" : "border-secondary")"
+                             style="margin-top:-20px"></div>
+
+                        @* Step 2 *@
+                        <div class="text-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1
+                                        @(step2Failed ? "bg-danger text-white" : step2Done ? "bg-success text-white" : "bg-light border")"
+                                 style="width:36px;height:36px;font-size:14px">
+                                <i class="bi @(step2Failed ? "bi-x-lg" : step2Done ? "bi-check-lg" : "bi-circle")"></i>
+                            </div>
+                            <small class="text-muted d-block" style="font-size:11px">قيد المراجعة</small>
+                            @if (app.ReviewedAt.HasValue)
+                            {
+                                <small class="text-muted d-block" style="font-size:10px">
+                                    @app.ReviewedAt.Value.ToString("dd/MM/yyyy")
+                                </small>
+                            }
+                        </div>
+
+                        <div class="flex-grow-1 border-top mx-2 @(step3Done ? "border-success" : "border-secondary")"
+                             style="margin-top:-20px"></div>
+
+                        @* Step 3 *@
+                        <div class="text-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1
+                                        @(step3Done ? "bg-success text-white" : "bg-light border")"
+                                 style="width:36px;height:36px;font-size:14px">
+                                <i class="bi @(step3Done ? "bi-check-lg" : "bi-circle")"></i>
+                            </div>
+                            <small class="text-muted d-block" style="font-size:11px">القبول</small>
+                        </div>
+
+                        <div class="flex-grow-1 border-top mx-2 @(step4Done ? "border-success" : "border-secondary")"
+                             style="margin-top:-20px"></div>
+
+                        @* Step 4 *@
+                        <div class="text-center">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-1
+                                        @(step4Done ? "bg-success text-white" : "bg-light border")"
+                                 style="width:36px;height:36px;font-size:14px">
+                                <i class="bi @(step4Done ? "bi-check-lg" : "bi-circle")"></i>
+                            </div>
+                            <small class="text-muted d-block" style="font-size:11px">التسكين</small>
+                        </div>
+                    </div>
+
+                    @if (app.Status == "Waitlist")
+                    {
+                        <div class="alert alert-warning mt-2">
+                            <i class="bi bi-hourglass-split"></i>
+                            <strong>أنت في قائمة الانتظار.</strong>
+                            سيتم إخطارك في حالة توفر مكان.
+                        </div>
+                    }
+
+                    @if (app.Status == "PendingDocuments")
+                    {
+                        <div class="alert alert-warning mt-2">
+                            <i class="bi bi-file-earmark-exclamation"></i>
+                            <strong>مطلوب منك تقديم مستندات إضافية.</strong>
+                            يرجى التواصل مع إدارة المدينة الجامعية.
+                        </div>
+                    }
+
+                    @if (app.Status == "Rejected")
+                    {
+                        <div class="alert alert-danger mt-2">
+                            <i class="bi bi-x-circle"></i>
+                            <strong>سبب الرفض: </strong>
+                            @(string.IsNullOrEmpty(app.RejectionReason)
+                                ? "لم يُذكر سبب. يرجى التواصل مع إدارة المدينة الجامعية."
+                                : app.RejectionReason)
+                        </div>
+                    }
+
+                    @if (app.Status == "Allocated")
+                    {
+                        <div class="alert alert-success mt-2">
+                            <i class="bi bi-house-check"></i>
+                            تم تسكينك بنجاح! راجع
+                            <a asp-controller="Student" asp-action="StatusReport" class="alert-link">بيان الحالة</a>
+                            للتفاصيل.
+                        </div>
+                    }
+
+                    @* ✅ FIX: CreatedAt هو DateTime? فلازم .Value قبل ToString *@
+                    <div class="mt-2 text-muted small">
+                        <i class="bi bi-clock"></i>
+                        تاريخ التقديم:
+                        @(app.CreatedAt.HasValue
+                            ? app.CreatedAt.Value.ToString("dd/MM/yyyy hh:mm tt")
+                            : "غير محدد")
+                    </div>
+
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@functions {
+    string GetStatusText(string? status) => status switch
+    {
+        "Pending"          => "في انتظار المراجعة",
+        "UnderReview"      => "قيد المراجعة",
+        "PendingDocuments" => "مطلوب مستندات",
+        "Accepted"         => "مقبول مبدئياً",
+        "Waitlist"         => "قائمة الانتظار",
+        "Rejected"         => "مرفوض",
+        "Cancelled"        => "ملغي",
+        "Allocated"        => "تم التسكين",
+        _                  => status ?? "غير معروف"
+    };
+}

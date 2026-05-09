@@ -1,0 +1,150 @@
+@model UniStay.ViewModels.Staff.StaffDashboardViewModel
+@{
+    ViewData["Title"] = "لوحة تحكم الموظف";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">لوحة التحكم</h2>
+    <span class="text-muted">@DateTime.Now.ToString("dddd، dd MMMM yyyy", new System.Globalization.CultureInfo("ar-SA"))</span>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-building"></i></div>
+                <div>
+                    <div class="stat-value">@Model.AssignedCitiesCount</div>
+                    <div class="stat-label">المدن المسندة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-info bg-opacity-10 text-info"><i class="bi bi-people"></i></div>
+                <div>
+                    <div class="stat-value">@Model.TotalStudents</div>
+                    <div class="stat-label">إجمالي الطلاب</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-tools"></i></div>
+                <div>
+                    <div class="stat-value">@Model.PendingMaintenanceRequests</div>
+                    <div class="stat-label">طلبات صيانة معلقة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-calendar-x"></i></div>
+                <div>
+                    <div class="stat-value">@Model.TodayAbsences</div>
+                    <div class="stat-label">غياب اليوم</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm animate-fade-in">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-building"></i> المدن المسندة</h5>
+                <a asp-action="MyCities" class="btn btn-outline-primary btn-sm">عرض الكل</a>
+            </div>
+            <div class="card-body">
+                @if (Model.AssignedCities.Any())
+                {
+                    <div class="row g-2">
+                        @foreach (var city in Model.AssignedCities)
+                        {
+                            var badgeClass = city.CityType switch { "Male" => "badge-soft-primary", "Female" => "badge-soft-danger", "Mixed" => "badge-soft-info", "VIP" => "badge-soft-warning", "Foreign" => "badge-soft-secondary", _ => "badge-soft-light" };
+                            var cityTypeLabel = city.CityType switch { "Male" => "ذكور", "Female" => "إناث", "Mixed" => "مختلط", "VIP" => "VIP", "Foreign" => "وافدون", _ => city.CityType };
+
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center p-3 rounded bg-light">
+                                    <div>
+                                        <h6 class="fw-bold mb-1">@city.CityName</h6>
+                                        <span class="badge @badgeClass">@cityTypeLabel</span>
+                                        <span class="badge @(city.IsPrimary ? "badge-soft-success" : "badge-soft-secondary") ms-1">
+                                            @(city.IsPrimary ? "رئيسي" : city.RoleInCity)
+                                        </span>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a asp-action="Buildings" asp-controller="Admin" asp-route-cityId="@city.CityID" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-layers"></i> @city.BuildingsCount
+                                        </a>
+                                        <a asp-action="CityConfig" asp-controller="Admin" asp-route-id="@city.CityID" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-gear"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-building-x" style="font-size:2rem"></i>
+                        <p class="mt-2 mb-0">لم يتم إسناد أي مدينة لك بعد</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm animate-fade-in">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-activity"></i> آخر النشاطات</h5>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.RecentActivities.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var act in Model.RecentActivities)
+                        {
+                            <div class="list-group-item py-2 px-3">
+                                <div class="d-flex justify-content-between">
+                                    <small class="fw-semibold">@act.Action</small>
+                                    <small class="text-muted">@act.CreatedAt.ToString("HH:mm")</small>
+                                </div>
+                                @if (!string.IsNullOrEmpty(act.TableName))
+                                {
+                                    <small class="text-muted d-block">@act.TableName</small>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-clock-history" style="font-size:2rem"></i>
+                        <p class="mt-2 mb-0">لا توجد نشاطات حديثة</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

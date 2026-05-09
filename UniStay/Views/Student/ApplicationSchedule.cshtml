@@ -1,0 +1,105 @@
+﻿@model List<UniStay.Models.ApplicationSchedule>
+@{
+    ViewData["Title"] = "مواعيد التقديم";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0"><i class="bi bi-calendar-range text-success me-2"></i> مواعيد التقديم للسكن</h3>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+@if (Model == null || !Model.Any())
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        لا توجد مواعيد تقديم متاحة حالياً. يرجى العودة لاحقاً.
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var s in Model)
+        {
+            var now = DateOnly.FromDateTime(DateTime.Now);
+            var isNewOpen = s.NewStudentsOpenDate.HasValue && s.NewStudentsCloseDate.HasValue
+                            && now >= s.NewStudentsOpenDate.Value && now <= s.NewStudentsCloseDate.Value;
+            var isReturningOpen = s.ReturningStudentsOpenDate.HasValue && s.ReturningStudentsCloseDate.HasValue
+                                && now >= s.ReturningStudentsOpenDate.Value && now <= s.ReturningStudentsCloseDate.Value;
+
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100 @(s.IsOpen ? "" : "opacity-75")">
+                    <div class="card-header bg-@(s.IsOpen ? "primary" : "secondary") text-white d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><i class="bi bi-building me-1"></i> @s.DormitoryCity?.Name</span>
+                        @if (s.IsOpen)
+                        {
+                            <span class="badge bg-light text-success"><i class="bi bi-check-circle me-1"></i>مفتوح</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-dark"><i class="bi bi-x-circle me-1"></i>مغلق</span>
+                        }
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted mb-3">
+                            <i class="bi bi-calendar3 me-1"></i> العام الدراسي: <strong>@s.AcademicYear</strong>
+                        </p>
+
+                        <div class="mb-3">
+                            <h6 class="fw-bold text-success"><i class="bi bi-person-plus me-1"></i> الطلاب الجدد</h6>
+                            @if (s.NewStudentsOpenDate.HasValue && s.NewStudentsCloseDate.HasValue)
+                            {
+                                <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                    <span>من <strong>@s.NewStudentsOpenDate.Value.ToString("yyyy/MM/dd")</strong></span>
+                                    <span>إلى <strong>@s.NewStudentsCloseDate.Value.ToString("yyyy/MM/dd")</strong></span>
+                                    @if (isNewOpen && s.IsOpen)
+                                    {
+                                        <span class="badge bg-success"><i class="bi bi-check me-1"></i>مُتاح</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">—</span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted small mb-0">لم يتم تحديد مواعيد بعد</p>
+                            }
+                        </div>
+
+                        <div>
+                            <h6 class="fw-bold text-warning"><i class="bi bi-arrow-repeat me-1"></i> الطلاب القدامى</h6>
+                            @if (s.ReturningStudentsOpenDate.HasValue && s.ReturningStudentsCloseDate.HasValue)
+                            {
+                                <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                    <span>من <strong>@s.ReturningStudentsOpenDate.Value.ToString("yyyy/MM/dd")</strong></span>
+                                    <span>إلى <strong>@s.ReturningStudentsCloseDate.Value.ToString("yyyy/MM/dd")</strong></span>
+                                    @if (isReturningOpen && s.IsOpen)
+                                    {
+                                        <span class="badge bg-success"><i class="bi bi-check me-1"></i>مُتاح</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">—</span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted small mb-0">لم يتم تحديد مواعيد بعد</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

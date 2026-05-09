@@ -1,0 +1,163 @@
+@model InventoryItemsViewModel
+@{
+    ViewData["Title"] = "إدارة المخازن";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-box-seam"></i> إدارة المخازن</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createItemModal">
+            <i class="bi bi-plus-circle"></i> إضافة صنف
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>الاسم</th>
+                        <th>الكود</th>
+                        <th>القيمة</th>
+                        <th>إجمالي المخزون</th>
+                        <th>المتاح</th>
+                        <th>المسلم</th>
+                        <th>نشط</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@item.ID</td>
+                            <td>@item.ItemName</td>
+                            <td>@item.ItemCode</td>
+                            <td>@item.ItemValue.ToString("N2")</td>
+                            <td>@item.TotalStock</td>
+                            <td>@item.AvailableStock</td>
+                            <td>@item.AssignedCount</td>
+                            <td>@(item.IsActive ? "نعم" : "لا")</td>
+                            <td>
+                                <button class="btn btn-sm btn-success" onclick="showAssign(@item.ID, '@item.ItemName', @item.AvailableStock)">
+                                    <i class="bi bi-person-plus"></i> توزيع
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @if (Model.TotalPages > 1)
+            {
+                <nav><ul class="pagination">
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.Page ? "active" : "")">
+                            <a class="page-link" href="@Url.Action("Items", new { page = i })">@i</a>
+                        </li>
+                    }
+                </ul></nav>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createItemModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="createItemForm">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">إضافة صنف جديد</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">اسم الصنف</label>
+                        <input name="itemName" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">كود الصنف</label>
+                        <input name="itemCode" class="form-control" required />
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">القيمة</label>
+                            <input name="itemValue" class="form-control" type="number" step="0.01" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">إجمالي المخزون</label>
+                            <input name="totalStock" class="form-control" type="number" required />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check"></i> إضافة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="assignItemModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="assignItemForm">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">توزيع صنف</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="inventoryItemID" id="assignItemId" />
+                    <div class="mb-3">
+                        <label class="form-label">الصنف</label>
+                        <p id="assignItemName" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الكمية المتاحة</label>
+                        <p id="assignAvailableStock" class="form-control-plaintext"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الطالب</label>
+                        <select name="studentID" class="form-select" required>
+                            <option value="">-- اختر الطالب --</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">الكمية</label>
+                        <input name="quantity" class="form-control" type="number" min="1" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check"></i> توزيع</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $('#createItemForm').submit(function (e) {
+            e.preventDefault();
+            $.post('@Url.Action("CreateItem")', $(this).serialize(), function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        });
+
+        function showAssign(id, name, stock) {
+            $('#assignItemId').val(id);
+            $('#assignItemName').text(name);
+            $('#assignAvailableStock').text(stock);
+            $('#assignItemModal').modal('show');
+        }
+
+        $('#assignItemForm').submit(function (e) {
+            e.preventDefault();
+            $.post('@Url.Action("Assign")', $(this).serialize(), function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        });
+    </script>
+}

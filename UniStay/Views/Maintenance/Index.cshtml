@@ -1,0 +1,231 @@
+@model UniStay.ViewModels.Maintenance.MaintenanceListViewModel
+@{
+    ViewData["Title"] = "طلبات الصيانة";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title"><i class="bi bi-tools"></i> طلبات الصيانة</h2>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-circle"></i> طلب صيانة جديد</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-list"></i></div>
+                <div>
+                    <div class="value">@Model.Requests.Count</div>
+                    <div class="label">إجمالي الطلبات</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-hourglass"></i></div>
+                <div>
+                    <div class="value">@Model.Requests.Count(r => r.Status == "Pending")</div>
+                    <div class="label">معلق</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-info bg-opacity-10 text-info"><i class="bi bi-person-check"></i></div>
+                <div>
+                    <div class="value">@Model.Requests.Count(r => r.Status == "Assigned" || r.Status == "InProgress")</div>
+                    <div class="label">تم التكليف / قيد التنفيذ</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle"></i></div>
+                <div>
+                    <div class="value">@Model.Requests.Count(r => r.Status == "Completed")</div>
+                    <div class="label">منتهي</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="get" class="filter-bar row g-2 mb-3">
+    <div class="col-md-3">
+        <select name="filterStatus" class="form-select" onchange="this.form.submit()">
+            <option value="">كل الحالات</option>
+            <option value="Pending" selected="@(Model.FilterStatus == "Pending")">معلق</option>
+            <option value="Assigned" selected="@(Model.FilterStatus == "Assigned")">تم التكليف</option>
+            <option value="InProgress" selected="@(Model.FilterStatus == "InProgress")">قيد التنفيذ</option>
+            <option value="Completed" selected="@(Model.FilterStatus == "Completed")">منتهي</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <a asp-action="Index" class="btn btn-secondary w-100">إعادة تعيين</a>
+    </div>
+</form>
+
+<div class="table-responsive bg-white rounded shadow-sm animate-fade-in">
+    <table class="table table-hover mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>الطالب</th>
+                <th>الغرفة</th>
+                <th>المبنى</th>
+                <th>التصنيف</th>
+                <th>الوصف</th>
+                <th>الأولوية</th>
+                <th>الحالة</th>
+                <th>تاريخ الطلب</th>
+                <th>مسند إلى</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model.Requests)
+            {
+                <tr>
+                    <td>@r.ID</td>
+                    <td>@r.StudentName</td>
+                    <td>@r.RoomNumber</td>
+                    <td>@r.BuildingName</td>
+                    <td>@(r.Category ?? "-")</td>
+                    <td title="@r.Description">@(r.Description?.Length > 50 ? r.Description.Substring(0, 50) + "..." : r.Description)</td>
+                    <td>
+                        <span class="badge-@(r.Priority == "High" ? "danger" : r.Priority == "Medium" ? "warning" : "info")">
+                            @(r.Priority == "High" ? "عالية" : r.Priority == "Medium" ? "متوسطة" : "منخفضة")
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge-@(r.Status switch
+                        {
+                            "Pending" => "secondary",
+                            "Assigned" => "primary",
+                            "InProgress" => "info",
+                            "Completed" => "success",
+                            _ => "secondary"
+                        })">
+                            @(r.Status switch
+                            {
+                                "Pending" => "معلق",
+                                "Assigned" => "تم التكليف",
+                                "InProgress" => "قيد التنفيذ",
+                                "Completed" => "منتهي",
+                                _ => r.Status
+                            })
+                        </span>
+                    </td>
+                    <td>@(r.CreatedAt?.ToString("yyyy-MM-dd") ?? "-")</td>
+                    <td>@(r.AssignedToName ?? "-")</td>
+                    <td class="text-nowrap">
+                        @if (r.Status == "Pending")
+                        {
+                            <button class="btn btn-outline-primary btn-sm btn-assign" data-id="@r.ID" title="تكليف فريق الصيانة">
+                                <i class="bi bi-person-plus"></i>
+                            </button>
+                        }
+                        @if (r.Status == "Assigned" || r.Status == "InProgress")
+                        {
+                            <button class="btn btn-outline-success btn-sm btn-complete" data-id="@r.ID" title="إكمال">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (!Model.Requests.Any())
+            {
+                <tr><td colspan="11" class="text-center text-muted py-4">لا توجد طلبات صيانة</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Assign Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">تكليف طلب صيانة</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="assignRequestId">
+                <div class="mb-3">
+                    <label class="form-label">فريق الصيانة <span class="text-danger">*</span></label>
+                    <select id="assignStaffUserId" class="form-select">
+                        <option value="">-- اختر --</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmAssign">تكليف</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $('.btn-assign').click(function () {
+                var id = $(this).data('id');
+                $('#assignRequestId').val(id);
+
+                $.get('@Url.Action("GetStaffUsers", "Maintenance")', function (data) {
+                    var sel = $('#assignStaffUserId');
+                    sel.empty().append('<option value="">-- اختر --</option>');
+                    data.forEach(function (u) {
+                        sel.append('<option value="' + u.id + '">' + u.name + (u.email ? ' - ' + u.email : '') + '</option>');
+                    });
+                });
+
+                $('#assignModal').modal('show');
+            });
+
+            $('#btnConfirmAssign').click(function () {
+                var requestId = $('#assignRequestId').val();
+                var staffUserId = $('#assignStaffUserId').val();
+
+                if (!staffUserId) { alert('يرجى اختيار فريق الصيانة'); return; }
+
+                $.ajax({
+                    url: '@Url.Action("Assign", "Maintenance")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ requestID: parseInt(requestId), staffUserID: parseInt(staffUserId) }),
+                    success: function (res) {
+                        if (res.success) {
+                            location.reload();
+                        } else {
+                            alert(res.message);
+                        }
+                    }
+                });
+            });
+
+            $('.btn-complete').click(function () {
+                var id = $(this).data('id');
+                if (!confirm('تأكيد إكمال طلب الصيانة؟')) return;
+
+                $.ajax({
+                    url: '@Url.Action("Complete", "Maintenance")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ requestID: parseInt(id) }),
+                    success: function (res) {
+                        if (res.success) {
+                            location.reload();
+                        } else {
+                            alert(res.message);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+}

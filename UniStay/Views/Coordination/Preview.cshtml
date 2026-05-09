@@ -1,0 +1,91 @@
+@model CoordinationPreviewViewModel
+@{
+    ViewData["Title"] = "معاينة التنسيق";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-eye"></i> معاينة التنسيق</h2>
+    </div>
+
+    <form method="get" class="row mb-4">
+        <div class="col-md-4">
+            <select name="cityId" class="form-select" onchange="this.form.submit()">
+                @foreach (var c in (IEnumerable<UniStay.Models.DormitoryCity>)ViewBag.Cities)
+                {
+                    <option value="@c.ID" selected="@(c.ID == Model.DormitoryCityID ? true : null)">@c.Name</option>
+                }
+            </select>
+        </div>
+    </form>
+
+    @if (Model.TotalApplicants > 0)
+    {
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-primary">
+                    <div class="card-body text-center">
+                        <h6>إجمالي المتقدمين</h6>
+                        <h3 class="text-primary">@Model.TotalApplicants</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-info">
+                    <div class="card-body text-center">
+                        <h6>الأسرة المتاحة</h6>
+                        <h3 class="text-info">@Model.AvailableBeds</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <h6>متوقع قبولهم</h6>
+                        <h3 class="text-success">@Model.AcceptedCount</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-warning">
+                    <div class="card-body text-center">
+                        <h6>متوقع الانتظار</h6>
+                        <h3 class="text-warning">@Model.WaitlistCount</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.TopStudents.Any())
+        {
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white"><h5 class="mb-0">أفضل 10 طلاب</h5></div>
+                <div class="card-body">
+                    <table class="table table-sm">
+                        <thead><tr><th>#</th><th>الاسم</th><th>الدرجة</th></tr></thead>
+                        <tbody>
+                            @for (int i = 0; i < Model.TopStudents.Count; i++)
+                            {
+                                <tr>
+                                    <td>@(i + 1)</td>
+                                    <td>@Model.TopStudents[i].Name</td>
+                                    <td>@Model.TopStudents[i].Score.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <form asp-action="Run" method="post" onsubmit="return confirm('تأكيد تنفيذ التنسيق؟')">
+            <input type="hidden" name="cityId" value="@Model.DormitoryCityID" />
+            <input type="hidden" name="academicYear" value="@Model.AcademicYear" />
+            <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-play-fill"></i> تنفيذ التنسيق</button>
+        </form>
+    }
+    else
+    {
+        <div class="alert alert-info">لا توجد طلبات بانتظار التنسيق</div>
+    }
+</div>

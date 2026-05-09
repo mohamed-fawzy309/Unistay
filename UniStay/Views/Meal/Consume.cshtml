@@ -1,0 +1,93 @@
+@model ConsumeViewModel
+@{
+    ViewData["Title"] = "تسجيل استهلاك الوجبات";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-upc-scan"></i> تسجيل استهلاك الوجبات</h2>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label">رقم الطالب</label>
+                    <input name="studentId" type="number" class="form-control" value="@Model.StudentID" placeholder="أدخل رقم الطالب">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">الرقم القومي</label>
+                    <input name="searchTerm" type="text" class="form-control" value="@Model.SearchTerm" placeholder="أدخل الرقم القومي">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> بحث</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.StudentID.HasValue)
+    {
+        if (Model.AvailableMeals.Any())
+        {
+            <div class="alert alert-info">
+                <strong>الطالب:</strong> @Model.AvailableMeals.First().StudentName - <strong>الرقم القومي:</strong> @Model.AvailableMeals.First().NationalID
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">الوجبات المتاحة اليوم</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>نوع الوجبة</th>
+                                    <th>السعر</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var m in Model.AvailableMeals)
+                                {
+                                    <tr>
+                                        <td>@m.ID</td>
+                                        <td>@m.MealType</td>
+                                        <td>@m.Price.ToString("N2")</td>
+                                        <td>
+                                            <div class="d-flex gap-2">
+                                                <button class="btn btn-sm btn-success" onclick="consume(@m.ID, @m.StudentID, 'Barcode')"><i class="bi bi-upc-scan"></i> باركود</button>
+                                                <button class="btn btn-sm btn-info" onclick="consume(@m.ID, @m.StudentID, 'QR')"><i class="bi bi-qr-code"></i> QR</button>
+                                                <button class="btn btn-sm btn-warning" onclick="consume(@m.ID, @m.StudentID, 'Manual')"><i class="bi bi-hand-index"></i> يدوي</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning">لا توجد وجبات متاحة لهذا الطالب اليوم</div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function consume(mealId, studentId, scanMethod) {
+            $.post('@Url.Action("RecordConsumption")', {
+                mealID: mealId,
+                studentID: studentId,
+                scanMethod: scanMethod
+            }, function (res) {
+                if (res.success) { location.reload(); } else { alert(res.message); }
+            });
+        }
+    </script>
+}
