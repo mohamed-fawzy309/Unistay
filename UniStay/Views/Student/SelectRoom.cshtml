@@ -7,6 +7,8 @@
     var reservedBeds = ViewBag.ReservedBeds as HashSet<string> ?? new HashSet<string>();
 }
 
+$('input[name="__RequestVerificationToken"]').val()
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="mb-0"><i class="bi bi-building text-success me-2"></i> اختر غرفتك — @ViewBag.CityName</h3>
 </div>
@@ -103,15 +105,12 @@ else
             btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
 
             $.ajax({
-                    url: '@Url.Action("ReserveRoom", "Student")',
+                url: '@Url.Action("ReserveRoom", "Student")',
                 type: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN':
-                        $('input[name="__RequestVerificationToken"]').val()
-                },
                 data: {
                     roomId: roomId,
-                    bedNumber: bed
+                    bedNumber: bed,
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
                 },
                 success: function(r) {
                     if (r.success) {
@@ -122,10 +121,7 @@ else
                     }
                 },
                 error: function(xhr) {
-                    var msg = 'خطأ ' + xhr.status;
-                    if (xhr.responseText && xhr.responseText.length < 200)
-                        msg += ': ' + xhr.responseText;
-                    alert(msg);
+                    alert('Response: ' + xhr.responseText);
                     btn.prop('disabled', false).text('سرير ' + bed);
                 }
             });
