@@ -265,6 +265,7 @@ namespace UniStay.Controllers
         public IActionResult Index()
         {
             return RedirectToAction(nameof(Report));
+
         }
 
         [HttpGet]
@@ -298,6 +299,7 @@ namespace UniStay.Controllers
             var pdfRows = summary.Select(r => new[] { r.PaymentType, r.Count.ToString(), r.TotalAmount.ToString("N2"), r.TotalPaid.ToString("N2") }).ToArray();
             var data = _export.ExportToPdf("تقرير المدفوعات", columns, pdfRows);
             return File(data, "application/pdf", "Payments.pdf");
+
         }
     }
 }

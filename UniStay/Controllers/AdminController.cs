@@ -458,6 +458,7 @@ namespace UniStay.Controllers
             if (!string.IsNullOrEmpty(faculty))
                 query = query.Where(s => s.Faculty == faculty);
 
+
             if (!string.IsNullOrEmpty(gender))
                 query = query.Where(s => s.Gender == gender);
 
