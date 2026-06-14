@@ -43,29 +43,6 @@
     <!-- روابط سريعة -->
     <div class="col-md-8 mb-4">
         <div class="row g-3">
-            <div class="col-md-6">
-                <div class="card bg-primary text-white h-100">
-                    <div class="card-body">
-                        <h5><i class="bi bi-calendar-check"></i> مواعيد التقديم</h5>
-                        <p class="small mb-3">تحقق من مواعيد فتح وغلق التقديم للمدن الجامعية.</p>
-                        @* FIX 4: إضافة asp-controller لتجنب ambiguity *@
-                        <a asp-controller="Student" asp-action="ApplicationSchedule" class="btn btn-light btn-sm text-primary">
-                            عرض المواعيد
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card bg-success text-white h-100">
-                    <div class="card-body">
-                        <h5><i class="bi bi-file-earmark-text"></i> بيان الحالة</h5>
-                        <p class="small mb-3">اطلع على بياناتك الكاملة وحالة التسكين والغياب.</p>
-                        <a asp-controller="Student" asp-action="StatusReport" class="btn btn-light btn-sm text-success">
-                            عرض البيان
-                        </a>
-                    </div>
-                </div>
-            </div>
             @if (ViewBag.IsAccepted == true && ViewBag.IsAllocated != true && ViewBag.HasReservation != true)
             {
                 <div class="col-md-6">
@@ -94,17 +71,6 @@
                     </div>
                 </div>
             }
-            <div class="col-md-6">
-                <div class="card bg-info text-white h-100">
-                    <div class="card-body">
-                        <h5><i class="bi bi-book"></i> الإرشادات</h5>
-                        <p class="small mb-3">تحميل نماذج التعديل وقراءة لوائح السكن.</p>
-                        <a asp-controller="Student" asp-action="Instructions" class="btn btn-light btn-sm text-info">
-                            قراءة المزيد
-                        </a>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>

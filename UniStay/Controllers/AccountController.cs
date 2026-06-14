@@ -65,14 +65,19 @@ namespace UniStay.Controllers
         //        return Content(ex.ToString());
         //    }
         //}
+
+
+
+
+
         //[HttpGet("create")]
         //public async Task<IActionResult> CreateAdminTemp()
         //{
         //    // 🔥 غير القيم دي
         //    string name = "admin";
         //    string email = "admin@unistay.com";
-        //    string nationalId = "12345678912345";
-        //    string password = "asd@asd1";
+        //    string nationalId = "12345678912346";
+        //    string password = "moh7elw7";
 
         //    // تحقق لو موجود
         //    var existing = await _context.SystemUsers
@@ -136,7 +141,7 @@ namespace UniStay.Controllers
 
             if (!_passwordService.VerifyPassword(model.Password, user.PasswordHash))
             {
-                model.ErrorMessage = "بيانات الدخول غير صحيحة";
+                model.ErrorMessage = "بيانات الدخول كلمة المرور غير صحيحة";
                 return View(model);
             }
 

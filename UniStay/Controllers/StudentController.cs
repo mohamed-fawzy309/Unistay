@@ -239,7 +239,7 @@ namespace UniStay.Controllers
 
         // POST: /Student/ReserveRoom
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> ReserveRoom(int roomId, byte bedNumber)
         {
             var studentId = GetCurrentStudentId();
