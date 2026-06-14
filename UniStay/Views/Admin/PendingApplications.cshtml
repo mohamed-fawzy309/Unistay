@@ -10,6 +10,14 @@
 
 <!-- Filters -->
 <form method="get" class="row g-2 mb-3 bg-white p-3 rounded shadow-sm">
+<div class="col-md-3">
+    <label class="form-label small">بحث</label>
+    <input type="text"
+           name="search"
+           class="form-control"
+           value="@ViewBag.Search"
+           placeholder="بحث بالاسم أو الرقم القومي">
+</div>
     <div class="col-md-2">
         <label class="form-label small">الحالة</label>
         <select name="status" class="form-select" onchange="this.form.submit()">
@@ -48,6 +56,11 @@
         <input type="date" name="to" class="form-control" value="@ViewBag.FilterTo?.ToString("yyyy-MM-dd")" onchange="this.form.submit()">
     </div>
     <div class="col-md-2 d-flex align-items-end">
+<div class="col-md-2 d-flex align-items-end">
+    <button type="submit" class="btn btn-primary w-100">
+        بحث
+    </button>
+</div>
         <a asp-action="PendingApplications" class="btn btn-secondary w-100">إعادة تعيين</a>
     </div>
 </form>

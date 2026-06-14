@@ -256,6 +256,13 @@ namespace UniStay.Controllers
                 OverdueCount = allPayments.Count(p => p.Status == "Overdue"),
                 Summary = summary
             });
+
+        }
+
+        [HttpGet]
+        public IActionResult Index()
+        {
+            return RedirectToAction(nameof(Report));
         }
     }
 }

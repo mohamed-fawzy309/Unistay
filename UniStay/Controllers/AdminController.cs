@@ -53,13 +53,14 @@ namespace UniStay.Controllers
 
        [HttpGet]
         public async Task<IActionResult> PendingApplications(
-            string? status = null,
-            string? studentType = null,
-            int? cityId = null,
-            string? faculty = null,
-            DateOnly? from = null,
-            DateOnly? to = null,
-            int page = 1)
+    string? status = null,
+    string? studentType = null,
+    int? cityId = null,
+    string? faculty = null,
+    string? search = null,
+    DateOnly? from = null,
+    DateOnly? to = null,
+    int page = 1)
         {
             var query = _db.Applications
                 .Include(a => a.Student)
@@ -117,6 +118,7 @@ namespace UniStay.Controllers
             ViewBag.FilterFaculty = faculty;
             ViewBag.FilterFrom = from;
             ViewBag.FilterTo = to;
+            ViewBag.Search = search;
 
             return View(apps);
         }
@@ -289,13 +291,14 @@ namespace UniStay.Controllers
 
         [HttpGet]
         public async Task<IActionResult> AllApplications(
-            string? status = null,
-            string? studentType = null,
-            int? cityId = null,
-            string? faculty = null,
-            DateOnly? from = null,
-            DateOnly? to = null,
-            int page = 1)
+    string? status = null,
+    string? studentType = null,
+    int? cityId = null,
+    string? faculty = null,
+    string? search = null,
+    DateOnly? from = null,
+    DateOnly? to = null,
+    int page = 1)
         {
             var query = _db.Applications
                 .Include(a => a.Student)
@@ -313,6 +316,13 @@ namespace UniStay.Controllers
 
             if (!string.IsNullOrEmpty(faculty))
                 query = query.Where(a => a.Student!.Faculty == faculty);
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(a =>
+                    a.Student!.FullName.Contains(search) ||
+                    a.Student.NationalID.Contains(search));
+            }
+
 
             if (from.HasValue)
                 query = query.Where(a => a.CreatedAt >= from.Value.ToDateTime(TimeOnly.MinValue));
@@ -377,6 +387,7 @@ namespace UniStay.Controllers
 
             if (!string.IsNullOrEmpty(faculty))
                 query = query.Where(s => s.Faculty == faculty);
+
 
             if (!string.IsNullOrEmpty(gender))
                 query = query.Where(s => s.Gender == gender);
@@ -1242,7 +1253,8 @@ namespace UniStay.Controllers
                 .Include(b => b.CityRooms)
                 .FirstOrDefaultAsync(b => b.ID == id && !b.IsDeleted);
 
-            if (building == null) return NotFound();
+            if (building == null)
+                return Content("Building Not Found");
 
             var layout = new BuildingLayoutViewModel
             {
