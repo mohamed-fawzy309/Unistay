@@ -4,86 +4,90 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="mb-0"><i class="bi bi-file-earmark-text text-success me-2"></i> بيان الحالة</h3>
+    <h4 class="mb-0" style="font-weight:800">
+        <i class="bi bi-file-earmark-text me-2" style="color:var(--success)"></i> بيان الحالة
+    </h4>
 </div>
 
 @if (Model == null)
 {
-    <div class="alert alert-warning">
+    <div class="alert-site alert-warning">
         <i class="bi bi-exclamation-triangle me-2"></i> لم يتم العثور على بيانات الطالب.
     </div>
     return;
 }
 
-@* بيانات الطالب *@
-<div class="card mb-4 shadow-sm">
-    <div class="card-header bg-success text-white fw-bold">
-        <i class="bi bi-person me-2"></i> البيانات الشخصية
+@* Student Data *@
+<div class="card-site mb-4">
+    <div class="card-site-header">
+        <i class="bi bi-person" style="color:var(--success)"></i>
+        البيانات الشخصية
     </div>
-    <div class="card-body">
+    <div class="card-site-body">
         <div class="row g-3">
             <div class="col-md-4">
-                <small class="text-muted d-block">الاسم الكامل</small>
-                <strong>@Model.FullName</strong>
+                <small style="color:var(--muted);font-size:.78rem">الاسم الكامل</small>
+                <div style="font-weight:700;font-size:.95rem">@Model.FullName</div>
             </div>
             <div class="col-md-4">
-                <small class="text-muted d-block">الرقم القومي</small>
-                <strong>@Model.NationalID</strong>
+                <small style="color:var(--muted);font-size:.78rem">الرقم القومي</small>
+                <div style="font-weight:700;font-size:.95rem;direction:ltr;text-align:right">@Model.NationalID</div>
             </div>
             <div class="col-md-4">
-                <small class="text-muted d-block">الجنس</small>
-                <strong>@(Model.Gender == "Male" ? "ذكر" : "أنثى")</strong>
+                <small style="color:var(--muted);font-size:.78rem">الجنس</small>
+                <div style="font-weight:700;font-size:.95rem">@(Model.Gender == "Male" ? "ذكر" : "أنثى")</div>
             </div>
             <div class="col-md-4">
-                <small class="text-muted d-block">الكلية</small>
-                <strong>@Model.Faculty</strong>
+                <small style="color:var(--muted);font-size:.78rem">الكلية</small>
+                <div style="font-weight:700;font-size:.95rem">@Model.Faculty</div>
             </div>
             <div class="col-md-4">
-                <small class="text-muted d-block">السنة الدراسية</small>
-                <strong>@Model.AcademicYear</strong>
+                <small style="color:var(--muted);font-size:.78rem">السنة الدراسية</small>
+                <div style="font-weight:700;font-size:.95rem">@Model.AcademicYear</div>
             </div>
             <div class="col-md-4">
-                <small class="text-muted d-block">رقم الهاتف</small>
-                <strong>@Model.Phone</strong>
+                <small style="color:var(--muted);font-size:.78rem">رقم الهاتف</small>
+                <div style="font-weight:700;font-size:.95rem">@Model.Phone</div>
             </div>
             <div class="col-md-6">
-                <small class="text-muted d-block">البريد الإلكتروني</small>
-                <strong>@Model.Email</strong>
+                <small style="color:var(--muted);font-size:.78rem">البريد الإلكتروني</small>
+                <div style="font-weight:700;font-size:.95rem">@Model.Email</div>
             </div>
             <div class="col-md-6">
-                <small class="text-muted d-block">العنوان</small>
-                <strong>@Model.Governorate - @Model.City - @Model.Address</strong>
+                <small style="color:var(--muted);font-size:.78rem">العنوان</small>
+                <div style="font-weight:700;font-size:.95rem">@Model.Governorate - @Model.City - @Model.Address</div>
             </div>
         </div>
     </div>
 </div>
 
-@* بيانات ولي الأمر *@
+@* Guardian Data *@
 @if (Model.Guardians != null && Model.Guardians.Any())
 {
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-secondary text-white fw-bold">
-            <i class="bi bi-people me-2"></i> بيانات ولي الأمر
+    <div class="card-site mb-4">
+        <div class="card-site-header">
+            <i class="bi bi-people" style="color:var(--red)"></i>
+            بيانات ولي الأمر
         </div>
-        <div class="card-body">
+        <div class="card-site-body">
             @foreach (var g in Model.Guardians)
             {
-                <div class="row g-2 mb-3 pb-3 border-bottom">
+                <div class="row g-2 mb-3 pb-3" style="border-bottom:1px solid var(--border)">
                     <div class="col-md-3">
-                        <small class="text-muted d-block">النوع</small>
-                        <strong>@(g.GuardianType == "Father" ? "الأب" : "ولي الأمر")</strong>
+                        <small style="color:var(--muted);font-size:.78rem">النوع</small>
+                        <div style="font-weight:700;font-size:.9rem">@(g.GuardianType == "Father" ? "الأب" : "ولي الأمر")</div>
                     </div>
                     <div class="col-md-4">
-                        <small class="text-muted d-block">الاسم</small>
-                        <strong>@g.FullName</strong>
+                        <small style="color:var(--muted);font-size:.78rem">الاسم</small>
+                        <div style="font-weight:700;font-size:.9rem">@g.FullName</div>
                     </div>
                     <div class="col-md-3">
-                        <small class="text-muted d-block">الوظيفة</small>
-                        <strong>@(g.Job ?? "—")</strong>
+                        <small style="color:var(--muted);font-size:.78rem">الوظيفة</small>
+                        <div style="font-weight:700;font-size:.9rem">@(g.Job ?? "—")</div>
                     </div>
                     <div class="col-md-2">
-                        <small class="text-muted d-block">متوفى؟</small>
-                        <strong>@(g.IsDeceased == true ? "نعم" : "لا")</strong>
+                        <small style="color:var(--muted);font-size:.78rem">متوفى؟</small>
+                        <div style="font-weight:700;font-size:.9rem">@(g.IsDeceased == true ? "نعم" : "لا")</div>
                     </div>
                 </div>
             }
@@ -91,17 +95,17 @@
     </div>
 }
 
-@* بيانات التسكين *@
-<div class="card mb-4 shadow-sm">
-    <div class="card-header bg-primary text-white fw-bold">
-        <i class="bi bi-house me-2"></i> بيانات التسكين
+@* Allocation Data *@
+<div class="card-site mb-4">
+    <div class="card-site-header">
+        <i class="bi bi-house" style="color:var(--red)"></i>
+        بيانات التسكين
     </div>
-    <div class="card-body">
+    <div class="card-site-body">
         @if (ViewBag.Allocation == null)
         {
-            <div class="alert alert-info mb-0">
-                <i class="bi bi-info-circle me-2"></i>
-                لم يتم تسكينك بعد. انتظر الإخطار من إدارة المدينة الجامعية.
+            <div class="alert-site alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i> لم يتم تسكينك بعد. انتظر الإخطار من إدارة المدينة الجامعية.
             </div>
         }
         else
@@ -109,83 +113,73 @@
             var alloc = ViewBag.Allocation as UniStay.Models.Allocation;
             <div class="row g-3">
                 <div class="col-md-4">
-                    <small class="text-muted d-block">المدينة الجامعية</small>
-                    <strong>@alloc?.CityRoom?.CityBuilding?.DormitoryCity?.Name</strong>
+                    <small style="color:var(--muted);font-size:.78rem">المدينة الجامعية</small>
+                    <div style="font-weight:700;font-size:.95rem">@alloc?.CityRoom?.CityBuilding?.DormitoryCity?.Name</div>
                 </div>
                 <div class="col-md-4">
-                    <small class="text-muted d-block">المبنى</small>
-                    <strong>@alloc?.CityRoom?.CityBuilding?.BuildingName</strong>
+                    <small style="color:var(--muted);font-size:.78rem">المبنى</small>
+                    <div style="font-weight:700;font-size:.95rem">@alloc?.CityRoom?.CityBuilding?.BuildingName</div>
                 </div>
                 <div class="col-md-4">
-                    <small class="text-muted d-block">رقم الغرفة</small>
-                    <strong>@alloc?.CityRoom?.RoomNumber</strong>
+                    <small style="color:var(--muted);font-size:.78rem">رقم الغرفة</small>
+                    <div style="font-weight:700;font-size:.95rem">@alloc?.CityRoom?.RoomNumber</div>
                 </div>
                 <div class="col-md-4">
-                    <small class="text-muted d-block">تاريخ التسكين</small>
-                    <strong>@(alloc?.AllocatedAt.HasValue == true ? alloc.AllocatedAt.Value.ToString("dd/MM/yyyy") : "—")</strong>
+                    <small style="color:var(--muted);font-size:.78rem">تاريخ التسكين</small>
+                    <div style="font-weight:700;font-size:.95rem">@(alloc?.AllocatedAt.HasValue == true ? alloc.AllocatedAt.Value.ToString("dd/MM/yyyy") : "—")</div>
                 </div>
                 <div class="col-md-4">
-                    <small class="text-muted d-block">الحالة</small>
-                    <span class="badge bg-success fs-6">@alloc?.Status</span>
+                    <small style="color:var(--muted);font-size:.78rem">الحالة</small>
+                    <div><span class="badge" style="background:var(--success-dim);color:var(--success);border:1px solid rgba(16,185,129,.3)">@alloc?.Status</span></div>
                 </div>
             </div>
         }
     </div>
 </div>
 
-@* سجل الغيابات *@
-<div class="card mb-4 shadow-sm">
-    <div class="card-header bg-warning text-dark fw-bold">
-        <i class="bi bi-clock-history me-2"></i> سجل طلبات الغياب (آخر 10)
+@* Absence Records *@
+<div class="card-site mb-4">
+    <div class="card-site-header">
+        <i class="bi bi-clock-history" style="color:var(--warn)"></i>
+        سجل طلبات الغياب (آخر 10)
     </div>
-    <div class="card-body p-0">
+    <div class="card-site-body p-0">
         @{
             var absencesList = ViewBag.Absences as List<UniStay.Models.Absence> ?? new();
         }
         @if (!absencesList.Any())
         {
-            <div class="p-3 text-muted">
+            <div class="p-3" style="color:var(--muted);font-size:.88rem">
                 <i class="bi bi-info-circle me-2"></i> لا توجد طلبات غياب مسجلة.
             </div>
         }
         else
         {
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
+                <table class="table mb-0" style="color:var(--text)">
+                    <thead style="background:var(--black-3);color:var(--muted);font-size:.78rem">
                         <tr>
-                            <th>#</th>
-                            <th>النوع</th>
-                            <th>من</th>
-                            <th>إلى</th>
-                            <th>الحالة</th>
-                            <th>تاريخ الطلب</th>
+                            <th class="px-3 py-2">#</th>
+                            <th class="px-3 py-2">النوع</th>
+                            <th class="px-3 py-2">من</th>
+                            <th class="px-3 py-2">إلى</th>
+                            <th class="px-3 py-2">الحالة</th>
+                            <th class="px-3 py-2">تاريخ الطلب</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var ab in absencesList)
                         {
-                            var badgeColor = ab.Status switch
-                            {
-                                "Approved" => "success",
-                                "Rejected" => "danger",
-                                "Pending"  => "warning text-dark",
-                                _          => "secondary"
-                            };
-                            var statusText = ab.Status switch
-                            {
-                                "Approved" => "موافق عليه",
-                                "Rejected" => "مرفوض",
-                                "Pending"  => "قيد المراجعة",
-                                _          => ab.Status
-                            };
+                            var badgeColor = ab.Status switch { "Approved" => "var(--success)", "Rejected" => "#ef4444", "Pending" => "var(--warn)", _ => "var(--muted)" };
+                            var badgeBg = ab.Status switch { "Approved" => "var(--success-dim)", "Rejected" => "rgba(239,68,68,.12)", "Pending" => "var(--warn-dim)", _ => "transparent" };
+                            var statusText = ab.Status switch { "Approved" => "موافق عليه", "Rejected" => "مرفوض", "Pending" => "قيد المراجعة", _ => ab.Status };
                             <tr>
-                                <td>@ab.ID</td>
-                                <td>@ab.AbsenceType</td>
-                                @ab.AbsenceDate.ToString("dd/MM/yyyy")
-                                <td>@(ab.ToDate.HasValue ? ab.ToDate.Value.ToString("dd/MM/yyyy") : "—")</td>
-                                <td><span class="badge bg-@badgeColor">@statusText</span></td>
-                                <td>@(ab.CreatedAt.HasValue ? ab.CreatedAt.Value.ToString("dd/MM/yyyy") : "—")</td>
+                                <td class="px-3 py-2" style="font-size:.85rem">@ab.ID</td>
+                                <td class="px-3 py-2" style="font-size:.85rem">@ab.AbsenceType</td>
+                                <td class="px-3 py-2" style="font-size:.85rem">@ab.AbsenceDate.ToString("dd/MM/yyyy")</td>
+                                <td class="px-3 py-2" style="font-size:.85rem">@(ab.ToDate.HasValue ? ab.ToDate.Value.ToString("dd/MM/yyyy") : "—")</td>
+                                <td class="px-3 py-2"><span class="badge" style="background:@badgeBg;color:@badgeColor;border:1px solid">@statusText</span></td>
+                                <td class="px-3 py-2" style="font-size:.85rem">@(ab.CreatedAt.HasValue ? ab.CreatedAt.Value.ToString("dd/MM/yyyy") : "—")</td>
                             </tr>
                         }
                     </tbody>

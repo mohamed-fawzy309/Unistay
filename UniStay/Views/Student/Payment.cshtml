@@ -7,68 +7,76 @@
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h3 class="mb-0"><i class="bi bi-credit-card text-danger me-2"></i> إتمام الدفع</h3>
+    <h4 class="mb-0" style="font-weight:800">
+        <i class="bi bi-credit-card me-2" style="color:var(--red)"></i> إتمام الدفع
+    </h4>
 </div>
 
 <div class="row g-4">
     <div class="col-md-7">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-danger text-white">
-                <i class="bi bi-clock me-2"></i> المهلة المتبقية
+        @* Countdown Card *@
+        <div class="card-site mb-3">
+            <div class="card-site-header">
+                <i class="bi bi-clock" style="color:var(--red)"></i>
+                المهلة المتبقية
             </div>
-            <div class="card-body text-center py-4">
-                <div id="countdown" class="display-4 fw-bold text-danger mb-2" style="font-family:monospace;direction:ltr">
+            <div class="card-site-body text-center py-4">
+                <div style="font-size:2.8rem;font-weight:900;font-family:monospace;direction:ltr;color:var(--red)" id="countdown">
                     <span id="hours">00</span>:<span id="minutes">00</span>:<span id="seconds">00</span>
                 </div>
-                <p class="text-muted mb-0">متبقي من الـ 24 ساعة لإتمام الدفع</p>
-                <div class="progress mt-3" style="height:6px">
-                    <div id="progressBar" class="progress-bar bg-danger" role="progressbar" style="width:100%"></div>
+                <p style="color:var(--muted);font-size:.85rem;margin-top:.3rem">متبقي من الـ 24 ساعة لإتمام الدفع</p>
+                <div class="progress mt-3" style="height:6px;background:var(--border);border-radius:3px">
+                    <div id="progressBar" class="progress-bar" role="progressbar" style="width:100%;background:var(--red);border-radius:3px"></div>
                 </div>
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mt-3">
-            <div class="card-header bg-primary text-white">
-                <i class="bi bi-receipt me-2"></i> تفاصيل الحجز
+        @* Booking Details *@
+        <div class="card-site">
+            <div class="card-site-header">
+                <i class="bi bi-receipt" style="color:var(--red)"></i>
+                تفاصيل الحجز
             </div>
-            <div class="card-body">
+            <div class="card-site-body">
                 <div class="row mb-2">
-                    <div class="col-6 text-muted">المبنى</div>
-                    <div class="col-6 fw-bold">@Model.CityRoom?.CityBuilding?.BuildingName</div>
+                    <div class="col-6" style="color:var(--muted);font-size:.9rem">المبنى</div>
+                    <div class="col-6 fw-bold" style="font-size:.95rem">@Model.CityRoom?.CityBuilding?.BuildingName</div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-6 text-muted">الغرفة</div>
-                    <div class="col-6 fw-bold">@Model.CityRoom?.RoomNumber</div>
+                    <div class="col-6" style="color:var(--muted);font-size:.9rem">الغرفة</div>
+                    <div class="col-6 fw-bold" style="font-size:.95rem">@Model.CityRoom?.RoomNumber</div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-6 text-muted">رقم السرير</div>
-                    <div class="col-6 fw-bold">@Model.BedNumber</div>
+                    <div class="col-6" style="color:var(--muted);font-size:.9rem">رقم السرير</div>
+                    <div class="col-6 fw-bold" style="font-size:.95rem">@Model.BedNumber</div>
                 </div>
                 <div class="row mb-2">
-                    <div class="col-6 text-muted">الدور</div>
-                    <div class="col-6 fw-bold">@Model.CityRoom?.FloorNumber</div>
+                    <div class="col-6" style="color:var(--muted);font-size:.9rem">الدور</div>
+                    <div class="col-6 fw-bold" style="font-size:.95rem">@Model.CityRoom?.FloorNumber</div>
                 </div>
-                <hr>
+                <hr style="border-color:var(--border);margin:1rem 0">
                 <div class="row">
-                    <div class="col-6 text-muted fs-5">المبلغ المطلوب</div>
-                    <div class="col-6 fw-bold fs-5 text-danger">@(amount.ToString("N2")) ج.م</div>
+                    <div class="col-6" style="font-size:1.1rem;color:var(--muted)">المبلغ المطلوب</div>
+                    <div class="col-6 fw-bold" style="font-size:1.2rem;color:var(--red)">@(amount.ToString("N2")) ج.م</div>
                 </div>
             </div>
         </div>
     </div>
 
+    @* Payment Simulation *@
     <div class="col-md-5">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-success text-white">
-                <i class="bi bi-credit-card-2-front me-2"></i> محاكاة الدفع
+        <div class="card-site">
+            <div class="card-site-header">
+                <i class="bi bi-credit-card-2-front" style="color:var(--success)"></i>
+                محاكاة الدفع
             </div>
-            <div class="card-body text-center py-4">
-                <div class="mb-4">
-                    <i class="bi bi-credit-card" style="font-size:4rem;color:#6c757d"></i>
+            <div class="card-site-body text-center py-4">
+                <div style="font-size:3.5rem;margin-bottom:.8rem;color:var(--muted)">
+                    <i class="bi bi-credit-card"></i>
                 </div>
-                <p class="text-muted mb-3">هذه محاكاة لعملية الدفع. اضغط على الزر لتأكيد الدفع.</p>
+                <p style="color:var(--muted);font-size:.88rem;margin-bottom:1.2rem">هذه محاكاة لعملية الدفع. اضغط على الزر لتأكيد الدفع.</p>
                 @Html.AntiForgeryToken()
-                <button id="btnPay" class="btn btn-success btn-lg w-100">
+                <button id="btnPay" class="btn w-100" style="background:var(--success);color:#fff;border:none;border-radius:10px;padding:.85rem;font-weight:700;font-size:1rem;transition:all .2s">
                     <i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م
                 </button>
                 <div id="paymentResult" class="mt-3"></div>
@@ -81,19 +89,18 @@
     <script>
         (function() {
             var deadlineMs = new Date('@deadline.ToString("o")').getTime();
-            var totalSec = Math.max(0, Math.floor((deadlineMs - Date.now()) / 1000));
+            var totalSec = @ViewBag.RemainingSeconds;
 
             function updateCountdown() {
                 var now = Date.now();
                 var diff = Math.max(0, Math.floor((deadlineMs - now) / 1000));
 
                 if (diff <= 0) {
-                    document.getElementById('countdown').innerHTML = '<span class="text-muted fs-4">انتهت المهلة</span>';
+                    document.getElementById('countdown').innerHTML = '<span style="color:var(--muted);font-size:1.2rem">انتهت المهلة</span>';
                     document.getElementById('btnPay').disabled = true;
                     document.getElementById('btnPay').innerHTML = '<i class="bi bi-x-circle me-2"></i> انتهت المهلة';
                     document.getElementById('progressBar').style.width = '0%';
-                    document.getElementById('progressBar').className = 'progress-bar bg-secondary';
-                    location.reload();
+                    document.getElementById('progressBar').style.background = 'var(--muted)';
                     return;
                 }
 
@@ -105,7 +112,7 @@
                     String(Math.floor(diff % 60)).padStart(2, '0');
 
                 document.getElementById('progressBar').style.width =
-                    (diff / totalSec * 100) + '%';
+                    (diff / (24 * 3600) * 100) + '%';
             }
 
             updateCountdown();
@@ -123,12 +130,9 @@
                 xhr.withCredentials = true;
 
                 xhr.onload = function() {
-                    console.log("Status:", xhr.status);
-                    console.log("Response:", xhr.responseText);
-
                     if (xhr.status !== 200) {
                         document.getElementById('paymentResult').innerHTML =
-                            '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i> السيرفر أرجع خطأ ' + xhr.status + '<br><small>' + xhr.responseText.substring(0, 200) + '</small></div>';
+                            '<div class="alert alert-danger" style="font-size:.85rem"><i class="bi bi-exclamation-circle me-2"></i> خطأ ' + xhr.status + '<br><small>' + xhr.responseText.substring(0, 200) + '</small></div>';
                         btn.disabled = false;
                         btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م';
                         return;
@@ -137,7 +141,7 @@
                     var r;
                     try { r = JSON.parse(xhr.responseText); } catch (e) {
                         document.getElementById('paymentResult').innerHTML =
-                            '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i> خطأ في الاستجابة<br><small>' + xhr.responseText.substring(0, 300) + '</small></div>';
+                            '<div class="alert alert-danger" style="font-size:.85rem"><i class="bi bi-exclamation-circle me-2"></i> خطأ في الاستجابة<br><small>' + xhr.responseText.substring(0, 300) + '</small></div>';
                         btn.disabled = false;
                         btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م';
                         return;
@@ -145,14 +149,14 @@
 
                     if (r.success) {
                         document.getElementById('paymentResult').innerHTML =
-                            '<div class="alert alert-success"><i class="bi bi-check-circle-fill me-2"></i>' + r.message + '</div>';
+                            '<div class="alert alert-success" style="font-size:.9rem"><i class="bi bi-check-circle-fill me-2"></i>' + r.message + '</div>';
                         btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تم الدفع بنجاح';
                         setTimeout(function() { window.location.href = '@Url.Action("Home", "Student")'; }, 2000);
                     } else if (r.expired) {
                         location.reload();
                     } else {
                         document.getElementById('paymentResult').innerHTML =
-                            '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i>' + r.message + '</div>';
+                            '<div class="alert alert-danger" style="font-size:.9rem"><i class="bi bi-exclamation-circle me-2"></i>' + r.message + '</div>';
                         btn.disabled = false;
                         btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م';
                     }
@@ -160,7 +164,7 @@
 
                 xhr.onerror = function() {
                     document.getElementById('paymentResult').innerHTML =
-                        '<div class="alert alert-danger"><i class="bi bi-exclamation-circle me-2"></i> حدث خطأ في الاتصال</div>';
+                        '<div class="alert alert-danger" style="font-size:.9rem"><i class="bi bi-exclamation-circle me-2"></i> حدث خطأ في الاتصال</div>';
                     btn.disabled = false;
                     btn.innerHTML = '<i class="bi bi-check-circle me-2"></i> تأكيد الدفع — @(amount.ToString("N2")) ج.م';
                 };

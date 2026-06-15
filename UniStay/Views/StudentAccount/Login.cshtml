@@ -4,52 +4,80 @@
     Layout = "~/Views/Shared/_LoginLayout.cshtml";
 }
 
-<div class="container">
-    <div class="row justify-content-center align-items-center min-vh-100">
-        <div class="col-lg-5 col-md-7">
-            <div class="card shadow-lg border-0 rounded-4">
-                <div class="card-header bg-success text-white text-center py-4">
-                    <h4 class="mb-0">بوابة الطالب</h4>
-                    <p class="mb-0">نظام UniStay - جامعة أسيوط</p>
+<div class="row justify-content-center">
+    <div class="col-lg-5 col-md-7">
+        <div class="login-card">
+
+            <div class="login-header">
+                <div style="font-size:2.5rem;margin-bottom:.5rem">
+                    <i class="fa-solid fa-user-graduate" style="background:linear-gradient(135deg,#ff6b7a,var(--red));-webkit-background-clip:text;-webkit-text-fill-color:transparent"></i>
                 </div>
-                <div class="card-body p-5">
-                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                    {
-                        <div class="alert alert-danger">@Model.ErrorMessage</div>
-                    }
+                <h4>بوابة الطالب</h4>
+                <p>نظام UniStay — جامعة أسيوط</p>
+            </div>
 
-                    <form asp-action="Login" method="post">
-                        @Html.AntiForgeryToken()
-
-                        <div class="mb-4">
-                            <label asp-for="NationalID" class="form-label fw-bold"></label>
-                            <input asp-for="NationalID" class="form-control form-control-lg" placeholder="الرقم القومي (14 رقم)" />
-                            <span asp-validation-for="NationalID" class="text-danger"></span>
-                        </div>
-
-                        <div class="mb-4">
-                            <label asp-for="Password" class="form-label fw-bold"></label>
-                            <input asp-for="Password" type="password" class="form-control form-control-lg" />
-                            <span asp-validation-for="Password" class="text-danger"></span>
-                        </div>
-
-                        <div class="d-flex justify-content-between mb-4">
-                            <div class="form-check">
-                                <input asp-for="RememberMe" class="form-check-input" type="checkbox">
-                                <label asp-for="RememberMe" class="form-check-label">تذكرني</label>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="btn btn-success btn-lg w-100">دخول إلى بوابة الطالب</button>
-                    </form>
-
-                    <div class="text-center mt-4">
-                        <a asp-action="Register" class="text-decoration-none">
-                            ليس لديك حساب؟ إنشاء حساب جديد
-                        </a>
+            <div class="login-body">
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="alert alert-danger">
+                        <i class="fa-solid fa-circle-exclamation me-1"></i>
+                        @Model.ErrorMessage
                     </div>
+                }
+
+                <form asp-action="Login" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-4">
+                        <label asp-for="NationalID" class="form-label">
+                            <i class="fa-regular fa-id-card me-1"></i>
+                            الرقم القومي
+                        </label>
+                        <input asp-for="NationalID" class="form-control" placeholder="الرقم القومي (14 رقم)" maxlength="14"
+                               oninput="this.value=this.value.replace(/\D/g,'')" />
+                        <span asp-validation-for="NationalID" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Password" class="form-label">
+                            <i class="fa-solid fa-lock me-1"></i>
+                            كلمة المرور
+                        </label>
+                        <input asp-for="Password" type="password" class="form-control" placeholder="أدخل كلمة المرور" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input asp-for="RememberMe" class="form-check-input" type="checkbox">
+                            <label asp-for="RememberMe" class="form-check-label">تذكرني</label>
+                        </div>
+                        <small style="color:var(--muted);font-size:.8rem">
+                            <i class="fa-regular fa-clock me-1"></i>
+                            جلسة آمنة
+                        </small>
+                    </div>
+
+                    <button type="submit" class="btn-login">
+                        <i class="fa-solid fa-arrow-left-to-bracket me-1"></i>
+                        دخول إلى بوابة الطالب
+                    </button>
+                </form>
+            </div>
+
+            <div class="login-footer">
+                <div class="d-flex justify-content-center gap-4 flex-wrap">
+                    <a href="/Application/Apply">
+                        <i class="fa-solid fa-user-plus me-1"></i>
+                        تقديم طلب سكن جديد
+                    </a>
+                    <a href="/">
+                        <i class="fa-solid fa-house me-1"></i>
+                        العودة للرئيسية
+                    </a>
                 </div>
             </div>
+
         </div>
     </div>
 </div>

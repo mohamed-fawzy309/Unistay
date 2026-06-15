@@ -319,6 +319,7 @@ namespace UniStay.Controllers
                 .FirstOrDefaultAsync(p => p.AllocationID == alloc.ID && p.Status == "Pending");
 
             var deadline = alloc.AllocatedAt?.AddHours(24) ?? DateTime.UtcNow.AddHours(24);
+            deadline = DateTime.SpecifyKind(deadline, DateTimeKind.Utc);
             var isExpired = DateTime.UtcNow > deadline;
 
             if (isExpired)
@@ -331,6 +332,10 @@ namespace UniStay.Controllers
             ViewBag.Deadline = deadline;
             ViewBag.RemainingSeconds = (int)(deadline - DateTime.UtcNow).TotalSeconds;
             ViewBag.Amount = payment?.Amount ?? 1000;
+            Console.WriteLine($"AllocatedAt = {alloc.AllocatedAt}");
+            Console.WriteLine($"UtcNow      = {DateTime.UtcNow}");
+            Console.WriteLine($"Now         = {DateTime.Now}");
+            Console.WriteLine($"Deadline    = {deadline}");
             return View(alloc);
         }
 
@@ -348,7 +353,9 @@ namespace UniStay.Controllers
             if (alloc == null)
                 return Json(new { success = false, message = "لا يوجد حجز مؤقت" });
 
-            var deadline = alloc.AllocatedAt?.AddHours(24) ?? DateTime.UtcNow;
+            var deadline = alloc.AllocatedAt.HasValue
+                ? new DateTime(alloc.AllocatedAt.Value.Ticks + TimeSpan.TicksPerHour * 24, DateTimeKind.Utc)
+                : DateTime.UtcNow;
             if (DateTime.UtcNow > deadline)
             {
                 await CancelReservationInternal(alloc, null);
@@ -555,6 +562,72 @@ namespace UniStay.Controllers
             ViewBag.TotalPaid = totalPaid;
 
             return View(violations);
+        }
+
+        // GET: /Student/Meals
+        [HttpGet]
+        public async Task<IActionResult> Meals()
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
+
+            var alloc = await _context.Allocations
+                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
+                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
+            if (alloc == null) return RedirectToAction("Home");
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var meals = await _context.Meals
+                .Where(m => m.StudentID == studentId && m.MealDate >= today && m.MealDate <= today.AddDays(6))
+                .OrderBy(m => m.MealDate).ThenBy(m => m.MealType)
+                .ToListAsync();
+
+            return View(meals);
+        }
+
+        // POST: /Student/ToggleMealBooking
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleMealBooking(int mealId)
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null) return Json(new { success = false, message = "غير مصرح" });
+
+            var meal = await _context.Meals
+                .FirstOrDefaultAsync(m => m.ID == mealId && m.StudentID == studentId);
+            if (meal == null)
+                return Json(new { success = false, message = "الوجبة غير موجودة" });
+
+            if (meal.MealDate <= DateOnly.FromDateTime(DateTime.UtcNow))
+                return Json(new { success = false, message = "لا يمكن تعديل حجز وجبة ماضية" });
+
+            meal.IsBooked = !(meal.IsBooked ?? true);
+            meal.IsActive = meal.IsBooked;
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, booked = meal.IsBooked });
+        }
+
+        // GET: /Student/AnnouncementsList
+        [HttpGet]
+        public async Task<IActionResult> AnnouncementsList()
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
+
+            var announcements = await _context.Announcements
+                .Where(a => a.IsPublished == true && (!a.ExpiresAt.HasValue || a.ExpiresAt > DateTime.UtcNow))
+                .OrderByDescending(a => a.PublishedAt)
+                .ToListAsync();
+
+            var absences = await _context.Absences
+                .Where(a => a.StudentID == studentId)
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(10)
+                .ToListAsync();
+
+            ViewBag.Absences = absences;
+            return View(announcements);
         }
 
         private async Task EnsureMonthlyFees(Allocation alloc)

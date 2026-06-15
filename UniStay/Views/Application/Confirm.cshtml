@@ -6,20 +6,31 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-lg-6">
-            <div class="card shadow text-center p-5">
-                <h1 class="text-success display-1 mb-4">✓</h1>
-                <h3>تم استلام طلبك بنجاح</h3>
-                <h4 class="text-muted mt-3">رقم الطلب: <strong>@ViewBag.ApplicationNumber</strong></h4>
+            <div class="card shadow text-center p-5" style="border-radius:18px;border-top:5px solid #10b981">
+                <div style="font-size:4rem;color:#10b981;margin-bottom:1rem">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 style="font-weight:800;color:#1e293b">تم استلام طلبك بنجاح</h3>
 
-                <div class="alert alert-info mt-4">
-                    <strong>اسم المستخدم:</strong> @ViewBag.NationalID<br>
+                <div class="alert alert-info mt-4 text-start" style="border-radius:12px;background:#f0f9ff;border:1px solid #bae6fd;color:#0369a1">
+                    <strong style="display:block;font-size:.9rem">اسم المستخدم:</strong>
+                    <span style="font-size:1.1rem;font-weight:700;letter-spacing:.05em">@ViewBag.NationalID</span>
+                    <hr style="margin:.5rem 0;opacity:.3">
                     <small>استخدم هذا الرقم القومي لتسجيل الدخول</small>
                 </div>
 
-                <p class="lead">تم إرسال رسالة تأكيد إلى بريدك الإلكتروني.</p>
-                <p>ستتلقى إشعاراً عندما تتم مراجعة طلبك.</p>
+                <p style="color:#64748b">تم إرسال رسالة تأكيد إلى بريدك الإلكتروني.<br>ستتلقى إشعاراً عندما تتم مراجعة طلبك.</p>
 
-                <a href="/" class="btn btn-primary mt-4">العودة للصفحة الرئيسية</a>
+                <div class="d-flex gap-3 justify-content-center mt-4 flex-wrap">
+                    <a href="/StudentAccount/Login" class="btn btn-primary px-4 py-2" style="border-radius:10px;font-weight:700">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> تسجيل الدخول
+                    </a>
+                    <a href="/" class="btn btn-outline-secondary px-4 py-2" style="border-radius:10px;font-weight:600">
+                        <i class="bi bi-house me-1"></i> العودة للرئيسية
+                    </a>
+                </div>
             </div>
         </div>
     </div>

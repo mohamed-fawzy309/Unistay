@@ -50,6 +50,18 @@ namespace UniStay.Controllers
                 return View(model);
             }
 
+            // التحقق من عدم استخدام البريد الإلكتروني من قبل طالب آخر
+            var emailExists = await _context.Students
+                .AnyAsync(s => s.Email == model.Email && s.NationalID != model.NationalID && s.IsDeleted != true);
+            if (emailExists)
+            {
+                ModelState.AddModelError("Email", "البريد الإلكتروني مستخدم بالفعل من قبل طالب آخر");
+                return View(model);
+            }
+
+            // حساب المسافة من الجامعة تلقائياً بناءً على المحافظة
+            model.DistanceFromUniv = CalculateDistance(model.Governorate, model.City);
+
             // 1. إنشاء أو تحديث Student
             var student = await _context.Students
                 .FirstOrDefaultAsync(s => s.NationalID == model.NationalID);
@@ -240,5 +252,22 @@ namespace UniStay.Controllers
 
             return View("TrackStatusResult", app);
         }
+        private decimal? CalculateDistance(string governorate, string city)
+        {
+            var distances = new Dictionary<string, decimal>
+            {
+                { "Assuit", 0m },        { "Cairo", 375m },       { "Giza", 350m },
+                { "Alexandria", 580m },   { "Qena", 190m },       { "Luxor", 230m },
+                { "Aswan", 320m },        { "Sohag", 100m },      { "RedSea", 450m },
+                { "NewValley", 700m },    { "Matrouh", 800m },    { "Fayoum", 250m },
+                { "Minya", 150m },        { "BeniSuef", 200m },   { "Sharqia", 500m },
+                { "Dakahlia", 550m },     { "Damietta", 600m },   { "KafrElSheikh", 520m },
+                { "Gharbia", 480m },      { "Monufia", 460m },    { "Beheira", 500m },
+                { "Ismailia", 420m },     { "PortSaid", 560m },   { "Suez", 400m },
+                { "NorthSinai", 550m },   { "SouthSinai", 600m }
+            };
+            return distances.TryGetValue(governorate, out var dist) ? dist : null;
+        }
+
     }
 }
