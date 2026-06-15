@@ -1,526 +1,728 @@
 ﻿@model UniStay.ViewModels.Application.ApplicationViewModel
 @{
-    ViewData["Title"] = "تقديم طلب سكن جامعي";
-    Layout = "~/Views/Shared/_LoginLayout.cshtml"; // نستخدم لياوت بسيط أو مخصص للفرم
+    ViewData["Title"] = "تقديم طلب سكن جامعي - UniStay";
+    Layout = null;
 }
 
-<!-- استدعاء مكتبة Flatpickr للتاريخ -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/material_blue.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://npmcdn.com/flatpickr/dist/l10n/ar.js"></script>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>تقديم طلب سكن جامعي — UniStay</title>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
+    <style>
+        :root {
+            --red: #e63946; --red-dark: #b52530; --red-dim: rgba(230,57,70,.15);
+            --black: #080b10; --black-2: #0f1319; --black-3: #161c26; --black-4: #1e2736;
+            --border: #1e2736; --text: #e8eaf0; --muted: #6b7a99;
+            --success: #10b981; --success-dim: rgba(16,185,129,.15);
+            --warn: #f59e0b; --danger: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--black); color: var(--text); overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--black); }
+        ::-webkit-scrollbar-thumb { background: var(--red-dark); border-radius: 3px; }
 
-<style>
-    body {
-        background-color: #f4f6f9;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+        .navbar {
+            background: rgba(8,11,16,.85); backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(230,57,70,.12);
+            padding: .9rem 0; position: fixed; top: 0; width: 100%; z-index: 1000;
+        }
+        .navbar-brand {
+            font-size: 1.5rem; font-weight: 900;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            text-decoration: none;
+        }
+        .nav-link { color: var(--muted) !important; font-weight: 500; font-size: .9rem; transition: color .2s; padding: .4rem .9rem !important; text-decoration: none; }
+        .nav-link:hover { color: #fff !important; }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: transparent; border: 1px solid var(--border);
+            color: var(--muted); border-radius: 10px;
+            padding: .6rem 1.4rem; font-family: 'Tajawal', sans-serif;
+            font-size: .9rem; font-weight: 600; text-decoration: none;
+            transition: all .25s;
+        }
+        .btn-back:hover { border-color: var(--red); color: var(--red); }
 
-    .apply-container {
-        max-width: 1200px;
-        margin: 30px auto;
-    }
+        .page-header { padding: 7rem 0 2rem; text-align: center; position: relative; }
+        .page-header::before {
+            content: ''; position: absolute; inset: 0;
+            background-image: linear-gradient(rgba(230,57,70,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(230,57,70,.05) 1px, transparent 1px);
+            background-size: 55px 55px;
+        }
+        .page-header-content { position: relative; z-index: 2; }
+        .page-title { font-size: 2.2rem; font-weight: 900; margin-bottom: .5rem; }
+        .page-title span { background: linear-gradient(135deg,#ff6b7a,var(--red)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .page-sub { color: var(--muted); font-size: 1rem; max-width: 600px; margin: 0 auto; line-height: 1.8; }
 
-    /* Sidebar Styling */
-    .steps-sidebar {
-        position: sticky;
-        top: 20px;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        padding: 20px;
-        height: fit-content;
-    }
+        .section { padding: 2rem 0 4rem; }
 
-    .step-item {
-        padding: 10px 15px;
-        margin-bottom: 5px;
-        border-radius: 6px;
-        color: #6c757d;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-        .step-item:hover {
-            background-color: #f8f9fa;
+        .form-card {
+            background: var(--black-2); border: 1px solid var(--border);
+            border-radius: 18px; padding: 2rem; margin-bottom: 1.5rem;
+            transition: border-color .3s;
+        }
+        .form-card:hover { border-color: rgba(230,57,70,.2); }
+        .form-card-header {
+            display: flex; align-items: center; gap: .75rem;
+            font-size: 1.1rem; font-weight: 800; margin-bottom: 1.5rem;
+            padding-bottom: .75rem; border-bottom: 1px solid var(--border);
+        }
+        .form-card-header i { color: var(--red); font-size: 1.2rem; width: 1.5rem; text-align: center; }
+        .step-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px; border-radius: 50%;
+            background: var(--red-dim); border: 1px solid rgba(230,57,70,.3);
+            color: var(--red); font-size: .8rem; font-weight: 800;
+            margin-left: .5rem;
         }
 
-        .step-item.active {
-            background-color: #0d6efd;
-            color: white;
+        .field-label {
+            display: block; font-size: .82rem; font-weight: 700;
+            color: var(--muted); margin-bottom: .4rem;
+        }
+        .field-label .required { color: var(--red); margin-right: .1rem; }
+        .field-label .hint { font-weight: 400; font-size: .75rem; color: var(--muted); margin-right: .3rem; }
+
+        .form-control, .form-select {
+            background: var(--black-3); border: 1.5px solid var(--border);
+            border-radius: 10px; color: var(--text);
+            font-family: 'Tajawal', sans-serif; font-size: .95rem;
+            padding: .75rem 1rem; transition: border-color .25s, box-shadow .25s;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: rgba(230,57,70,.55); box-shadow: 0 0 0 3px var(--red-dim);
+            background: var(--black-3); color: var(--text);
+        }
+        .form-control::placeholder { color: #4a5568; font-size: .85rem; }
+        .form-select option { background: var(--black-3); color: var(--text); }
+        .form-control.is-invalid, .form-select.is-invalid {
+            border-color: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,.12);
+        }
+        .text-danger { color: var(--danger) !important; font-size: .8rem; margin-top: .2rem; display: block; }
+        .text-muted-small { color: var(--muted); font-size: .75rem; margin-top: .2rem; display: block; }
+
+        .instructions-box {
+            background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.2);
+            border-radius: 12px; padding: 1rem 1.25rem;
+            display: flex; align-items: flex-start; gap: .75rem;
+            margin-bottom: 1.5rem;
+        }
+        .instructions-box i { color: var(--success); font-size: 1.1rem; margin-top: .1rem; }
+        .instructions-box p { color: var(--success); font-size: .85rem; line-height: 1.7; margin: 0; }
+
+        .alert-validation {
+            background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25);
+            border-radius: 12px; padding: .9rem 1.1rem;
+            display: flex; align-items: flex-start; gap: .7rem; margin-bottom: 1.5rem;
+        }
+        .alert-validation i { color: var(--danger); font-size: 1rem; margin-top: .1rem; }
+        .alert-validation ul { color: var(--danger); font-size: .85rem; margin: 0; padding-right: 1.2rem; }
+        .alert-validation li { margin-bottom: .2rem; }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--red), var(--red-dark));
+            border: none; color: #fff; border-radius: 12px;
+            padding: 1rem 2.5rem; font-family: 'Tajawal', sans-serif;
+            font-size: 1.05rem; font-weight: 700; cursor: pointer;
+            display: inline-flex; align-items: center; gap: .7rem;
+            position: relative; overflow: hidden;
+            transition: transform .2s, box-shadow .2s;
+        }
+        .btn-submit::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
+            transition: left .5s;
+        }
+        .btn-submit:hover::before { left: 150%; }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(230,57,70,.4); color: #fff; }
+        .btn-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .form-check-input { background: var(--black-3); border: 1.5px solid var(--border); cursor: pointer; }
+        .form-check-input:checked { background: var(--red); border-color: var(--red); }
+        .form-check-label { color: var(--text); font-size: .9rem; }
+
+        .declaration-box {
+            background: var(--black-3); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1rem 1.25rem;
         }
 
-        .step-item.completed {
-            color: #198754;
+        .tab-btn-group { display: flex; gap: 0; margin-bottom: 1.5rem; }
+        .tab-btn {
+            flex: 1; padding: .7rem 1rem;
+            background: var(--black-3); border: 1.5px solid var(--border);
+            color: var(--muted); font-family: 'Tajawal', sans-serif;
+            font-size: .9rem; font-weight: 600; cursor: pointer;
+            transition: all .25s; text-align: center;
         }
+        .tab-btn:first-child { border-radius: 0 10px 10px 0; }
+        .tab-btn:last-child { border-radius: 10px 0 0 10px; }
+        .tab-btn.active { background: var(--red-dim); border-color: rgba(230,57,70,.4); color: var(--red); }
+        .tab-btn:hover:not(.active) { background: var(--black-4); }
 
-    /* Form Styling */
-    .form-card {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        padding: 30px;
-        margin-bottom: 20px;
-        border-top: 4px solid #0d6efd;
-    }
-
-    .section-title {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #2c3e50;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #eee;
-        display: flex;
-        align-items: center;
-    }
-
-        .section-title i {
-            margin-left: 10px;
-            color: #0d6efd;
+        footer {
+            background: var(--black-2); border-top: 1px solid var(--border);
+            padding: 2rem 0; text-align: center;
         }
+        .footer-brand {
+            font-size: 1.1rem; font-weight: 900;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: .4rem;
+        }
+        .footer-text { color: var(--muted); font-size: .82rem; }
+        .footer-text span { color: var(--red); }
 
-    .form-label {
-        font-weight: 600;
-        font-size: 0.9rem;
-        color: #495057;
-    }
+        @@media (max-width: 768px) {
+            .page-title { font-size: 1.6rem; }
+            .form-card { padding: 1.25rem; }
+        }
+    </style>
+</head>
+<body>
 
-    .required-field::after {
-        content: " *";
-        color: red;
-    }
-
-    .hidden-section {
-        display: none;
-        animation: fadeIn 0.5s;
-    }
-    @@keyframes fadeIn {
-        from
-
-    {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-
-    }
-
-    .alert-custom {
-        background-color: #fff3cd;
-        border-right: 5px solid #ffc107;
-        color: #856404;
-        padding: 15px;
-        border-radius: 4px;
-        margin-bottom: 20px;
-        font-size: 0.9rem;
-    }
-</style>
-
-<div class="container apply-container">
-    <div class="row">
-        <!-- Sidebar Steps -->
-        <div class="col-lg-3 d-none d-lg-block">
-            <div class="steps-sidebar">
-                <h5 class="mb-4 text-primary">خطوات التقديم</h5>
-                <div class="step-item active" onclick="scrollToSection('studentData')">1. البيانات الشخصية</div>
-                <div class="step-item" onclick="scrollToSection('academicData')">2. البيانات الدراسية</div>
-                <div class="step-item" onclick="scrollToSection('guardianData')">3. بيانات ولي الأمر</div>
-                <div class="step-item" onclick="scrollToSection('housingData')">4. نوع السكن والطلبات</div>
-                <div class="step-item" onclick="scrollToSection('accountData')">5. إنشاء الحساب</div>
-
-                <hr class="my-4">
-                <div class="alert alert-sm alert-info">
-                    <small>⚠️ تأكد من صحة البيانات قبل الإرسال، حيث سيتم استخدامها في التنسيق.</small>
-                </div>
+    <nav class="navbar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-sm btn-outline-secondary" onclick="history.back()" title="رجوع" style="border-color:var(--border);color:var(--muted)">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <a href="/" class="nav-link"><i class="fa-solid fa-house" style="margin-left:.3rem"></i>الرئيسية</a>
             </div>
+            <a class="navbar-brand" href="/"><img src="~/images/Unistay_logo.png" alt="UniStay" style="height:45px"></a>
         </div>
+    </nav>
 
-        <!-- Main Form -->
-        <div class="col-lg-9">
-            <form asp-action="Apply" method="post" id="applicationForm">
+    <section class="page-header">
+        <div class="container page-header-content">
+            <h1 class="page-title">تقديم طلب <span>السكن الجامعي</span></h1>
+            <p class="page-sub">املأ البيانات التالية بعناية. جميع الحقول ذات العلامة <span style="color:var(--red)">*</span> إلزامية.</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+
+            <form asp-action="Apply" method="post" id="applicationForm" novalidate>
                 @Html.AntiForgeryToken()
 
-                <!-- Tabs for New/Returning -->
-                <div class="card mb-4 border-0 shadow-sm">
-                    <div class="card-body p-2 bg-light rounded">
-                        <div class="btn-group w-100" role="group">
-                            <input type="radio" class="btn-check" name="IsReturningStudent" id="tabNew" value="false" checked onchange="toggleStudentType(false)">
-                            <label class="btn btn-outline-primary" for="tabNew">طالب جديد (أول مرة)</label>
-
-                            <input type="radio" class="btn-check" name="IsReturningStudent" id="tabReturning" value="true" onchange="toggleStudentType(true)">
-                            <label class="btn btn-outline-primary" for="tabReturning">طالب مستمر (تجديد)</label>
+                @* Validation Summary *@
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    var errors = ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                    if (errors.Any())
+                    {
+                        <div class="alert-validation">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <div>
+                                <strong style="color:var(--danger);font-size:.9rem">يُرجى تصحيح الأخطاء التالية:</strong>
+                                <ul>
+                                    @foreach (var err in errors)
+                                    {
+                                        <li>@err</li>
+                                    }
+                                </ul>
+                            </div>
                         </div>
+                    }
+                }
+
+                @* Student Type Tabs *@
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="step-badge">1</span>
+                        نوع التقديم
+                    </div>
+                    <div class="instructions-box">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <p>اختر "طالب جديد" إذا كنت تتقدم لأول مرة، أو "طالب مستمر" إذا كنت مسجلاً في الأعوام السابقة وتريد تجديد السكن.</p>
+                    </div>
+                    <div class="tab-btn-group">
+                        <input type="radio" name="IsReturningStudent" id="tabNew" value="false" checked hidden>
+                        <input type="radio" name="IsReturningStudent" id="tabReturning" value="true" hidden>
+                        <label class="tab-btn active" id="tabNewLabel" for="tabNew" onclick="toggleStudentType(false)">
+                            <i class="fa-solid fa-user-plus me-1"></i> طالب جديد
+                        </label>
+                        <label class="tab-btn" id="tabReturningLabel" for="tabReturning" onclick="toggleStudentType(true)">
+                            <i class="fa-solid fa-rotate me-1"></i> طالب مستمر
+                        </label>
                     </div>
                 </div>
 
-                <!-- Section 1: Student Data -->
-                <div id="studentData" class="form-card">
-                    <div class="section-title"><i class="bi bi-person-badge"></i> البيانات الشخصية للطالب</div>
-
+                @* Section 1: Personal Data *@
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="step-badge">2</span>
+                        <i class="fa-solid fa-user"></i>
+                        البيانات الشخصية
+                    </div>
+                    <div class="instructions-box">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <p>تأكد من كتابة الاسم الرباعي كما هو في الوثائق الرسمية. الرقم القومي يجب أن يكون 14 رقماً بالضبط.</p>
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label asp-for="NationalID" class="form-label required-field"></label>
-                            <input asp-for="NationalID" class="form-control" placeholder="14 رقم" maxlength="14" oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+                            <label asp-for="NationalID" class="field-label">
+                                الرقم القومي <span class="required">*</span>
+                                <span class="hint">— 14 رقم</span>
+                            </label>
+                            <input asp-for="NationalID" class="form-control" placeholder="مثال: 29801011234567" maxlength="14" oninput="this.value=this.value.replace(/\D/g,'')" />
                             <span asp-validation-for="NationalID" class="text-danger"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="FullName" class="form-label required-field"></label>
-                            <input asp-for="FullName" class="form-control" />
+                            <label asp-for="FullName" class="field-label">
+                                الاسم الرباعي <span class="required">*</span>
+                            </label>
+                            <input asp-for="FullName" class="form-control" placeholder="الاسم كما في شهادة الميلاد" />
                             <span asp-validation-for="FullName" class="text-danger"></span>
                         </div>
-
                         <div class="col-md-4">
-                            <label asp-for="BirthDate" class="form-label required-field"></label>
-                            <input asp-for="BirthDate" class="form-control flatpickr" placeholder="اختر تاريخ الميلاد" />
-                            <span asp-validation-for="BirthDate" class="text-danger"></span>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">العمر (تلقائي)</label>
-                            <input type="text" id="calculatedAge" class="form-control bg-light" readonly />
-                        </div>
-                        <div class="col-md-4">
-                            <label asp-for="Gender" class="form-label required-field"></label>
+                            <label asp-for="Gender" class="field-label">النوع <span class="required">*</span></label>
                             <select asp-for="Gender" class="form-select">
                                 <option value="">-- اختر --</option>
                                 <option value="Male">ذكر</option>
                                 <option value="Female">أنثى</option>
                             </select>
+                            <span asp-validation-for="Gender" class="text-danger"></span>
                         </div>
-
-                        <div class="col-md-6">
-                            <label asp-for="Religion" class="form-label required-field"></label>
+                        <div class="col-md-4">
+                            <label asp-for="BirthDate" class="field-label">تاريخ الميلاد <span class="required">*</span></label>
+                            <input asp-for="BirthDate" class="form-control" id="birthDate" placeholder="اختر تاريخ الميلاد" />
+                            <span asp-validation-for="BirthDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="field-label">العمر <span class="hint">— يحسب تلقائياً</span></label>
+                            <input type="text" id="calculatedAge" class="form-control" readonly style="background:var(--black-4);color:var(--success)" placeholder="--" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Religion" class="field-label">الديانة <span class="required">*</span></label>
                             <select asp-for="Religion" class="form-select">
                                 <option value="">-- اختر --</option>
                                 <option value="Muslim">مسلم</option>
                                 <option value="Christian">مسيحي</option>
                             </select>
+                            <span asp-validation-for="Religion" class="text-danger"></span>
                         </div>
-                        <div class="col-md-6">
-                            <label asp-for="Nationality" class="form-label required-field"></label>
+                        <div class="col-md-4">
+                            <label asp-for="Nationality" class="field-label">الجنسية <span class="required">*</span></label>
                             <select asp-for="Nationality" class="form-select">
                                 <option value="Egyptian">مصري</option>
                                 <option value="Foreign">وافد</option>
                             </select>
                         </div>
-
+                        <div class="col-md-4">
+                            <label asp-for="Phone" class="field-label">رقم التليفون <span class="required">*</span></label>
+                            <input asp-for="Phone" class="form-control" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/\D/g,'')" />
+                            <span asp-validation-for="Phone" class="text-danger"></span>
+                        </div>
                         <div class="col-md-6">
-                            <label asp-for="Governorate" class="form-label required-field"></label>
+                            <label asp-for="Email" class="field-label">البريد الإلكتروني <span class="required">*</span></label>
+                            <input asp-for="Email" type="email" class="form-control" placeholder="example@domain.com" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Governorate" class="field-label">المحافظة <span class="required">*</span></label>
                             <select asp-for="Governorate" class="form-select" id="governorateSelect">
-                                <option value="">-- المحافظة --</option>
-                                <!-- يمكن ملؤها بـ JS -->
-                                <option value="Cairo">القاهرة</option>
-                                <option value="Giza">الجيزة</option>
-                                <option value="Assuit">أسيوط</option>
-                                <!-- ... باقي المحافظات -->
+                                <option value="">-- اختر المحافظة --</option>
                             </select>
+                            <span asp-validation-for="Governorate" class="text-danger"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="City" class="form-label required-field"></label>
-                            <input asp-for="City" class="form-control" placeholder="المركز / المدينة" />
-                        </div>
-
-                        <div class="col-12">
-                            <label asp-for="Address" class="form-label required-field"></label>
-                            <textarea asp-for="Address" class="form-control" rows="2"></textarea>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label asp-for="Email" class="form-label required-field"></label>
-                            <input asp-for="Email" type="email" class="form-control" />
+                            <label asp-for="City" class="field-label">المركز / المدينة <span class="required">*</span></label>
+                            <select asp-for="City" class="form-select" id="citySelect">
+                                <option value="">-- اختر المركز --</option>
+                            </select>
+                            <span asp-validation-for="City" class="text-danger"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="Phone" class="form-label required-field"></label>
-                            <input asp-for="Phone" class="form-control" placeholder="01xxxxxxxxx" />
+                            <label asp-for="Address" class="field-label">العنوان بالتفصيل <span class="required">*</span></label>
+                            <textarea asp-for="Address" class="form-control" rows="2" placeholder="الشارع، الرقم، المنطقة…"></textarea>
+                            <span asp-validation-for="Address" class="text-danger"></span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Section 2: Academic Data -->
-                <div id="academicData" class="form-card">
-                    <div class="section-title"><i class="bi bi-book"></i> البيانات الأكاديمية</div>
+                @* Section 2: Academic Data *@
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="step-badge">3</span>
+                        <i class="fa-solid fa-graduation-cap"></i>
+                        البيانات الأكاديمية
+                    </div>
+                    <div class="instructions-box">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <p>اختر الكلية والفرقة الدراسية. التقدير بالنسبة المئوية (مثال: 85.5). يحسب البعد عن الجامعة تلقائياً من المحافظة.</p>
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label asp-for="Faculty" class="form-label required-field"></label>
-                            <select asp-for="Faculty" class="form-select">
+                            <label asp-for="Faculty" class="field-label">الكلية <span class="required">*</span></label>
+                            <select asp-for="Faculty" class="form-select" id="facultySelect">
                                 <option value="">-- اختر الكلية --</option>
-                                <option value="Engineering">الهندسة</option>
-                                <option value="Medicine">الطب</option>
-                                <option value="Science">العلوم</option>
-                                <option value="Commerce">التجارة</option>
-                                <option value="Arts">الآداب</option>
-                                <!-- ... -->
                             </select>
+                            <span asp-validation-for="Faculty" class="text-danger"></span>
+                            <span class="text-muted-small" id="facultyHint"></span>
                         </div>
-
-                        <!-- يظهر فقط للطلاب المستمرين -->
-                        <div class="col-md-6" id="studentCodeDiv" style="display:none;">
-                            <label asp-for="StudentCode" class="form-label">رقم شئون الطالب <span class="text-danger">*</span></label>
-                            <input asp-for="StudentCode" class="form-control" />
-                        </div>
-
-                        <div class="col-md-6">
-                            <label asp-for="AcademicYear" class="form-label"></label>
+                        <div class="col-md-3">
+                            <label asp-for="AcademicYear" class="field-label">الفرقة الدراسية</label>
                             <select asp-for="AcademicYear" class="form-select">
-                                <option value="">-- الفرقة --</option>
+                                <option value="">-- اختر --</option>
                                 <option value="1">الأولى</option>
                                 <option value="2">الثانية</option>
                                 <option value="3">الثالثة</option>
                                 <option value="4">الرابعة</option>
-                                <option value="5">الخامسة (طب/هندسة)</option>
+                                <option value="5">الخامسة</option>
+                                <option value="6">السادسة</option>
+                                <option value="7">السابعة</option>
                             </select>
                         </div>
-
-                        <div class="col-md-6">
-                            <label asp-for="GradePercentage" class="form-label required-field">التقدير العام (%)</label>
+                        <div class="col-md-3">
+                            <label asp-for="GradePercentage" class="field-label">التقدير العام (%) <span class="required">*</span></label>
                             <input asp-for="GradePercentage" type="number" step="0.01" class="form-control" placeholder="مثال: 85.5" />
+                            <span asp-validation-for="GradePercentage" class="text-danger"></span>
                         </div>
-
-                        <div class="col-md-6">
-                            <label asp-for="DistanceFromUniv" class="form-label">البعد عن الجامعة (كم)</label>
-                            <input asp-for="DistanceFromUniv" type="number" class="form-control" />
-                            <small class="text-muted">يؤثر في أولوية التنسيق</small>
+                        <div class="col-md-6" id="studentCodeDiv" style="display:none">
+                            <label asp-for="StudentCode" class="field-label">رقم شئون الطالب <span class="required">*</span></label>
+                            <input asp-for="StudentCode" class="form-control" placeholder="رقم شئون الطالب" />
                         </div>
                     </div>
                 </div>
 
-                <!-- Section 3: Guardian Data -->
-                <div id="guardianData" class="form-card">
-                    <div class="section-title"><i class="bi bi-people"></i> بيانات ولي الأمر (الأب)</div>
+                @* Section 3: Guardian Data *@
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="step-badge">4</span>
+                        <i class="fa-solid fa-people"></i>
+                        بيانات ولي الأمر
+                    </div>
+                    <div class="instructions-box">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <p>بيانات الأب إلزامية. إذا كان الأب متوفياً، فعّل الخيار لإظهار حقول ولي الأمر البديل.</p>
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label asp-for="FatherName" class="form-label required-field"></label>
+                            <label asp-for="FatherName" class="field-label">اسم الأب <span class="required">*</span></label>
                             <input asp-for="FatherName" class="form-control" />
+                            <span asp-validation-for="FatherName" class="text-danger"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="FatherJob" class="form-label"></label>
-                            <input asp-for="FatherJob" class="form-control" />
+                            <label asp-for="FatherJob" class="field-label">وظيفة الأب</label>
+                            <input asp-for="FatherJob" class="form-control" placeholder="وظيفة الأب" />
                         </div>
                         <div class="col-12">
-                            <label asp-for="FatherAddress" class="form-label"></label>
+                            <label asp-for="FatherAddress" class="field-label">عنوان الأب</label>
                             <input asp-for="FatherAddress" class="form-control" />
                         </div>
-
-                        <div class="col-12 mt-3">
+                        <div class="col-12 mt-2">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="isFatherDeceased" asp-for="IsFatherDeceased" onchange="toggleMotherFields()">
-                                <label class="form-check-label text-danger" for="isFatherDeceased">الأب متوفى (إظهار بيانات الأم / ولي الأمر البديل)</label>
+                                <label class="form-check-label" for="isFatherDeceased" style="color:var(--danger)">
+                                    <i class="fa-solid fa-heart-crack me-1"></i> الأب متوفى — إظهار بيانات ولي الأمر البديل
+                                </label>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Hidden Mother/Guardian Fields -->
-                    <div id="motherFields" class="hidden-section mt-4 p-3 bg-light rounded border">
-                        <h6 class="text-primary mb-3">بيانات الأم / ولي الأمر البديل</h6>
+                    <div id="motherFields" class="mt-4 p-3" style="background:var(--black-3);border:1px solid var(--border);border-radius:12px;display:none">
+                        <div class="fw-bold mb-3" style="color:var(--red)"><i class="fa-solid fa-user-shield me-1"></i> بيانات ولي الأمر البديل</div>
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label asp-for="GuardianName" class="form-label"></label>
+                                <label asp-for="GuardianName" class="field-label">اسم ولي الأمر</label>
                                 <input asp-for="GuardianName" class="form-control" />
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="GuardianNationalID" class="form-label"></label>
-                                <input asp-for="GuardianNationalID" class="form-control" />
+                                <label asp-for="GuardianNationalID" class="field-label">الرقم القومي لولي الأمر</label>
+                                <input asp-for="GuardianNationalID" class="form-control" maxlength="14" oninput="this.value=this.value.replace(/\D/g,'')" />
                             </div>
-                            <div class="col-md-6">
-                                <label asp-for="GuardianRelation" class="form-label">صلة القرابة</label>
+                            <div class="col-md-4">
+                                <label asp-for="GuardianRelation" class="field-label">صلة القرابة</label>
                                 <select asp-for="GuardianRelation" class="form-select">
                                     <option value="Mother">الأم</option>
                                     <option value="Uncle">العم</option>
+                                    <option value="Brother">الأخ</option>
                                     <option value="Other">آخر</option>
                                 </select>
                             </div>
-                            <div class="col-12">
-                                <label asp-for="GuardianAddress" class="form-label"></label>
+                            <div class="col-md-8">
+                                <label asp-for="GuardianAddress" class="field-label">عنوان ولي الأمر</label>
                                 <input asp-for="GuardianAddress" class="form-control" />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Section 4: Housing Preferences -->
-                <div id="housingData" class="form-card">
-                    <div class="section-title"><i class="bi bi-house-door"></i> تفاصيل السكن والطلبات الخاصة</div>
-
-                    <div class="alert-custom">
-                        <strong>ملاحظة هامة:</strong> اختيار نوع السكن (مميز/عادي) يخضع للسعة المتاحة ولوائح التنسيق.
+                @* Section 4: Housing Preferences *@
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="step-badge">5</span>
+                        <i class="fa-solid fa-house"></i>
+                        تفاصيل السكن
                     </div>
-
+                    <div class="instructions-box">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <p>اختر نوع السكن المناسب لك. السكن المميز و VIP متاحان بعدد محدود من الغرف ويخضعان للتنسيق.</p>
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label asp-for="HousingType" class="form-label required-field">نوع السكن المطلوب</label>
+                            <label asp-for="HousingType" class="field-label">نوع السكن <span class="required">*</span></label>
                             <select asp-for="HousingType" class="form-select">
                                 <option value="Standard">عادي (مشترك)</option>
                                 <option value="Premium">مميز (عدد أقل)</option>
                                 <option value="VIP">VIP (غرفة مفردة/ثنائية)</option>
                             </select>
                         </div>
-
                         <div class="col-md-6">
-                            <label class="form-label">حالة السكن السابق</label>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" asp-for="HasPreviousHousing" value="true">
-                                <label class="form-check-label">سكن لي سابقاً</label>
-                            </div>
-                            <div class="form-check form-check-inline">
-                                <input class="form-check-input" type="radio" asp-for="HasPreviousHousing" value="false" checked>
-                                <label class="form-check-label">لا</label>
+                            <label class="field-label">حالة السكن السابق</label>
+                            <div class="d-flex gap-3 mt-1">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" asp-for="HasPreviousHousing" value="false" checked>
+                                    <label class="form-check-label">لا</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" asp-for="HasPreviousHousing" value="true">
+                                    <label class="form-check-label">سكنت سابقاً</label>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="col-md-6">
-                            <div class="form-check mt-4">
+                        <div class="col-md-4">
+                            <div class="form-check mt-2">
                                 <input class="form-check-input" type="checkbox" asp-for="HasFamilyAbroad">
-                                <label class="form-check-label" asp-for="HasFamilyAbroad">أسرة مقيمة بالخارج (يمنح أولوية)</label>
+                                <label class="form-check-label" asp-for="HasFamilyAbroad">أسرة مقيمة بالخارج (أولوية)</label>
                             </div>
                         </div>
-
-                        <div class="col-md-6">
-                            <div class="form-check mt-4">
+                        <div class="col-md-4">
+                            <div class="form-check mt-2">
                                 <input class="form-check-input" type="checkbox" asp-for="HasMedicalCondition" id="medicalCheck" onchange="toggleMedicalDesc()">
-                                <label class="form-check-label text-danger" asp-for="HasMedicalCondition">حالة مرضية خاصة / إعاقة</label>
+                                <label class="form-check-label" style="color:var(--danger)" asp-for="HasMedicalCondition">حالة مرضية / إعاقة</label>
                             </div>
                         </div>
-
-                        <div class="col-12 hidden-section" id="medicalDescDiv">
-                            <label asp-for="MedicalDescription" class="form-label">تفاصيل الحالة المرضية</label>
-                            <textarea asp-for="MedicalDescription" class="form-control" rows="3"></textarea>
+                        <div class="col-12" id="medicalDescDiv" style="display:none">
+                            <label asp-for="MedicalDescription" class="field-label">تفاصيل الحالة المرضية</label>
+                            <textarea asp-for="MedicalDescription" class="form-control" rows="2"></textarea>
                         </div>
                     </div>
                 </div>
 
-                <!-- Section 5: Account & Declaration -->
-                <div id="accountData" class="form-card border-success">
-                    <div class="section-title text-success"><i class="bi bi-shield-lock"></i> إنشاء حساب الدخول والإقرار</div>
-
+                @* Section 5: Account *@
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="step-badge">6</span>
+                        <i class="fa-solid fa-shield-key"></i>
+                        إنشاء الحساب والإقرار
+                    </div>
+                    <div class="instructions-box">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <p>كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حروف وأرقام. احتفظ ببيانات الدخول بعد التسجيل.</p>
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label asp-for="Password" class="form-label required-field"></label>
+                            <label asp-for="Password" class="field-label">كلمة المرور <span class="required">*</span></label>
                             <input asp-for="Password" type="password" class="form-control" minlength="8" />
-                            <small class="text-muted">8 أحرف على الأقل (حروف + أرقام)</small>
+                            <span class="text-muted-small">8 أحرف على الأقل (حروف + أرقام)</span>
                             <span asp-validation-for="Password" class="text-danger"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="ConfirmPassword" class="form-label required-field"></label>
+                            <label asp-for="ConfirmPassword" class="field-label">تأكيد كلمة المرور <span class="required">*</span></label>
                             <input asp-for="ConfirmPassword" type="password" class="form-control" />
                             <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
                         </div>
-
-                        <div class="col-12 mt-4">
-                            <div class="form-check p-3 border rounded bg-light">
-                                <input class="form-check-input" type="checkbox" asp-for="Declaration" id="declarationCheck">
-                                <label class="form-check-label fw-bold" for="declarationCheck">
-                                    أقر أنا الطالب/ة بصحة جميع البيانات المدخلة أعلاه، وأتحمل المسؤولية الكاملة عن أي مخالفة. كما أوافق على لوائح المدن الجامعية وقوانينها.
-                                </label>
+                        <div class="col-12 mt-3">
+                            <div class="declaration-box">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="Declaration" id="declarationCheck">
+                                    <label class="form-check-label fw-bold" for="declarationCheck">
+                                        أقر أنا الطالب/ة بصحة جميع البيانات المدخلة أعلاه، وأتحمل المسؤولية الكاملة عن أي مخالفة. كما أوافق على لوائح المدن الجامعية وقوانينها.
+                                    </label>
+                                </div>
                                 <span asp-validation-for="Declaration" class="text-danger d-block mt-2"></span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <div class="text-center mb-5">
-                    <button type="submit" class="btn btn-primary btn-lg px-5 shadow">
-                        <i class="bi bi-check-circle me-2"></i> تسجيل طلب السكن
+                <div class="text-center mt-4 mb-5">
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        تسجيل طلب السكن
                     </button>
                 </div>
 
             </form>
         </div>
-    </div>
-</div>
+    </section>
 
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <footer>
+        <div class="container">
+            <div class="footer-brand">UniStay</div>
+            <div class="footer-text">
+                <span>نظام إدارة السكن الجامعي</span> &nbsp;·&nbsp; جميع الحقوق محفوظة &nbsp;·&nbsp; &copy; 2025
+            </div>
+        </div>
+    </footer>
 
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/ar.js"></script>
     <script>
-        // تهيئة Flatpickr للتاريخ
-        flatpickr(".flatpickr", {
-            locale: "ar",
-            dateFormat: "Y-m-d",
-            maxDate: "today",
-            onChange: function(selectedDates, dateStr, instance) {
-                calculateAge(dateStr);
-            }
+        // ── Flatpickr
+        flatpickr("#birthDate", {
+            locale: "ar", dateFormat: "Y-m-d", maxDate: "today",
+            onChange: function(sel, str) { calculateAge(str); }
         });
 
-        // حساب العمر
         function calculateAge(birthDateStr) {
-            if(!birthDateStr) return;
-            const birthDate = new Date(birthDateStr);
-            const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const m = today.getMonth() - birthDate.getMonth();
-            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-            document.getElementById('calculatedAge').value = age + " سنة";
+            if (!birthDateStr) { document.getElementById('calculatedAge').value = '--'; return; }
+            const b = new Date(birthDateStr);
+            const t = new Date();
+            let age = t.getFullYear() - b.getFullYear();
+            const m = t.getMonth() - b.getMonth();
+            if (m < 0 || (m === 0 && t.getDate() < b.getDate())) age--;
+            document.getElementById('calculatedAge').value = age + ' سنة';
         }
 
-        // إظهار حقول الأم
-        function toggleMotherFields() {
-            const isChecked = document.getElementById('isFatherDeceased').checked;
-            const div = document.getElementById('motherFields');
-            div.style.display = isChecked ? 'block' : 'none';
+        // ── Governorates data
+        const governorates = [
+            "Cairo","Alexandria","Giza","Assuit","Qena","Luxor","Aswan","Sohag",
+            "RedSea","NewValley","Matrouh","Fayoum","Minya","BeniSuef","Sharqia",
+            "Dakahlia","Damietta","KafrElSheikh","Gharbia","Monufia","Beheira",
+            "Ismailia","PortSaid","Suez","NorthSinai","SouthSinai"
+        ];
+        const govArabic = {
+            Cairo:"القاهرة",Alexandria:"الإسكندرية",Giza:"الجيزة",Assuit:"أسيوط",
+            Qena:"قنا",Luxor:"الأقصر",Aswan:"أسوان",Sohag:"سوهاج",
+            RedSea:"البحر الأحمر",NewValley:"الوادي الجديد",Matrouh:"مطروح",
+            Fayoum:"الفيوم",Minya:"المنيا",BeniSuef:"بني سويف",Sharqia:"الشرقية",
+            Dakahlia:"الدقهلية",Damietta:"دمياط",KafrElSheikh:"كفر الشيخ",
+            Gharbia:"الغربية",Monufia:"المنوفية",Beheira:"البحيرة",
+            Ismailia:"الإسماعيلية",PortSaid:"بورسعيد",Suez:"السويس",
+            NorthSinai:"شمال سيناء",SouthSinai:"جنوب سيناء"
+        };
+        const cities = {
+            Assuit: ["أسيوط","ديروط","الفتح","أبنوب","منقباد","صدفا","الغنايم","ساحل سليم","القوصية"],
+            Cairo: ["الزمالك","مصر الجديدة","المعادي","حلوان","شبرا","العباسية","مدينة نصر","المرج","السلام"],
+            Giza: ["الدقي","العجوزة","المهندسين","الهرم","أكتوبر","الشيخ زايد","البدرشين","الصف"],
+            Alexandria: ["العطارين","محرم بك","سموحة","لوران","سبورتنج","المنتزه","برج العرب","السيوف"],
+            Qena: ["قنا","قوص","نجع حمادي","الأقصر","دشنا","الوقف"],
+            Luxor: ["البياضية","الطود","الزينية","البعيرات","القرنة","إسنا","أرمنت"],
+            Aswan: ["أسوان","إدفو","كوم أمبو","نصر النوبة","دراو"],
+            Sohag: ["سوهاج","جرجا","طهطا","الخزان","أخميم","البلينا","ساقلتة","دار السلام"],
+            RedSea: ["الغردقة","سفاجا","القصير","مرسى علم","الشلاتين","حلايب"],
+            NewValley: ["الخارجة","الداخلة","باريس","بلاط","الفرافرة"],
+            Matrouh: ["مرسى مطروح","النجيلة","السلوم","سيوة","العلمين","الحمام"],
+            Fayoum: ["الفيوم","إطسا","طامية","سنورس","أبشواي","يوسف الصديق"],
+            Minya: ["المنيا","ملوي","العدوة","مغاغة","أبو قرقاص","بني مزار","ديرمواس","سمالوط"],
+            BeniSuef: ["بني سويف","ناصر","الواسطى","إهناسيا","سمسطا","ببا","الفشن"],
+            Sharqia: ["الزقازيق","بلبيس","منيا القمح","أبو كبير","ههيا","ديرب نجم","كفر صقر","الإبراهيمية"],
+            Dakahlia: ["المنصورة","طلخا","نبروه","أجا","ميت غمر","دكرنس","بلقاس","شربين"],
+            Damietta: ["دمياط","فارسكور","كفر سعد","الزرقا","كفر البطيخ"],
+            KafrElSheikh: ["كفر الشيخ","دسوق","بيلا","قلين","الحامول","الرياض","سيدي سالم"],
+            Gharbia: ["طنطا","المحلة الكبرى","كفر الزيات","زفتى","السنطة","قطور","بسيون"],
+            Monufia: ["شبين الكوم","منوف","الباجور","قويسنا","بركة السبع","تلا","الشهداء","أشمون"],
+            Beheira: ["دمنهور","كفر الدوار","رشيد","أبو المطامير","إدكو","حوش عيسى","شبراخيت","يتاي البارود"],
+            Ismailia: ["الإسماعيلية","فايد","القنطرة شرق","القنطرة غرب","أبو صوير","التل الكبير"],
+            PortSaid: ["بورسعيد","بورفؤاد","الزهور","الجنوب","المناخ","الشرفا"],
+            Suez: ["السويس","الأربعين","عتاقة","فيصل","الجناين"],
+            NorthSinai: ["العريش","بئر العبد","الشيخ زويد","رفح","نخل"],
+            SouthSinai: ["الطور","شرم الشيخ","دهب","نويبع","رأس سدر","أبو زنيمة","كاترين"]
+        };
 
-            // تفعيل/تعطيل الحقول المطلوبة
-            const inputs = div.querySelectorAll('input');
-            inputs.forEach(input => {
-                if(isChecked) input.removeAttribute('disabled');
-                else {
-                    input.setAttribute('disabled', 'true');
-                    input.value = '';
-                }
-            });
-        }
+        const govSelect = document.getElementById('governorateSelect');
+        governorates.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g; opt.textContent = govArabic[g] || g;
+            govSelect.appendChild(opt);
+        });
 
-        // إظهار وصف الحالة المرضية
-        function toggleMedicalDesc() {
-            const isChecked = document.getElementById('medicalCheck').checked;
-            document.getElementById('medicalDescDiv').style.display = isChecked ? 'block' : 'none';
-        }
+        govSelect.addEventListener('change', function() {
+            const citySel = document.getElementById('citySelect');
+            citySel.innerHTML = '<option value="">-- اختر المركز --</option>';
+            const c = cities[this.value];
+            if (c) c.forEach(ct => { const o = document.createElement('option'); o.value = ct; o.textContent = ct; citySel.appendChild(o); });
+        });
 
-        // التبديل بين طالب جديد ومستمر
+        // ── All Faculties
+        const faculties = [
+            { name: "الهندسة", hint: "شهادة الثانوية العامة شعبة علمي رياضة" },
+            { name: "الطب", hint: "شهادة الثانوية العامة شعبة علمي علوم" },
+            { name: "طب الأسنان", hint: "شهادة الثانوية العامة شعبة علمي علوم" },
+            { name: "الصيدلة", hint: "شهادة الثانوية العامة شعبة علمي علوم" },
+            { name: "العلاج الطبيعي", hint: "شهادة الثانوية العامة شعبة علمي علوم" },
+            { name: "الطب البيطري", hint: "شهادة الثانوية العامة شعبة علمي علوم" },
+            { name: "التمريض", hint: "شهادة الثانوية العامة" },
+            { name: "العلوم", hint: "شهادة الثانوية العامة" },
+            { name: "الزراعة", hint: "شهادة الثانوية العامة" },
+            { name: "التجارة", hint: "شهادة الثانوية العامة" },
+            { name: "الآداب", hint: "شهادة الثانوية العامة" },
+            { name: "التربية", hint: "شهادة الثانوية العامة" },
+            { name: "الحقوق", hint: "شهادة الثانوية العامة" },
+            { name: "الإعلام", hint: "شهادة الثانوية العامة" },
+            { name: "الاقتصاد والعلوم السياسية", hint: "شهادة الثانوية العامة" },
+            { name: "دار العلوم", hint: "شهادة الثانوية العامة" },
+            { name: "السياحة والفنادق", hint: "شهادة الثانوية العامة" },
+            { name: "التربية الرياضية", hint: "شهادة الثانوية العامة" },
+            { name: "التربية النوعية", hint: "شهادة الثانوية العامة" },
+            { name: "التربية الفنية", hint: "شهادة الثانوية العامة" },
+            { name: "التربية الموسيقية", hint: "شهادة الثانوية العامة" },
+            { name: "الألسن", hint: "شهادة الثانوية العامة" },
+            { name: "الآثار", hint: "شهادة الثانوية العامة" },
+            { name: "الفنون الجميلة", hint: "شهادة الثانوية العامة" },
+            { name: "الفنون التطبيقية", hint: "شهادة الثانوية العامة" },
+            { name: "العلوم الصحية التطبيقية", hint: "شهادة الثانوية العامة" },
+            { name: "حاسبات ومعلومات", hint: "شهادة الثانوية العامة" },
+            { name: "الذكاء الاصطناعي", hint: "شهادة الثانوية العامة" },
+            { name: "الثروة السمكية", hint: "شهادة الثانوية العامة" },
+            { name: "النانو تكنولوجي", hint: "شهادة الثانوية العامة" },
+            { name: "الطاقة والطاقة المتجددة", hint: "شهادة الثانوية العامة" },
+            { name: "الدراسات العليا", hint: "مؤهل عالي" },
+            { name: "معهد فني صحي", hint: "شهادة الثانوية العامة" },
+            { name: "معهد فني تجاري", hint: "شهادة الثانوية العامة" },
+            { name: "معهد فني زراعي", hint: "شهادة الثانوية العامة" },
+            { name: "معهد فني صناعي", hint: "شهادة الثانوية العامة" }
+        ];
+        const facSelect = document.getElementById('facultySelect');
+        const facHint = document.getElementById('facultyHint');
+        faculties.forEach(f => {
+            const o = document.createElement('option');
+            o.value = f.name; o.textContent = f.name;
+            facSelect.appendChild(o);
+        });
+        facSelect.addEventListener('change', function() {
+            const f = faculties.find(x => x.name === this.value);
+            facHint.textContent = f ? f.hint : '';
+        });
+
+        // ── Student type toggle
         function toggleStudentType(isReturning) {
-            const codeDiv = document.getElementById('studentCodeDiv');
-            const codeInput = codeDiv.querySelector('input');
-
-            if (isReturning) {
-                codeDiv.style.display = 'block';
-                codeInput.required = true;
-            } else {
-                codeDiv.style.display = 'none';
-                codeInput.required = false;
-                codeInput.value = '';
-            }
+            document.getElementById('tabNewLabel').classList.toggle('active', !isReturning);
+            document.getElementById('tabReturningLabel').classList.toggle('active', isReturning);
+            document.getElementById('tabNew').checked = !isReturning;
+            document.getElementById('tabReturning').checked = isReturning;
+            const div = document.getElementById('studentCodeDiv');
+            div.style.display = isReturning ? 'block' : 'none';
         }
 
-        // Scroll Smooth
-        function scrollToSection(id) {
-            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        function toggleMotherFields() {
+            const c = document.getElementById('isFatherDeceased').checked;
+            document.getElementById('motherFields').style.display = c ? 'block' : 'none';
         }
 
-        // Highlight Active Step on Scroll
-        window.addEventListener('scroll', () => {
-            let current = '';
-            const sections = ['studentData', 'academicData', 'guardianData', 'housingData', 'accountData'];
+        function toggleMedicalDesc() {
+            document.getElementById('medicalDescDiv').style.display =
+                document.getElementById('medicalCheck').checked ? 'block' : 'none';
+        }
 
-            sections.forEach(section => {
-                const element = document.getElementById(section);
-                const rect = element.getBoundingClientRect();
-                if (rect.top <= 150) {
-                    current = section;
-                }
-            });
-
-            document.querySelectorAll('.step-item').forEach(item => {
-                item.classList.remove('active');
-                if (item.getAttribute('onclick').includes(current)) {
-                    item.classList.add('active');
-                }
-            });
+        // ── Submit loading
+        document.getElementById('applicationForm').addEventListener('submit', function() {
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> جاري الإرسال…';
         });
     </script>
-}
+</body>
+</html>

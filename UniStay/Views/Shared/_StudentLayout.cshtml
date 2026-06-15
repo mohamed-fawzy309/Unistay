@@ -6,77 +6,242 @@
     <title>@ViewData["Title"] - بوابة الطالب</title>
     <link href="~/lib/bootstrap/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
     <style>
+        :root {
+            --red: #e63946; --red-dark: #b52530; --red-dim: rgba(230,57,70,.15);
+            --black: #080b10; --black-2: #0f1319; --black-3: #161c26; --black-4: #1e2736;
+            --border: #1e2736; --text: #e8eaf0; --muted: #6b7a99;
+            --success: #10b981; --success-dim: rgba(16,185,129,.15);
+            --warn: #f59e0b; --warn-dim: rgba(245,158,11,.15);
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--black);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--black); }
+        ::-webkit-scrollbar-thumb { background: var(--red-dark); border-radius: 3px; }
+
+        /* ── Sidebar ── */
         .sidebar {
             width: 260px;
-            background: #2c3e50;
-            color: #ecf0f1;
+            background: var(--black-2);
+            border-left: 1px solid var(--border);
             height: 100vh;
             position: fixed;
             right: 0;
+            top: 0;
             overflow-y: auto;
+            z-index: 100;
+            transition: right .3s;
+        }
+        .sidebar-logo {
+            padding: 1.2rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+        .sidebar-logo img { height: 38px; filter: drop-shadow(0 2px 8px rgba(230,57,70,.3)); }
+        .sidebar-menu { padding: .75rem 0; }
+        .menu-header {
+            padding: .6rem 1.25rem;
+            font-size: .72rem;
+            font-weight: 700;
+            color: var(--muted);
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            padding: .65rem 1.25rem;
+            color: var(--muted) !important;
+            font-size: .87rem;
+            font-weight: 500;
+            text-decoration: none;
+            border-right: 3px solid transparent;
+            transition: all .2s;
+        }
+        .nav-link i { width: 1.1rem; text-align: center; font-size: .95rem; }
+        .nav-link:hover {
+            background: rgba(230,57,70,.06);
+            color: var(--text) !important;
+            border-right-color: var(--red);
+        }
+        .nav-link.active {
+            background: var(--red-dim);
+            color: var(--red) !important;
+            border-right-color: var(--red);
+            font-weight: 700;
         }
 
+        /* ── Top Bar ── */
+        .topbar {
+            background: var(--black-2);
+            border-bottom: 1px solid var(--border);
+            padding: .75rem 1.5rem;
+            margin-right: 260px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar-greeting {
+            font-size: 1rem;
+            font-weight: 700;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .topbar-actions { display: flex; align-items: center; gap: 1rem; }
+        .topbar-actions a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: .85rem;
+            font-weight: 500;
+            transition: color .2s;
+        }
+        .topbar-actions a:hover { color: var(--red); }
+        .btn-logout {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: 8px;
+            padding: .35rem 1rem;
+            font-family: 'Tajawal', sans-serif;
+            font-size: .82rem;
+            font-weight: 600;
+            transition: all .25s;
+            text-decoration: none;
+        }
+        .btn-logout:hover {
+            border-color: var(--red);
+            color: var(--red);
+            background: var(--red-dim);
+        }
+
+        /* ── Main Content ── */
         .main-content {
             margin-right: 260px;
-            background: #f8f9fa;
-            min-height: 100vh;
+            min-height: calc(100vh - 56px);
+            padding: 1.5rem;
         }
 
-        .nav-link {
-            color: #bdc3c7 !important;
-            padding: 12px 20px;
+        /* ── Cards ── */
+        .card-site {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            transition: border-color .3s;
         }
+        .card-site:hover { border-color: rgba(230,57,70,.2); }
+        .card-site-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 700;
+            font-size: .95rem;
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+        }
+        .card-site-body { padding: 1.25rem; }
 
-            .nav-link:hover, .nav-link.active {
-                background: #34495e;
-                color: white !important;
-            }
+        /* ── Alerts ── */
+        .alert-site {
+            border-radius: 10px;
+            padding: .85rem 1.1rem;
+            font-size: .9rem;
+            margin-bottom: 1rem;
+        }
+        .alert-success { background: var(--success-dim); border: 1px solid rgba(16,185,129,.25); color: var(--success); }
+        .alert-warning { background: var(--warn-dim); border: 1px solid rgba(245,158,11,.25); color: var(--warn); }
+        .alert-danger { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.25); color: #ef4444; }
+        .alert-info { background: rgba(59,130,246,.12); border: 1px solid rgba(59,130,246,.25); color: #60a5fa; }
 
-        .menu-header {
-            padding: 10px 20px;
-            background: #1a252f;
-            font-size: 0.85rem;
-            text-transform: uppercase;
+        /* ── Badges ── */
+        .badge { font-weight: 600; padding: .3rem .7rem; border-radius: 6px; }
+
+        /* ── Responsive ── */
+        @@media (max-width: 768px) {
+            .sidebar { right: -260px; }
+            .sidebar.open { right: 0; }
+            .main-content, .topbar { margin-right: 0; }
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar Student -->
-    <nav class="sidebar">
-        <div class="p-3">
-            <ul class="nav flex-column">
-                <li><a class="nav-link" asp-controller="Student" asp-action="Home">الصفحة الرئيسية </a></li>
-                <li><a class="nav-link" asp-controller="Student" asp-action="ApplicationSchedule"><i class="bi bi-calendar"></i> مواعيد التقديم</a></li>
-                <li><a class="nav-link" asp-controller="Student" asp-action="Instructions"><i class="bi bi-info-circle"></i> إرشادات وإقرارات</a></li>
-                <li><a class="nav-link" asp-controller="Student" asp-action="EditProfile"><i class="bi bi-pencil"></i> تعديل البيانات</a></li>
-                <li><a class="nav-link" asp-controller="Student" asp-action="StatusReport"><i class="bi bi-file-earmark-text"></i> بيان الحالة</a></li>
-                <li><a class="nav-link" asp-controller="Student" asp-action="ApplicationStatus"><i class="bi bi-graph-up"></i> الاستعلام عن القبول</a></li>
 
-                @if (ViewBag.IsAllocated == true)
-                {
-                    <li class="menu-header text-light mt-3">الخدمات</li>
-                    <li><a class="nav-link" asp-controller="Student" asp-action="RequestAbsence"><i class="bi bi-door-open"></i> طلب إذن غياب</a></li>
-                    <li><a class="nav-link" asp-controller="Student" asp-action="Payments"><i class="bi bi-currency-dollar"></i> الرسوم والمدفوعات</a></li>
-                    <li><a class="nav-link" asp-controller="Student" asp-action="Violations"><i class="bi bi-exclamation-triangle"></i> المخالفات والغرامات</a></li>
-                    <li><a class="nav-link" href="#"><i class="bi bi-fork-knife"></i> الوجبات</a></li>
-                }
-            </ul>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <a href="/Student/Home"><img src="~/images/Unistay_logo.png" alt="UniStay"></a>
+        </div>
+        <div class="sidebar-menu">
+            <div class="menu-header">الرئيسية</div>
+            <a class="nav-link" asp-controller="Student" asp-action="Home">
+                <i class="bi bi-house-door"></i> الصفحة الرئيسية
+            </a>
+            <a class="nav-link" asp-controller="Student" asp-action="ApplicationSchedule">
+                <i class="bi bi-calendar"></i> مواعيد التقديم
+            </a>
+            <a class="nav-link" asp-controller="Student" asp-action="Instructions">
+                <i class="bi bi-info-circle"></i> إرشادات وإقرارات
+            </a>
+            <a class="nav-link" asp-controller="Student" asp-action="EditProfile">
+                <i class="bi bi-pencil"></i> تعديل البيانات
+            </a>
+            <a class="nav-link" asp-controller="Student" asp-action="StatusReport">
+                <i class="bi bi-file-earmark-text"></i> بيان الحالة
+            </a>
+            <a class="nav-link" asp-controller="Student" asp-action="ApplicationStatus">
+                <i class="bi bi-graph-up"></i> الاستعلام عن القبول
+            </a>
+
+            @if (ViewBag.IsAllocated == true)
+            {
+                <div class="menu-header mt-2">الخدمات</div>
+                <a class="nav-link" asp-controller="Student" asp-action="RequestAbsence">
+                    <i class="bi bi-door-open"></i> طلب إذن غياب
+                </a>
+                <a class="nav-link" asp-controller="Student" asp-action="Payments">
+                    <i class="bi bi-currency-dollar"></i> الرسوم والمدفوعات
+                </a>
+                <a class="nav-link" asp-controller="Student" asp-action="Violations">
+                    <i class="bi bi-exclamation-triangle"></i> المخالفات والغرامات
+                </a>
+                <a class="nav-link" asp-controller="Student" asp-action="Meals">
+                    <i class="bi bi-fork-knife"></i> الوجبات
+                </a>
+                <a class="nav-link" asp-controller="Student" asp-action="AnnouncementsList">
+                    <i class="bi bi-megaphone"></i> الإعلانات
+                </a>
+            }
         </div>
     </nav>
 
     <!-- Top Bar -->
-    <nav class="navbar navbar-dark bg-success shadow" style="margin-right:260px;">
-        <div class="container-fluid">
-            <span class="navbar-brand">مرحباً، @ViewBag.StudentName</span>
-            <div>
-                <a asp-controller="StudentAccount" asp-action="ChangePassword" class="text-white mx-3">تغيير كلمة المرور</a>
-                <a asp-controller="StudentAccount" asp-action="Logout" class="btn btn-light btn-sm">تسجيل خروج</a>
-            </div>
+    <div class="topbar">
+        <div class="topbar-greeting">
+            مرحباً، @ViewBag.StudentName
         </div>
-    </nav>
+        <div class="topbar-actions">
+            <a asp-controller="StudentAccount" asp-action="ChangePassword">
+                <i class="bi bi-key me-1"></i> تغيير كلمة المرور
+            </a>
+            <a asp-controller="StudentAccount" asp-action="Logout" class="btn-logout">
+                <i class="bi bi-box-arrow-left me-1"></i> تسجيل خروج
+            </a>
+            <button class="d-md-none btn btn-sm btn-outline-secondary" style="border-color:var(--border);color:var(--muted)" onclick="document.getElementById('sidebar').classList.toggle('open')">
+                <i class="bi bi-list"></i>
+            </button>
+        </div>
+    </div>
 
-    <div class="main-content p-4">
+    <!-- Main -->
+    <div class="main-content">
         @RenderBody()
     </div>
 

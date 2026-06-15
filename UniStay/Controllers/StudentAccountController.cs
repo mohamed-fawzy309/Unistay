@@ -91,60 +91,16 @@ namespace UniStay.Controllers
         }
 
         [HttpGet("Register")]
-        public async Task<IActionResult> Register()
+        public IActionResult Register()
         {
-            var authResult = await HttpContext.AuthenticateAsync("StudentCookie");
-            if (authResult.Succeeded)
-                return RedirectToAction("Home", "Student");
-
-            return View(new StudentRegisterViewModel());
+            return RedirectToAction("Apply", "Application");
         }
 
         [HttpPost("Register")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(StudentRegisterViewModel model)
+        public IActionResult Register(StudentRegisterViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
-
-            var existingNationalId = await _context.Students.AnyAsync(s => s.NationalID == model.NationalID);
-            if (existingNationalId)
-            {
-                model.ErrorMessage = "هذا الرقم القومي مسجل بالفعل. يمكنك تسجيل الدخول مباشرة.";
-                return View(model);
-            }
-
-            var existingLogin = await _context.StudentLogins.AnyAsync(s => s.Username == model.NationalID);
-            if (existingLogin)
-            {
-                model.ErrorMessage = "يوجد حساب مسبق بهذا الرقم القومي. يمكنك تسجيل الدخول.";
-                return View(model);
-            }
-
-            var student = new Student
-            {
-                NationalID = model.NationalID,
-                FullName = model.FullName,
-                CreatedAt = DateTime.UtcNow,
-                LastUpdatedAt = DateTime.UtcNow
-            };
-            _context.Students.Add(student);
-            await _context.SaveChangesAsync();
-
-            var studentLogin = new StudentLogin
-            {
-                StudentID = student.ID,
-                Username = model.NationalID,
-                PasswordHash = _passwordService.HashPassword(model.Password),
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
-            };
-            _context.StudentLogins.Add(studentLogin);
-            await _context.SaveChangesAsync();
-
-            await _auditService.LogAsync(student.ID, "Student", "Register", "StudentLogin", student.ID);
-
-            TempData["Success"] = "تم إنشاء الحساب بنجاح. يمكنك تسجيل الدخول الآن.";
-            return RedirectToAction("Login");
+            return RedirectToAction("Apply", "Application");
         }
 
         [HttpGet("Logout")]

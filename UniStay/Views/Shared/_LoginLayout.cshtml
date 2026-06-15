@@ -4,28 +4,203 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - UniStay</title>
-
-    <!-- Bootstrap 5.3 RTL -->
     <link href="~/lib/bootstrap/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
     <style>
-        body { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); }
-        .login-card { box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: none; }
-        .university-logo { width: 90px; height: 90px; }
+        :root {
+            --red: #e63946; --red-dark: #b52530; --red-dim: rgba(230,57,70,.15);
+            --black: #080b10; --black-2: #0f1319; --black-3: #161c26; --black-4: #1e2736;
+            --border: #1e2736; --text: #e8eaf0; --muted: #6b7a99;
+            --success: #10b981;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--black);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--black); }
+        ::-webkit-scrollbar-thumb { background: var(--red-dark); border-radius: 3px; }
 
+        .bg-grid {
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background-image: linear-gradient(rgba(230,57,70,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(230,57,70,.05) 1px, transparent 1px);
+            background-size: 55px 55px;
+            animation: gridMove 25s linear infinite;
+        }
+        @@keyframes gridMove { from { transform: translateY(0); } to { transform: translateY(55px); } }
+
+        .bg-glow {
+            position: fixed; width: 600px; height: 600px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(230,57,70,.07) 0%, transparent 70%);
+            top: -200px; left: 50%; transform: translateX(-50%);
+            pointer-events: none; z-index: 0;
+            animation: glowDrift 9s ease-in-out infinite alternate;
+        }
+        @@keyframes glowDrift {
+            from { transform: translateX(-50%) translateY(0); }
+            to { transform: translateX(-50%) translateY(45px); }
+        }
+
+        .logo-area {
+            position: fixed;
+            top: 1.5rem;
+            right: 2rem;
+            z-index: 10;
+        }
+
+        .login-card {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 24px 64px rgba(0,0,0,.5);
+            position: relative;
+            z-index: 2;
+        }
+        .login-header {
+            background: linear-gradient(135deg, var(--black-3), var(--black-4));
+            border-bottom: 1px solid var(--border);
+            padding: 2rem 2rem 1.5rem;
+            text-align: center;
+        }
+        .login-header h4 {
+            font-weight: 900;
+            background: linear-gradient(135deg, #ff6b7a, var(--red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .login-header p {
+            color: var(--muted);
+            font-size: .85rem;
+            margin-top: .3rem;
+        }
+        .login-body {
+            padding: 2rem;
+        }
+
+        .form-label {
+            font-weight: 700;
+            font-size: .82rem;
+            color: var(--muted);
+            margin-bottom: .4rem;
+        }
+        .form-control {
+            background: var(--black-3);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1rem;
+            padding: .8rem 1rem;
+            transition: border-color .25s, box-shadow .25s;
+        }
+        .form-control:focus {
+            border-color: rgba(230,57,70,.55);
+            box-shadow: 0 0 0 3px var(--red-dim);
+            background: var(--black-3);
+            color: var(--text);
+        }
+        .form-control::placeholder { color: #4a5568; font-size: .9rem; }
+        .text-danger { color: #ef4444 !important; font-size: .8rem; }
+
+        .btn-login {
+            width: 100%;
+            background: linear-gradient(135deg, var(--red), var(--red-dark));
+            border: none;
+            color: #fff;
+            border-radius: 10px;
+            padding: .85rem 1.5rem;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform .2s, box-shadow .2s;
+        }
+        .btn-login::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.2), transparent);
+            transition: left .5s;
+        }
+        .btn-login:hover::before { left: 150%; }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(230,57,70,.4); color: #fff; }
+
+        .form-check-input {
+            background: var(--black-3);
+            border: 1.5px solid var(--border);
+            cursor: pointer;
+        }
+        .form-check-input:checked { background: var(--red); border-color: var(--red); }
+        .form-check-label { color: var(--muted); font-size: .88rem; }
+
+        .login-footer {
+            text-align: center;
+            padding: 1.5rem 2rem;
+            border-top: 1px solid var(--border);
+        }
+        .login-footer a {
+            color: var(--red);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: .9rem;
+            transition: color .2s;
+        }
+        .login-footer a:hover { color: #ff6b7a; }
+
+        footer {
+            background: var(--black-2);
+            border-top: 1px solid var(--border);
+            padding: 1.5rem 0;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+        .footer-text { color: var(--muted); font-size: .82rem; }
+        .footer-text span { color: var(--red); }
+
+        .alert {
+            border-radius: 10px;
+            font-size: .9rem;
+            padding: .8rem 1rem;
+        }
+        .alert-danger {
+            background: rgba(239,68,68,.12);
+            border: 1px solid rgba(239,68,68,.25);
+            color: #ef4444;
+        }
+
+        @@media (max-width: 576px) {
+            .logo-area { top: 1rem; right: 1rem; }
+            .logo-area img { height: 40px; }
+            .login-body { padding: 1.25rem; }
+        }
     </style>
 </head>
 <body>
-    <div class="d-flex justify-content-between align-items-start pe-3 pt-3">
-        <a href="/"><img src="~/images/Unistay_logo.png" alt="UniStay" style="height:60px"></a>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow" aria-hidden="true"></div>
+
+    <div class="logo-area">
+        <a href="/"><img src="~/images/Unistay_logo.png" alt="UniStay" style="height:48px;filter:drop-shadow(0 2px 8px rgba(230,57,70,.3))"></a>
     </div>
-    <div class="container">
+
+    <div class="container" style="padding-top:5rem;padding-bottom:3rem">
         @RenderBody()
     </div>
 
-    <footer class="text-center text-muted py-4 mt-5">
-        <small>© 2026 جامعة أسيوط - نظام إدارة المدن الجامعية (UniStay)</small>
+    <footer>
+        <div class="container">
+            <div class="footer-text">
+                <span>نظام إدارة السكن الجامعي</span> &nbsp;·&nbsp; جميع الحقوق محفوظة &nbsp;·&nbsp; &copy; 2025
+            </div>
+        </div>
     </footer>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

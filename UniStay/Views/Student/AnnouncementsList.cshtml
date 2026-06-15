@@ -1,0 +1,115 @@
+@model List<UniStay.Models.Announcement>
+@{
+    ViewData["Title"] = "الإعلانات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0" style="font-weight:800">
+        <i class="bi bi-megaphone me-2" style="color:var(--red)"></i> الإعلانات
+    </h4>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="card-site">
+        <div class="card-site-body text-center py-5">
+            <div style="font-size:3rem;margin-bottom:.75rem;color:var(--muted)">
+                <i class="bi bi-megaphone"></i>
+            </div>
+            <p style="color:var(--muted);font-size:.95rem">لا توجد إعلانات متاحة حالياً.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var ann in Model)
+        {
+            var typeBadge = ann.AnnouncementType switch
+            {
+                "Urgent" => new { bg = "var(--red-dim)", color = "#ef4444" },
+                "Important" => new { bg = "var(--warn-dim)", color = "var(--warn)" },
+                _ => new { bg = "var(--black-4)", color = "var(--muted)" }
+            };
+            var typeText = ann.AnnouncementType switch
+            {
+                "Urgent" => "عاجل",
+                "Important" => "هام",
+                _ => "عام"
+            };
+            <div class="col-12">
+                <div class="card-site">
+                    <div class="card-site-header d-flex justify-content-between align-items-center flex-wrap" style="gap:.5rem">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge" style="background:@typeBadge.bg;color:@typeBadge.color;border:1px solid;font-size:.72rem">
+                                @typeText
+                            </span>
+                            <span style="font-size:.9rem">@ann.Title</span>
+                        </div>
+                        @if (ann.PublishedAt.HasValue)
+                        {
+                            <small style="color:var(--muted);font-size:.75rem">
+                                <i class="bi bi-calendar me-1"></i> @ann.PublishedAt.Value.ToString("dd/MM/yyyy")
+                            </small>
+                        }
+                    </div>
+                    <div class="card-site-body" style="font-size:.88rem;color:var(--muted);line-height:1.7">
+                        @Html.Raw(ann.Body?.Replace("\n", "<br/>"))
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@* Absence Records *@
+<div class="card-site mt-4">
+    <div class="card-site-header">
+        <i class="bi bi-clock-history" style="color:var(--warn)"></i>
+        سجل طلبات الغياب (آخر 10)
+    </div>
+    <div class="card-site-body p-0">
+        @{
+            var absencesList = ViewBag.Absences as List<UniStay.Models.Absence> ?? new();
+        }
+        @if (!absencesList.Any())
+        {
+            <div class="p-3" style="color:var(--muted);font-size:.88rem">
+                <i class="bi bi-info-circle me-2"></i> لا توجد طلبات غياب مسجلة.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table mb-0" style="color:var(--text)">
+                    <thead style="background:var(--black-3);color:var(--muted);font-size:.78rem">
+                        <tr>
+                            <th class="px-3 py-2">#</th>
+                            <th class="px-3 py-2">النوع</th>
+                            <th class="px-3 py-2">من</th>
+                            <th class="px-3 py-2">إلى</th>
+                            <th class="px-3 py-2">الحالة</th>
+                            <th class="px-3 py-2">تاريخ الطلب</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ab in absencesList)
+                        {
+                            var badgeColor = ab.Status switch { "Approved" => "var(--success)", "Rejected" => "#ef4444", "Pending" => "var(--warn)", _ => "var(--muted)" };
+                            var badgeBg = ab.Status switch { "Approved" => "var(--success-dim)", "Rejected" => "rgba(239,68,68,.12)", "Pending" => "var(--warn-dim)", _ => "transparent" };
+                            var statusText = ab.Status switch { "Approved" => "موافق عليه", "Rejected" => "مرفوض", "Pending" => "قيد المراجعة", _ => ab.Status };
+                            <tr>
+                                <td class="px-3 py-2" style="font-size:.85rem">@ab.ID</td>
+                                <td class="px-3 py-2" style="font-size:.85rem">@ab.AbsenceType</td>
+                                <td class="px-3 py-2" style="font-size:.85rem">@ab.AbsenceDate.ToString("dd/MM/yyyy")</td>
+                                <td class="px-3 py-2" style="font-size:.85rem">@(ab.ToDate.HasValue ? ab.ToDate.Value.ToString("dd/MM/yyyy") : "—")</td>
+                                <td class="px-3 py-2"><span class="badge" style="background:@badgeBg;color:@badgeColor;border:1px solid">@statusText</span></td>
+                                <td class="px-3 py-2" style="font-size:.85rem">@(ab.CreatedAt.HasValue ? ab.CreatedAt.Value.ToString("dd/MM/yyyy") : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

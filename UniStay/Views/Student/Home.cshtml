@@ -2,56 +2,58 @@
     ViewData["Title"] = "لوحة التحكم";
 }
 
-@* FIX 1: TempData messages يظهروا في الـ Home بعد redirect من صفحات تانية *@
 @if (TempData["Success"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["Success"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="alert-site alert-success">
+        <i class="bi bi-check-circle me-1"></i> @TempData["Success"]
     </div>
 }
 @if (TempData["Warning"] != null)
 {
-    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-        @TempData["Warning"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="alert-site alert-warning">
+        <i class="bi bi-exclamation-triangle me-1"></i> @TempData["Warning"]
     </div>
 }
 
-<div class="row">
+<div class="row g-4">
     <div class="col-12">
-        @* FIX 2: إزالة الـ emoji من الـ heading — غير احترافي في نظام رسمي *@
-        <h3 class="mb-4">مرحباً، @ViewBag.StudentName</h3>
+        <h4 style="font-weight:800;margin-bottom:.25rem">مرحباً، @ViewBag.StudentName</h4>
+        <p style="color:var(--muted);font-size:.88rem">نظرة عامة على طلباتك وخدماتك</p>
     </div>
 
-    <!-- بطاقة الحالة الحالية -->
-    <div class="col-md-4 mb-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body text-center">
-                <h5 class="text-muted">حالة طلبك الأخير</h5>
-                @* FIX 3: text-@ViewBag.LatestStatusColor ممكن يطلع class غير موجود لو القيمة null أو غريبة *@
-                <h2 class="my-3 text-@(ViewBag.LatestStatusColor ?? "secondary")">
-                    @(ViewBag.LatestStatus ?? "لا يوجد طلبات حالية")
-                </h2>
-                <a asp-controller="Student" asp-action="ApplicationStatus" class="btn btn-outline-primary btn-sm">
-                    تفاصيل الطلب
+    <!-- Status Card -->
+    <div class="col-md-4">
+        <div class="card-site h-100">
+            <div class="card-site-header">
+                <i class="bi bi-graph-up" style="color:var(--red)"></i>
+                حالة طلبك الأخير
+            </div>
+            <div class="card-site-body text-center py-4">
+                <div style="font-size:2.2rem;font-weight:900;color:@(ViewBag.LatestStatusColor switch { "success" => "var(--success)", "danger" => "#ef4444", "warning" => "var(--warn)", _ => "var(--muted)" })">
+                    @(ViewBag.LatestStatus ?? "لا يوجد طلبات")
+                </div>
+                <a asp-controller="Student" asp-action="ApplicationStatus" style="display:inline-flex;align-items:center;gap:.35rem;margin-top:.75rem;color:var(--red);font-size:.85rem;font-weight:600;text-decoration:none">
+                    تفاصيل الطلب <i class="bi bi-arrow-left"></i>
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- روابط سريعة -->
-    <div class="col-md-8 mb-4">
+    <!-- Quick Actions -->
+    <div class="col-md-8">
         <div class="row g-3">
             @if (ViewBag.IsAccepted == true && ViewBag.IsAllocated != true && ViewBag.HasReservation != true)
             {
                 <div class="col-md-6">
-                    <div class="card bg-warning text-dark h-100">
-                        <div class="card-body">
-                            <h5><i class="bi bi-house-door"></i> اختيار الغرفة</h5>
-                            <p class="small mb-3">تم قبول طلبك! اختر غرفتك الآن من المباني المتاحة.</p>
-                            <a asp-controller="Student" asp-action="SelectRoom" class="btn btn-dark btn-sm">
-                                اختر غرفتك
+                    <div class="card-site" style="border-color:rgba(245,158,11,.3);background:var(--black-3)">
+                        <div class="card-site-body text-center py-4">
+                            <div style="font-size:2rem;margin-bottom:.5rem;color:var(--warn)">
+                                <i class="bi bi-house-door"></i>
+                            </div>
+                            <h6 style="font-weight:700">اختيار الغرفة</h6>
+                            <p style="color:var(--muted);font-size:.82rem;margin-bottom:.8rem">تم قبول طلبك! اختر غرفتك الآن من المباني المتاحة.</p>
+                            <a asp-controller="Student" asp-action="SelectRoom" class="btn" style="background:var(--warn);color:#000;border:none;border-radius:8px;font-weight:700;padding:.5rem 1.5rem">
+                                <i class="bi bi-arrow-left me-1"></i> اختر غرفتك
                             </a>
                         </div>
                     </div>
@@ -60,12 +62,32 @@
             @if (ViewBag.HasReservation == true && ViewBag.IsAllocated != true)
             {
                 <div class="col-md-6">
-                    <div class="card bg-danger text-white h-100">
-                        <div class="card-body">
-                            <h5><i class="bi bi-credit-card"></i> إتمام الدفع</h5>
-                            <p class="small mb-3">لديك حجز مؤقت. قم بالدفع خلال 24 ساعة لتأكيد التسكين.</p>
-                            <a asp-controller="Student" asp-action="Payment" class="btn btn-light btn-sm text-danger">
-                                إتمام الدفع
+                    <div class="card-site" style="border-color:rgba(239,68,68,.3);background:var(--black-3)">
+                        <div class="card-site-body text-center py-4">
+                            <div style="font-size:2rem;margin-bottom:.5rem;color:#ef4444">
+                                <i class="bi bi-credit-card"></i>
+                            </div>
+                            <h6 style="font-weight:700">إتمام الدفع</h6>
+                            <p style="color:var(--muted);font-size:.82rem;margin-bottom:.8rem">لديك حجز مؤقت. قم بالدفع خلال 24 ساعة لتأكيد التسكين.</p>
+                            <a asp-controller="Student" asp-action="Payment" class="btn" style="background:#ef4444;color:#fff;border:none;border-radius:8px;font-weight:700;padding:.5rem 1.5rem">
+                                <i class="bi bi-arrow-left me-1"></i> إتمام الدفع
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (ViewBag.IsAllocated == true)
+            {
+                <div class="col-md-6">
+                    <div class="card-site" style="border-color:rgba(16,185,129,.3);background:var(--black-3)">
+                        <div class="card-site-body text-center py-4">
+                            <div style="font-size:2rem;margin-bottom:.5rem;color:var(--success)">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                            <h6 style="font-weight:700">تم تسكينك</h6>
+                            <p style="color:var(--muted);font-size:.82rem;margin-bottom:.8rem">يمكنك الآن استخدام جميع الخدمات المتاحة.</p>
+                            <a asp-controller="Student" asp-action="StatusReport" class="btn" style="background:var(--success);color:#fff;border:none;border-radius:8px;font-weight:700;padding:.5rem 1.5rem">
+                                <i class="bi bi-file-earmark-text me-1"></i> بيان الحالة
                             </a>
                         </div>
                     </div>
