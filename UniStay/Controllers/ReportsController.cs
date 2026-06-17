@@ -93,7 +93,10 @@ public class ReportsController : Controller
                 Phone = s.Phone,
                 Email = s.Email,
                 City = s.City,
+<<<<<<< HEAD
                 Markaz = s.Markaz,
+=======
+>>>>>>> 745f584 (add system supervision and reports modules)
                 Governorate = s.Governorate,
                 Status = activeAlloc != null ? "Allocated" : "Unallocated",
                 AllocatedCity = activeAlloc?.CityRoom?.CityBuilding?.DormitoryCity?.Name,
@@ -129,10 +132,17 @@ public class ReportsController : Controller
         string? gender = null, string? faculty = null, string? status = null)
     {
         var rows = await BuildStudentListData(search, cityId, buildingId, gender, faculty, status);
+<<<<<<< HEAD
         var columns = new[] { "الاسم", "الرقم القومي", "كود الطالب", "النوع", "الكلية", "التقدير", "الهاتف", "البريد", "المحافظة", "المركز", "المدينة", "الحالة", "المدينة الجامعية", "المبنى", "الغرفة", "صورة" };
         var data = _export.ExportToExcel("قوائم الطلاب", columns, rows, r => new object?[] {
             r.FullName, r.NationalID, r.StudentCode, r.Gender == "Male" ? "ذكر" : "أنثى",
             r.Faculty, r.GradePercentage, r.Phone, r.Email, r.Governorate, r.Markaz, r.City,
+=======
+        var columns = new[] { "الاسم", "الرقم القومي", "كود الطالب", "النوع", "الكلية", "التقدير", "الهاتف", "البريد", "المحافظة", "المدينة", "الحالة", "المدينة الجامعية", "المبنى", "الغرفة", "صورة" };
+        var data = _export.ExportToExcel("قوائم الطلاب", columns, rows, r => new object?[] {
+            r.FullName, r.NationalID, r.StudentCode, r.Gender == "Male" ? "ذكر" : "أنثى",
+            r.Faculty, r.GradePercentage, r.Phone, r.Email, r.Governorate, r.City,
+>>>>>>> 745f584 (add system supervision and reports modules)
             r.Status == "Allocated" ? "مقيم" : "غير مقيم", r.AllocatedCity, r.BuildingName, r.RoomNumber,
             r.HasPhoto == true ? "نعم" : "لا"
         });
@@ -190,7 +200,11 @@ public class ReportsController : Controller
             {
                 FullName = s.FullName, NationalID = s.NationalID, StudentCode = s.StudentCode,
                 Gender = s.Gender, Faculty = s.Faculty, GradePercentage = s.GradePercentage,
+<<<<<<< HEAD
                 Phone = s.Phone, Email = s.Email, Governorate = s.Governorate, Markaz = s.Markaz, City = s.City,
+=======
+                Phone = s.Phone, Email = s.Email, Governorate = s.Governorate, City = s.City,
+>>>>>>> 745f584 (add system supervision and reports modules)
                 Status = activeAlloc != null ? "Allocated" : "Unallocated",
                 AllocatedCity = activeAlloc?.CityRoom?.CityBuilding?.DormitoryCity?.Name,
                 BuildingName = activeAlloc?.CityRoom?.CityBuilding?.BuildingName,
@@ -439,7 +453,11 @@ public class ReportsController : Controller
         {
             ID = s.ID, FullName = s.FullName, NationalID = s.NationalID,
             StudentCode = s.StudentCode, Gender = s.Gender, Faculty = s.Faculty,
+<<<<<<< HEAD
             Phone = s.Phone, City = s.City, Markaz = s.Markaz
+=======
+            Phone = s.Phone, City = s.City
+>>>>>>> 745f584 (add system supervision and reports modules)
         }).ToList();
 
         var vm = new StudentsWithoutPhotosViewModel
@@ -459,10 +477,17 @@ public class ReportsController : Controller
     public async Task<IActionResult> StudentsWithoutPhotosExportExcel(int? cityId = null, string? gender = null, string? faculty = null)
     {
         var rows = await BuildStudentsWithoutPhotosData(cityId, gender, faculty);
+<<<<<<< HEAD
         var columns = new[] { "الاسم", "الرقم القومي", "كود الطالب", "النوع", "الكلية", "الهاتف", "المركز", "المدينة" };
         var data = _export.ExportToExcel("الطلاب بدون صور", columns, rows, r => new object?[] {
             r.FullName, r.NationalID, r.StudentCode, r.Gender == "Male" ? "ذكر" : "أنثى",
             r.Faculty, r.Phone, r.Markaz, r.City
+=======
+        var columns = new[] { "الاسم", "الرقم القومي", "كود الطالب", "النوع", "الكلية", "الهاتف", "المدينة" };
+        var data = _export.ExportToExcel("الطلاب بدون صور", columns, rows, r => new object?[] {
+            r.FullName, r.NationalID, r.StudentCode, r.Gender == "Male" ? "ذكر" : "أنثى",
+            r.Faculty, r.Phone, r.City
+>>>>>>> 745f584 (add system supervision and reports modules)
         });
         return File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentsWithoutPhotos.xlsx");
     }
@@ -476,7 +501,11 @@ public class ReportsController : Controller
         return (await query.OrderBy(s => s.FullName).ToListAsync()).Select(s => new StudentNoPhotoRowViewModel
         {
             FullName = s.FullName, NationalID = s.NationalID, StudentCode = s.StudentCode,
+<<<<<<< HEAD
             Gender = s.Gender, Faculty = s.Faculty, Phone = s.Phone, City = s.City, Markaz = s.Markaz
+=======
+            Gender = s.Gender, Faculty = s.Faculty, Phone = s.Phone, City = s.City
+>>>>>>> 745f584 (add system supervision and reports modules)
         }).ToList();
     }
 

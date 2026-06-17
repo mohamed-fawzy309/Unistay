@@ -88,7 +88,10 @@
                 <th>النوع</th>
                 <th>الكلية</th>
                 <th>الهاتف</th>
+<<<<<<< HEAD
                 <th>المركز</th>
+=======
+>>>>>>> 745f584 (add system supervision and reports modules)
                 <th>المدينة</th>
             </tr>
         </thead>
@@ -102,13 +105,20 @@
                     <td>@(s.Gender == "Male" ? "ذكر" : "أنثى")</td>
                     <td>@(s.Faculty ?? "—")</td>
                     <td>@(s.Phone ?? "—")</td>
+<<<<<<< HEAD
                     <td>@(s.Markaz ?? "—")</td>
+=======
+>>>>>>> 745f584 (add system supervision and reports modules)
                     <td>@(s.City ?? "—")</td>
                 </tr>
             }
             @if (!Model.Students.Any())
             {
+<<<<<<< HEAD
                 <tr><td colspan="8" class="text-center text-muted py-4">لا توجد بيانات</td></tr>
+=======
+                <tr><td colspan="7" class="text-center text-muted py-4">لا توجد بيانات</td></tr>
+>>>>>>> 745f584 (add system supervision and reports modules)
             }
         </tbody>
     </table>
