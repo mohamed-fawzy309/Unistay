@@ -112,6 +112,28 @@ public partial class AssuitDbContext : DbContext
 
     public virtual DbSet<Violation> Violations { get; set; }
 
+    public virtual DbSet<Village> Villages { get; set; }
+
+    public virtual DbSet<HousingType> HousingTypes { get; set; }
+
+    public virtual DbSet<MealType> MealTypes { get; set; }
+
+    public virtual DbSet<FeeType> FeeTypes { get; set; }
+
+    public virtual DbSet<FeeConfiguration> FeeConfigurations { get; set; }
+
+    public virtual DbSet<Country> Countries { get; set; }
+
+    public virtual DbSet<StudentCategory> StudentCategories { get; set; }
+
+    public virtual DbSet<ApplicationConfiguration> ApplicationConfigurations { get; set; }
+
+    public virtual DbSet<Role> Roles { get; set; }
+
+    public virtual DbSet<RolePermission> RolePermissions { get; set; }
+
+    public virtual DbSet<UserRole> UserRoles { get; set; }
+
     
    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -1587,6 +1609,170 @@ public partial class AssuitDbContext : DbContext
                 .HasForeignKey(d => d.StudentID)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Violation_Student");
+        });
+
+        modelBuilder.Entity<Village>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Village__3214EC27");
+            entity.ToTable("Village");
+            entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.DormitoryCity).WithMany(p => p.Villages)
+                .HasForeignKey(d => d.DormitoryCityID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Village_DormitoryCity");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.VillageCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_Village_CreatedBy");
+
+            entity.HasOne(d => d.LastUpdatedByNavigation).WithMany(p => p.VillageLastUpdatedByNavigations)
+                .HasForeignKey(d => d.LastUpdatedBy)
+                .HasConstraintName("FK_Village_LastUpdatedBy");
+        });
+
+        modelBuilder.Entity<HousingType>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__HousingType__3214EC27");
+            entity.ToTable("HousingType");
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+        });
+
+        modelBuilder.Entity<MealType>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__MealType__3214EC27");
+            entity.ToTable("MealType");
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+        });
+
+        modelBuilder.Entity<FeeType>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__FeeType__3214EC27");
+            entity.ToTable("FeeType");
+            entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.FeeCategory).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+        });
+
+        modelBuilder.Entity<FeeConfiguration>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__FeeConfig__3214EC27");
+            entity.ToTable("FeeConfiguration");
+            entity.Property(e => e.Amount).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.AcademicYear).HasMaxLength(10);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.FeeType).WithMany(p => p.FeeConfigurations)
+                .HasForeignKey(d => d.FeeTypeID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_FeeConfig_FeeType");
+
+            entity.HasOne(d => d.DormitoryCity).WithMany(p => p.FeeConfigurations)
+                .HasForeignKey(d => d.DormitoryCityID)
+                .HasConstraintName("FK_FeeConfig_DormitoryCity");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.FeeConfigurationCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_FeeConfig_CreatedBy");
+
+            entity.HasOne(d => d.LastUpdatedByNavigation).WithMany(p => p.FeeConfigurationLastUpdatedByNavigations)
+                .HasForeignKey(d => d.LastUpdatedBy)
+                .HasConstraintName("FK_FeeConfig_LastUpdatedBy");
+        });
+
+        modelBuilder.Entity<Country>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Country__3214EC27");
+            entity.ToTable("Country");
+            entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.NameAr).HasMaxLength(200);
+            entity.Property(e => e.Code).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+        });
+
+        modelBuilder.Entity<StudentCategory>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__StudentCategory__3214EC27");
+            entity.ToTable("StudentCategory");
+            entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+        });
+
+        modelBuilder.Entity<ApplicationConfiguration>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__AppConfig__3214EC27");
+            entity.ToTable("ApplicationConfiguration");
+            entity.HasIndex(e => e.ConfigKey, "UQ_AppConfig_Key").IsUnique();
+            entity.Property(e => e.ConfigKey).HasMaxLength(100).IsUnicode(false);
+            entity.Property(e => e.ConfigValue).HasMaxLength(2000);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Category).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+        });
+
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Role__3214EC27");
+            entity.ToTable("Role");
+            entity.HasIndex(e => e.Name, "UQ_Role_Name").IsUnique();
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+        });
+
+        modelBuilder.Entity<RolePermission>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__RolePermission__3214EC27");
+            entity.ToTable("RolePermission");
+            entity.HasIndex(e => new { e.RoleID, e.PermissionID }, "UQ_RolePermission").IsUnique();
+            entity.Property(e => e.CanView).HasDefaultValue(false);
+            entity.Property(e => e.CanCreate).HasDefaultValue(false);
+            entity.Property(e => e.CanEdit).HasDefaultValue(false);
+            entity.Property(e => e.CanDelete).HasDefaultValue(false);
+
+            entity.HasOne(d => d.Role).WithMany(p => p.RolePermissions)
+                .HasForeignKey(d => d.RoleID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RolePermission_Role");
+
+            entity.HasOne(d => d.Permission).WithMany(p => p.RolePermissions)
+                .HasForeignKey(d => d.PermissionID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_RolePermission_Permission");
+        });
+
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__UserRole__3214EC27");
+            entity.ToTable("UserRole");
+            entity.HasIndex(e => new { e.SystemUserID, e.RoleID }, "UQ_UserRole").IsUnique();
+            entity.Property(e => e.AssignedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.SystemUser).WithMany(p => p.UserRoles)
+                .HasForeignKey(d => d.SystemUserID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_UserRole_SystemUser");
+
+            entity.HasOne(d => d.Role).WithMany(p => p.UserRoles)
+                .HasForeignKey(d => d.RoleID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_UserRole_Role");
+
+            entity.HasOne(d => d.AssignedByNavigation).WithMany(p => p.UserRoleAssignedByNavigations)
+                .HasForeignKey(d => d.AssignedBy)
+                .HasConstraintName("FK_UserRole_AssignedBy");
         });
 
         OnModelCreatingPartial(modelBuilder);

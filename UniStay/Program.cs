@@ -45,6 +45,7 @@ builder.Services.AddScoped<IMealService, MealService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IReportExportService, ReportExportService>();
 
 // ===== Settings =====
 builder.Services.Configure<UniversityApiSettings>(

@@ -30,80 +30,80 @@ namespace UniStay.Controllers
             _auditService = auditService;
             _emailService = emailService;
         }
-        //[HttpGet("create-Assuit-university")]
-        //public async Task<IActionResult> CreateUniversityTemp()
-        //{
-        //    try
-        //    {
-        //        // تحقق هل الجامعة موجودة
-        //        var existing = await _context.Universities
-        //            .FirstOrDefaultAsync(u => u.Name == "جامعة أسيوط");
+        [HttpGet("create-Assuit-university")]
+        public async Task<IActionResult> CreateUniversityTemp()
+        {
+            try
+            {
+                // تحقق هل الجامعة موجودة
+                var existing = await _context.Universities
+                    .FirstOrDefaultAsync(u => u.Name == "جامعة أسيوط");
 
-        //        if (existing != null)
-        //            return Content("University already exists");
+                if (existing != null)
+                    return Content("University already exists");
 
-        //        var university = new University
-        //        {
-        //            Name = "جامعة أسيوط",
-        //            NameEn = "Assiut University",
-        //            Address = "أسيوط - جمهورية مصر العربية",
-        //            Phone = "0881234567",
-        //            Email = "info@aun.edu.eg",
-        //            Website = "https://www.aun.edu.eg",
-        //            Logo = "/images/Assuit_university_logo.png",
-        //            APIBaseUrl = null,
-        //            APIKey = null
-        //        };
+                var university = new University
+                {
+                    Name = "جامعة أسيوط",
+                    NameEn = "Assiut University",
+                    Address = "أسيوط - جمهورية مصر العربية",
+                    Phone = "0881234567",
+                    Email = "info@aun.edu.eg",
+                    Website = "https://www.aun.edu.eg",
+                    Logo = "/images/Assuit_university_logo.png",
+                    APIBaseUrl = null,
+                    APIKey = null
+                };
 
-        //        _context.Universities.Add(university);
-        //        await _context.SaveChangesAsync();
+                _context.Universities.Add(university);
+                await _context.SaveChangesAsync();
 
-        //        return Content("University created successfully");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return Content(ex.ToString());
-        //    }
-        //}
-
-
+                return Content("University created successfully");
+            }
+            catch (Exception ex)
+            {
+                return Content(ex.ToString());
+            }
+        }
 
 
 
-        //[HttpGet("create")]
-        //public async Task<IActionResult> CreateAdminTemp()
-        //{
-        //    // 🔥 غير القيم دي
-        //    string name = "admin";
-        //    string email = "admin@unistay.com";
-        //    string nationalId = "12345678912346";
-        //    string password = "moh7elw7";
 
-        //    // تحقق لو موجود
-        //    var existing = await _context.SystemUsers
-        //        .FirstOrDefaultAsync(x => x.NationalID == nationalId);
 
-        //    if (existing != null)
-        //        return Content("Admin already exists");
+        [HttpGet("create")]
+        public async Task<IActionResult> CreateAdminTemp()
+        {
+            // 🔥 غير القيم دي
+            string name = "admin";
+            string email = "admin@unistay.com";
+            string nationalId = "12345678912346";
+            string password = "moh7elw7";
 
-        //    var admin = new SystemUser
-        //    {
-        //        Name = name,
-        //        Email = email,
-        //        NationalID = nationalId,
-        //        Phone = "123456",
-        //        PasswordHash = _passwordService.HashPassword(password),
-        //        IsSuperAdmin = true,
-        //        IsActive = true,
-        //        MustChangePassword = false,
-        //        CreatedAt = DateTime.UtcNow
-        //    };
+            // تحقق لو موجود
+            var existing = await _context.SystemUsers
+                .FirstOrDefaultAsync(x => x.NationalID == nationalId);
 
-        //    _context.SystemUsers.Add(admin);
-        //    await _context.SaveChangesAsync();
+            if (existing != null)
+                return Content("Admin already exists");
 
-        //    return Content("Admin created successfully");
-        //}
+            var admin = new SystemUser
+            {
+                Name = name,
+                Email = email,
+                NationalID = nationalId,
+                Phone = "123456",
+                PasswordHash = _passwordService.HashPassword(password),
+                IsSuperAdmin = true,
+                IsActive = true,
+                MustChangePassword = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.SystemUsers.Add(admin);
+            await _context.SaveChangesAsync();
+
+            return Content("Admin created successfully");
+        }
 
         // ============================================================
         // LOGIN
