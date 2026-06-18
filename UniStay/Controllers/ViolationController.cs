@@ -16,12 +16,14 @@ namespace UniStay.Controllers
         private readonly AssuitDbContext _db;
         private readonly IAuditService _audit;
         private readonly IEmailService _email;
+        private readonly IReportExportService _export;
 
-        public ViolationController(AssuitDbContext db, IAuditService audit, IEmailService email)
+        public ViolationController(AssuitDbContext db, IAuditService audit, IEmailService email, IReportExportService export)
         {
             _db = db;
             _audit = audit;
             _email = email;
+            _export = export;
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
@@ -232,6 +234,37 @@ namespace UniStay.Controllers
             };
 
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ReportExportExcel(string? filterStatus = null, string? filterSeverity = null, int? dormitoryCityId = null)
+        {
+            var query = _db.Violations.Include(v => v.Student).AsQueryable();
+            if (!string.IsNullOrEmpty(filterStatus) && filterStatus != "All") query = query.Where(v => v.Status == filterStatus);
+            if (!string.IsNullOrEmpty(filterSeverity) && filterSeverity != "All") query = query.Where(v => v.Severity == filterSeverity);
+            if (dormitoryCityId.HasValue) query = query.Where(v => v.DormitoryCityID == dormitoryCityId.Value);
+            var rows = await query.OrderByDescending(v => v.RecordedAt).Select(v => new {
+                v.Student.FullName, v.Student.NationalID, v.ViolationType, v.Severity, v.FineAmount, v.FinePaid, v.Status, v.RecordedAt
+            }).ToListAsync();
+            var columns = new[] { "الطالب", "الرقم القومي", "نوع المخالفة", "درجة الخطورة", "الغرامة", "المدفوع", "الحالة", "التاريخ" };
+            var data = _export.ExportToExcel("المخالفات", columns, rows, r => new object?[] { r.FullName, r.NationalID, r.ViolationType, r.Severity, r.FineAmount, r.FinePaid, r.Status, r.RecordedAt?.ToString("yyyy-MM-dd") });
+            return File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Violations.xlsx");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ReportExportPdf(string? filterStatus = null, string? filterSeverity = null, int? dormitoryCityId = null)
+        {
+            var query = _db.Violations.Include(v => v.Student).AsQueryable();
+            if (!string.IsNullOrEmpty(filterStatus) && filterStatus != "All") query = query.Where(v => v.Status == filterStatus);
+            if (!string.IsNullOrEmpty(filterSeverity) && filterSeverity != "All") query = query.Where(v => v.Severity == filterSeverity);
+            if (dormitoryCityId.HasValue) query = query.Where(v => v.DormitoryCityID == dormitoryCityId.Value);
+            var rows = await query.OrderByDescending(v => v.RecordedAt).Select(v => new {
+                v.Student.FullName, v.Student.NationalID, v.ViolationType, v.Severity, v.FineAmount, v.FinePaid, v.Status, v.RecordedAt
+            }).ToListAsync();
+            var columns = new[] { "الطالب", "الرقم القومي", "نوع المخالفة", "درجة الخطورة", "الغرامة", "المدفوع", "الحالة", "التاريخ" };
+            var pdfRows = rows.Select(r => new[] { r.FullName, r.NationalID, r.ViolationType, r.Severity, r.FineAmount?.ToString("N2") ?? "", r.FinePaid?.ToString("N2") ?? "", r.Status, r.RecordedAt?.ToString("yyyy-MM-dd") ?? "" }).ToArray();
+            var data = _export.ExportToPdf("المخالفات", columns, pdfRows);
+            return File(data, "application/pdf", "Violations.pdf");
         }
     }
 }

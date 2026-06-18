@@ -19,6 +19,10 @@ namespace UniStay.Services.Implementations
 
         public bool HasPermission(int userId, string permissionKey, string action = "CanView")
         {
+            var user = _context.SystemUsers.Find(userId);
+            if (user != null && user.IsSuperAdmin)
+                return true;
+
             var perm = _context.UserPermissions
                 .Include(p => p.Permission)
                 .FirstOrDefault(p => p.SystemUserID == userId &&

@@ -1,0 +1,168 @@
+@model UniStay.ViewModels.Reports.SocialCaseReportViewModel
+@{
+    ViewData["Title"] = "الحالات الاجتماعية";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">الحالات الاجتماعية</h2>
+    <div class="btn-group">
+        <a asp-action="SocialCaseExportExcel" asp-route-caseType="@Model.Filter.CaseType" asp-route-status="@Model.Filter.Status" asp-route-priority="@Model.Filter.Priority" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        <a asp-action="SocialCaseExportPdf" asp-route-caseType="@Model.Filter.CaseType" asp-route-status="@Model.Filter.Status" asp-route-priority="@Model.Filter.Priority" class="btn btn-danger"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-people"></i></div>
+                <div>
+                    <div class="value">@Model.TotalCases</div>
+                    <div class="label">إجمالي الحالات</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-folder-open"></i></div>
+                <div>
+                    <div class="value">@Model.OpenCases</div>
+                    <div class="label">مفتوحة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle"></i></div>
+                <div>
+                    <div class="value">@Model.ResolvedCases</div>
+                    <div class="label">تم الحل</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-exclamation-triangle"></i></div>
+                <div>
+                    <div class="value">@Model.HighPriority</div>
+                    <div class="label">أولوية عالية</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="get" class="filter-bar row g-2 mb-3">
+    <div class="col-md-3">
+        <label class="form-label small">نوع الحالة</label>
+        <select name="caseType" class="form-select" onchange="this.form.submit()">
+            <option value="">الكل</option>
+            <option value="Orphan" selected="@(Model.Filter.CaseType == "Orphan")">يتيم</option>
+            <option value="LowIncome" selected="@(Model.Filter.CaseType == "LowIncome")">ضعف دخل</option>
+            <option value="Disability" selected="@(Model.Filter.CaseType == "Disability")">إعاقة</option>
+            <option value="Medical" selected="@(Model.Filter.CaseType == "Medical")">حالة مرضية</option>
+            <option value="FamilyAbroad" selected="@(Model.Filter.CaseType == "FamilyAbroad")">عائلة بالخارج</option>
+            <option value="Foreign" selected="@(Model.Filter.CaseType == "Foreign")">طالب وافد</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">الحالة</label>
+        <select name="status" class="form-select" onchange="this.form.submit()">
+            <option value="">الكل</option>
+            <option value="Open" selected="@(Model.Filter.Status == "Open")">مفتوحة</option>
+            <option value="Resolved" selected="@(Model.Filter.Status == "Resolved")">تم الحل</option>
+            <option value="Closed" selected="@(Model.Filter.Status == "Closed")">مغلقة</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">الأولوية</label>
+        <select name="priority" class="form-select" onchange="this.form.submit()">
+            <option value="">الكل</option>
+            <option value="High" selected="@(Model.Filter.Priority == "High")">عالية</option>
+            <option value="Medium" selected="@(Model.Filter.Priority == "Medium")">متوسطة</option>
+            <option value="Low" selected="@(Model.Filter.Priority == "Low")">منخفضة</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small">بحث</label>
+        <input type="text" name="search" class="form-control" placeholder="اسم الطالب أو الرقم القومي..." value="@Model.Filter.Search">
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <a asp-action="SocialCase" class="btn btn-secondary w-100">إعادة تعيين</a>
+    </div>
+</form>
+
+<div class="table-responsive bg-white rounded shadow-sm animate-fade-in">
+    <table class="table table-hover mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>الطالب</th>
+                <th>الرقم القومي</th>
+                <th>الكلية</th>
+                <th>نوع الحالة</th>
+                <th>الحالة</th>
+                <th>الأولوية</th>
+                <th>المسؤول</th>
+                <th>تاريخ الإنشاء</th>
+                <th>ملاحظات</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model.Cases)
+            {
+                <tr>
+                    <td class="fw-semibold">@c.StudentName</td>
+                    <td>@c.NationalID</td>
+                    <td>@(c.Faculty ?? "—")</td>
+                    <td>@c.CaseTypeDisplay</td>
+                    <td>
+                        <span class="badge bg-@(c.Status switch { "Open" => "warning", "Resolved" => "success", "Closed" => "secondary", _ => "light" })">
+                            @c.StatusDisplay
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-@(c.Priority switch { "High" => "danger", "Medium" => "warning", "Low" => "info", _ => "light" })">
+                            @c.PriorityDisplay
+                        </span>
+                    </td>
+                    <td>@(c.AssignedTo ?? "—")</td>
+                    <td><small>@c.CreatedAt?.ToString("yyyy/MM/dd")</small></td>
+                    <td><small class="text-muted">@(c.Notes ?? "—")</small></td>
+                </tr>
+            }
+            @if (!Model.Cases.Any())
+            {
+                <tr><td colspan="9" class="text-center text-muted py-4">لا توجد بيانات</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination pagination-modern justify-content-center">
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" asp-action="SocialCase" asp-route-page="@i" asp-route-caseType="@Model.Filter.CaseType" asp-route-status="@Model.Filter.Status" asp-route-priority="@Model.Filter.Priority" asp-route-search="@Model.Filter.Search">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

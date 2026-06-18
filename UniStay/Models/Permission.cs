@@ -18,4 +18,6 @@ public partial class Permission
     public virtual PermissionGroup? Group { get; set; }
 
     public virtual ICollection<UserPermission> UserPermissions { get; set; } = new List<UserPermission>();
+
+    public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
 }
