@@ -6,6 +6,7 @@ using UniStay.Helpers;
 using UniStay.Models;
 using UniStay.Services.Interfaces;
 using UniStay.ViewModels.Admin;
+using UniStay.ViewModels.Permissions;
 
 namespace UniStay.Controllers
 {
@@ -17,19 +18,22 @@ namespace UniStay.Controllers
         private readonly IUniversityApiService _api;
         private readonly IAuditService _audit;
         private readonly IEmailService _email;
+        private readonly IPasswordService _passwordService;
 
         public AdminController(
             AssuitDbContext db,
             IPermissionService perm,
             IUniversityApiService api,
             IAuditService audit,
-            IEmailService email)
+            IEmailService email,
+            IPasswordService passwordService)
         {
             _db = db;
             _perm = perm;
             _api = api;
             _audit = audit;
             _email = email;
+            _passwordService = passwordService;
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
@@ -40,9 +44,62 @@ namespace UniStay.Controllers
             return DateTime.Now.Month >= 9 ? $"{year}-{year + 1}" : $"{year - 1}-{year}";
         }
 
-        public  IActionResult Index()
+        [RequirePermission("Dashboard.View", "CanView")]
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var now = DateTime.UtcNow;
+            var currentYear = GetCurrentAcademicYear();
+
+            var vm = new DashboardViewModel
+            {
+                PendingCount = await _db.Applications.CountAsync(a => a.Status == "Pending" && a.AcademicYear == currentYear),
+                AcceptedCount = await _db.Applications.CountAsync(a => a.Status == "Accepted" && a.AcademicYear == currentYear),
+                RejectedCount = await _db.Applications.CountAsync(a => a.Status == "Rejected" && a.AcademicYear == currentYear),
+                TotalStudents = await _db.Students.CountAsync(s => s.IsDeleted != true),
+                AllocatedCount = await _db.Allocations.CountAsync(a => a.Status == "Active"),
+                CityCount = await _db.DormitoryCities.CountAsync(c => c.IsActive && !c.IsDeleted),
+                BuildingCount = await _db.CityBuildings.CountAsync(b => b.IsActive != false && b.IsDeleted != true),
+                RoomCount = await _db.CityRooms.CountAsync(r => r.IsActive != false && r.IsDeleted != true),
+                UserCount = await _db.SystemUsers.CountAsync(u => !u.IsDeleted),
+                AdminCount = await _db.SystemUsers.CountAsync(u => u.IsSuperAdmin && !u.IsDeleted),
+                RoleCount = await _db.Set<UniStay.Models.Role>().CountAsync(r => r.IsActive),
+                TodayApplications = await _db.Applications.CountAsync(a => a.CreatedAt!.Value.Date == now.Date),
+                TotalApplications = await _db.Applications.CountAsync()
+            };
+
+            vm.LatestApplications = await _db.Applications
+                .Include(a => a.Student)
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(10)
+                .Select(a => new ApplicationRowViewModel
+                {
+                    ID = a.ID,
+                    StudentName = a.Student!.FullName,
+                    NationalID = a.Student.NationalID,
+                    Faculty = a.Student.Faculty,
+                    Status = a.Status,
+                    CreatedAt = a.CreatedAt!.Value
+                })
+                .ToListAsync();
+
+            var recentLogs = await _db.AuditLogs
+                .OrderByDescending(l => l.CreatedAt)
+                .Take(5)
+                .ToListAsync();
+            var userIds = recentLogs.Where(l => l.UserType == "System").Select(l => l.UserID).Distinct().ToList();
+            var userNames = await _db.SystemUsers.Where(u => userIds.Contains(u.ID)).ToDictionaryAsync(u => u.ID, u => u.Name);
+            vm.RecentAuditLogs = recentLogs.Select(l => new AuditLogRowViewModel
+            {
+                ID = l.ID,
+                UserDisplayName = l.UserType == "System" && userNames.ContainsKey(l.UserID) ? userNames[l.UserID] : l.UserID.ToString(),
+                UserType = l.UserType,
+                Action = l.Action,
+                ActionDisplay = l.Action,
+                TableName = l.TableName,
+                CreatedAt = l.CreatedAt
+            }).ToList();
+
+            return View(vm);
         }
 
 
@@ -51,7 +108,8 @@ namespace UniStay.Controllers
        // 1. إدارة الطلبات
        // ──────────────────────────────────────────────────────────────────────────────
 
-       [HttpGet]
+        [HttpGet]
+        [RequirePermission("PendingRegistrations.Manage", "CanView")]
         public async Task<IActionResult> PendingApplications(
             string? status = null,
             string? studentType = null,
@@ -122,6 +180,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("PendingRegistrations.Manage", "CanEdit")]
         public async Task<IActionResult> ReviewApplication(int id)
         {
             var app = await _db.Applications
@@ -142,6 +201,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("PendingRegistrations.Manage", "CanEdit")]
         public async Task<IActionResult> ReviewApplication(int id, ReviewDecisionViewModel model)
         {
             var app = await _db.Applications
@@ -193,6 +253,7 @@ namespace UniStay.Controllers
         }
 
         [HttpPost]
+        [RequirePermission("PendingRegistrations.Manage", "CanEdit")]
         public async Task<IActionResult> VerifyFromServer(int id)
         {
             var app = await _db.Applications
@@ -234,6 +295,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("PendingRegistrations.Manage", "CanEdit")]
         public async Task<IActionResult> QuickApprove(int id)
         {
             var app = await _db.Applications.FindAsync(id);
@@ -258,6 +320,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("PendingRegistrations.Manage", "CanEdit")]
         public async Task<IActionResult> QuickReject(int id, string reason)
         {
             if (string.IsNullOrWhiteSpace(reason))
@@ -288,6 +351,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Coordination.Manage", "CanView")]
         public async Task<IActionResult> AllApplications(
             string? status = null,
             string? studentType = null,
@@ -359,6 +423,7 @@ namespace UniStay.Controllers
         // ──────────────────────────────────────────────────────────────────────────────
 
         [HttpGet]
+        [RequirePermission("Students.Manage", "CanView")]
         public async Task<IActionResult> Students(
             string? search = null,
             string? faculty = null,
@@ -414,6 +479,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Students.Manage", "CanView")]
         public async Task<IActionResult> StudentDetails(int id)
         {
             var student = await _db.Students
@@ -436,6 +502,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Students.Manage", "CanEdit")]
         public async Task<IActionResult> EditStudent(int id, EditStudentViewModel model)
         {
             if (!ModelState.IsValid)
@@ -488,6 +555,7 @@ namespace UniStay.Controllers
         // ──────────────────────────────────────────────────────────────────────────────
 
         [HttpGet]
+        [RequirePermission("DormitoryCities.Manage", "CanView")]
         public async Task<IActionResult> Cities()
         {
             var cities = await _db.DormitoryCities
@@ -506,6 +574,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("DormitoryCities.Manage", "CanCreate")]
         public async Task<IActionResult> Cities(CreateCityViewModel model)
         {
             if (!ModelState.IsValid) return RedirectToAction("Cities");
@@ -533,6 +602,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("DormitoryCities.Manage", "CanEdit")]
         public async Task<IActionResult> EditCity(EditCityViewModel model)
         {
             if (!ModelState.IsValid)
@@ -563,6 +633,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("DormitoryCities.Manage", "CanEdit")]
         public async Task<IActionResult> CityConfig(int id)
         {
             var city = await _db.DormitoryCities
@@ -586,6 +657,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("DormitoryCities.Manage", "CanEdit")]
         public async Task<IActionResult> CityConfig(CityConfiguration model)
         {
             var config = await _db.CityConfigurations
@@ -634,6 +706,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Buildings.Manage", "CanView")]
         public async Task<IActionResult> Buildings(int? cityId = null)
         {
             var query = _db.CityBuildings
@@ -671,6 +744,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Buildings.Manage", "CanCreate")]
         public async Task<IActionResult> Buildings(CreateBuildingViewModel model)
         {
             if (!ModelState.IsValid) return RedirectToAction("Buildings");
@@ -699,6 +773,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Buildings.Manage", "CanEdit")]
         public async Task<IActionResult> EditBuilding(EditBuildingViewModel model)
         {
             if (!ModelState.IsValid)
@@ -730,6 +805,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Rooms.Manage", "CanView")]
         public async Task<IActionResult> Rooms(int? buildingId = null)
         {
             var query = _db.CityRooms
@@ -776,6 +852,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Rooms.Manage", "CanCreate")]
         public async Task<IActionResult> Rooms(CreateRoomViewModel model)
         {
             if (!ModelState.IsValid) return RedirectToAction("Rooms");
@@ -820,6 +897,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Rooms.Manage", "CanEdit")]
         public async Task<IActionResult> EditRoom(EditRoomViewModel model)
         {
             if (!ModelState.IsValid)
@@ -860,6 +938,7 @@ namespace UniStay.Controllers
         // ──────────────────────────────────────────────────────────────────────────────
 
         [HttpGet]
+        [RequirePermission("ApplicationSchedules.Manage", "CanView")]
         public async Task<IActionResult> Schedules()
         {
             var schedules = await _db.ApplicationSchedules
@@ -877,6 +956,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("ApplicationSchedules.Manage", "CanCreate")]
         public async Task<IActionResult> Schedules(CreateScheduleViewModel model)
         {
             if (!ModelState.IsValid) return RedirectToAction("Schedules");
@@ -914,6 +994,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("ApplicationSchedules.Manage", "CanEdit")]
         public async Task<IActionResult> EditSchedule(EditScheduleViewModel model)
         {
             if (!ModelState.IsValid)
@@ -941,6 +1022,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Instructions.Manage", "CanView")]
         public async Task<IActionResult> Instructions()
         {
             var instructions = await _db.HousingInstructions
@@ -959,6 +1041,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Instructions.Manage", "CanCreate")]
         public async Task<IActionResult> Instructions(CreateInstructionViewModel model)
         {
             if (!ModelState.IsValid) return RedirectToAction("Instructions");
@@ -991,6 +1074,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Instructions.Manage", "CanEdit")]
         public async Task<IActionResult> EditInstruction(EditInstructionViewModel model)
         {
             if (!ModelState.IsValid)
@@ -1019,6 +1103,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Instructions.Manage", "CanEdit")]
         public async Task<IActionResult> InstructionAttachments(int instructionId)
         {
             var instruction = await _db.HousingInstructions
@@ -1033,6 +1118,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Instructions.Manage", "CanEdit")]
         public async Task<IActionResult> UploadInstructionAttachment(int instructionId, IFormFile file, string? fileName)
         {
             if (file == null || file.Length == 0)
@@ -1074,6 +1160,7 @@ namespace UniStay.Controllers
         }
 
         [HttpPost]
+        [RequirePermission("Instructions.Manage", "CanDelete")]
         public async Task<IActionResult> DeleteInstructionAttachment(int id)
         {
             var attachment = await _db.HousingInstructionAttachments.FindAsync(id);
@@ -1096,6 +1183,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("AppConfig.Manage", "CanView")]
         public async Task<IActionResult> Announcements()
         {
             var announcements = await _db.Announcements
@@ -1114,6 +1202,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("AppConfig.Manage", "CanCreate")]
         public async Task<IActionResult> Announcements(CreateAnnouncementViewModel model)
         {
             if (!ModelState.IsValid) return RedirectToAction("Announcements");
@@ -1174,6 +1263,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("AppConfig.Manage", "CanEdit")]
         public async Task<IActionResult> EditAnnouncement(EditAnnouncementViewModel model)
         {
             if (!ModelState.IsValid)
@@ -1211,6 +1301,7 @@ namespace UniStay.Controllers
         }
 
         [HttpPost]
+        [RequirePermission("AppConfig.Manage", "CanEdit")]
         public async Task<IActionResult> TogglePublishAnnouncement(int id)
         {
             var announcement = await _db.Announcements.FindAsync(id);
@@ -1235,6 +1326,7 @@ namespace UniStay.Controllers
         // ──────────────────────────────────────────────────────────────────────────────
 
         [HttpGet]
+        [RequirePermission("Buildings.Manage", "CanView")]
         public async Task<IActionResult> BuildingLayout(int id)
         {
             var building = await _db.CityBuildings
@@ -1275,6 +1367,931 @@ namespace UniStay.Controllers
             layout.Floors = floors;
 
             return View(layout);
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 6. Villages
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpGet]
+        [RequirePermission("Villages.Manage", "CanView")]
+        public async Task<IActionResult> Villages(int? cityId = null)
+        {
+            var query = _db.Villages
+                .Include(v => v.DormitoryCity)
+                .AsQueryable();
+
+            if (cityId.HasValue)
+                query = query.Where(v => v.DormitoryCityID == cityId.Value);
+
+            var villages = await query
+                .OrderBy(v => v.DormitoryCity.Name).ThenBy(v => v.Name)
+                .Select(v => new VillageViewModel
+                {
+                    ID = v.ID,
+                    Name = v.Name,
+                    DormitoryCityID = v.DormitoryCityID,
+                    CityName = v.DormitoryCity.Name,
+                    IsActive = v.IsActive,
+                    CreatedAt = v.CreatedAt
+                })
+                .ToListAsync();
+
+            ViewBag.Cities = await _db.DormitoryCities.Where(c => c.IsActive && !c.IsDeleted).ToListAsync();
+            ViewBag.FilterCityId = cityId;
+            return View(villages);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Villages.Manage", "CanCreate")]
+        public async Task<IActionResult> Villages(CreateVillageViewModel model)
+        {
+            if (!ModelState.IsValid) return RedirectToAction("Villages");
+
+            var village = new Village
+            {
+                DormitoryCityID = model.DormitoryCityID,
+                Name = model.Name,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = CurrentUserId
+            };
+
+            _db.Villages.Add(village);
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Village.Create", "Village", village.ID,
+                null, new { village.Name, village.DormitoryCityID });
+
+            TempData["Success"] = "تم إضافة القرية";
+            return RedirectToAction("Villages");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Villages.Manage", "CanEdit")]
+        public async Task<IActionResult> EditVillage(EditVillageViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "بيانات غير صحيحة";
+                return RedirectToAction("Villages");
+            }
+
+            var village = await _db.Villages.FindAsync(model.ID);
+            if (village == null) return NotFound();
+
+            var oldName = village.Name;
+            village.Name = model.Name;
+            village.IsActive = model.IsActive;
+            village.LastUpdatedAt = DateTime.UtcNow;
+            village.LastUpdatedBy = CurrentUserId;
+
+            await _db.SaveChangesAsync();
+            await _audit.LogAsync(CurrentUserId, "Staff", "Village.Edit", "Village", model.ID,
+                new { Name = oldName }, new { model.Name, model.IsActive });
+
+            TempData["Success"] = "تم تحديث القرية";
+            return RedirectToAction("Villages");
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 7. Housing Types
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpGet]
+        [RequirePermission("HousingTypes.Manage", "CanView")]
+        public async Task<IActionResult> HousingTypes()
+        {
+            var types = await _db.HousingTypes
+                .OrderBy(t => t.Name)
+                .Select(t => new HousingTypeViewModel
+                {
+                    ID = t.ID,
+                    Name = t.Name,
+                    Description = t.Description,
+                    IsActive = t.IsActive
+                })
+                .ToListAsync();
+
+            return View(types);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("HousingTypes.Manage", "CanCreate")]
+        public async Task<IActionResult> HousingTypes(CreateHousingTypeViewModel model)
+        {
+            if (!ModelState.IsValid) return RedirectToAction("HousingTypes");
+
+            var type = new HousingType { Name = model.Name, Description = model.Description, IsActive = true };
+            _db.HousingTypes.Add(type);
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "HousingType.Create", "HousingType", type.ID,
+                null, new { type.Name });
+
+            TempData["Success"] = "تم إضافة نوع السكن";
+            return RedirectToAction("HousingTypes");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("HousingTypes.Manage", "CanEdit")]
+        public async Task<IActionResult> EditHousingType(EditHousingTypeViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "بيانات غير صحيحة";
+                return RedirectToAction("HousingTypes");
+            }
+
+            var type = await _db.HousingTypes.FindAsync(model.ID);
+            if (type == null) return NotFound();
+
+            type.Name = model.Name;
+            type.Description = model.Description;
+            type.IsActive = model.IsActive;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "HousingType.Edit", "HousingType", model.ID,
+                null, new { model.Name, model.IsActive });
+
+            TempData["Success"] = "تم تحديث نوع السكن";
+            return RedirectToAction("HousingTypes");
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 8. Meal Types
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpGet]
+        [RequirePermission("MealTypes.Manage", "CanView")]
+        public async Task<IActionResult> MealTypes()
+        {
+            var types = await _db.MealTypes
+                .OrderBy(t => t.Name)
+                .Select(t => new MealTypeViewModel
+                {
+                    ID = t.ID,
+                    Name = t.Name,
+                    Description = t.Description,
+                    IsActive = t.IsActive
+                })
+                .ToListAsync();
+
+            return View(types);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("MealTypes.Manage", "CanCreate")]
+        public async Task<IActionResult> MealTypes(CreateMealTypeViewModel model)
+        {
+            if (!ModelState.IsValid) return RedirectToAction("MealTypes");
+
+            var type = new MealType { Name = model.Name, Description = model.Description, IsActive = true };
+            _db.MealTypes.Add(type);
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "MealType.Create", "MealType", type.ID,
+                null, new { type.Name });
+
+            TempData["Success"] = "تم إضافة نوع الوجبة";
+            return RedirectToAction("MealTypes");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("MealTypes.Manage", "CanEdit")]
+        public async Task<IActionResult> EditMealType(EditMealTypeViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "بيانات غير صحيحة";
+                return RedirectToAction("MealTypes");
+            }
+
+            var type = await _db.MealTypes.FindAsync(model.ID);
+            if (type == null) return NotFound();
+
+            type.Name = model.Name;
+            type.Description = model.Description;
+            type.IsActive = model.IsActive;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "MealType.Edit", "MealType", model.ID,
+                null, new { model.Name, model.IsActive });
+
+            TempData["Success"] = "تم تحديث نوع الوجبة";
+            return RedirectToAction("MealTypes");
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 9. Fee Types
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpGet]
+        [RequirePermission("FeeTypes.Manage", "CanView")]
+        public async Task<IActionResult> FeeTypes()
+        {
+            var types = await _db.FeeTypes
+                .OrderBy(t => t.FeeCategory).ThenBy(t => t.Name)
+                .Select(t => new FeeTypeViewModel
+                {
+                    ID = t.ID,
+                    Name = t.Name,
+                    Description = t.Description,
+                    FeeCategory = t.FeeCategory,
+                    IsActive = t.IsActive,
+                    CreatedAt = t.CreatedAt
+                })
+                .ToListAsync();
+
+            return View(types);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("FeeTypes.Manage", "CanCreate")]
+        public async Task<IActionResult> FeeTypes(CreateFeeTypeViewModel model)
+        {
+            if (!ModelState.IsValid) return RedirectToAction("FeeTypes");
+
+            var type = new FeeType
+            {
+                Name = model.Name,
+                Description = model.Description,
+                FeeCategory = model.FeeCategory,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = CurrentUserId
+            };
+            _db.FeeTypes.Add(type);
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "FeeType.Create", "FeeType", type.ID,
+                null, new { type.Name, type.FeeCategory });
+
+            TempData["Success"] = "تم إضافة نوع الرسم";
+            return RedirectToAction("FeeTypes");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("FeeTypes.Manage", "CanEdit")]
+        public async Task<IActionResult> EditFeeType(EditFeeTypeViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "بيانات غير صحيحة";
+                return RedirectToAction("FeeTypes");
+            }
+
+            var type = await _db.FeeTypes.FindAsync(model.ID);
+            if (type == null) return NotFound();
+
+            type.Name = model.Name;
+            type.Description = model.Description;
+            type.FeeCategory = model.FeeCategory;
+            type.IsActive = model.IsActive;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "FeeType.Edit", "FeeType", model.ID,
+                null, new { model.Name, model.FeeCategory, model.IsActive });
+
+            TempData["Success"] = "تم تحديث نوع الرسم";
+            return RedirectToAction("FeeTypes");
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 10. Fee Configurations
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpGet]
+        [RequirePermission("FeeConfigurations.Manage", "CanView")]
+        public async Task<IActionResult> FeeConfigurations()
+        {
+            var configs = await _db.FeeConfigurations
+                .Include(f => f.FeeType)
+                .Include(f => f.DormitoryCity)
+                .OrderBy(f => f.FeeType.Name)
+                .Select(f => new FeeConfigurationViewModel
+                {
+                    ID = f.ID,
+                    FeeTypeID = f.FeeTypeID,
+                    FeeTypeName = f.FeeType.Name,
+                    DormitoryCityID = f.DormitoryCityID,
+                    CityName = f.DormitoryCity != null ? f.DormitoryCity.Name : null,
+                    Amount = f.Amount,
+                    AcademicYear = f.AcademicYear,
+                    IsActive = f.IsActive
+                })
+                .ToListAsync();
+
+            ViewBag.FeeTypes = await _db.FeeTypes.Where(t => t.IsActive).ToListAsync();
+            ViewBag.Cities = await _db.DormitoryCities.Where(c => c.IsActive && !c.IsDeleted).ToListAsync();
+            return View(configs);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("FeeConfigurations.Manage", "CanCreate")]
+        public async Task<IActionResult> FeeConfigurations(CreateFeeConfigurationViewModel model)
+        {
+            if (!ModelState.IsValid) return RedirectToAction("FeeConfigurations");
+
+            var config = new FeeConfiguration
+            {
+                FeeTypeID = model.FeeTypeID,
+                DormitoryCityID = model.DormitoryCityID,
+                Amount = model.Amount,
+                AcademicYear = model.AcademicYear ?? GetCurrentAcademicYear(),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = CurrentUserId
+            };
+            _db.FeeConfigurations.Add(config);
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "FeeConfig.Create", "FeeConfiguration", config.ID,
+                null, new { config.FeeTypeID, config.Amount, config.AcademicYear });
+
+            TempData["Success"] = "تم إضافة تكوين الرسم";
+            return RedirectToAction("FeeConfigurations");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("FeeConfigurations.Manage", "CanEdit")]
+        public async Task<IActionResult> EditFeeConfiguration(EditFeeConfigurationViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "بيانات غير صحيحة";
+                return RedirectToAction("FeeConfigurations");
+            }
+
+            var config = await _db.FeeConfigurations.FindAsync(model.ID);
+            if (config == null) return NotFound();
+
+            var oldAmount = config.Amount;
+            config.Amount = model.Amount;
+            config.IsActive = model.IsActive;
+            config.LastUpdatedAt = DateTime.UtcNow;
+            config.LastUpdatedBy = CurrentUserId;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "FeeConfig.Edit", "FeeConfiguration", model.ID,
+                new { Amount = oldAmount }, new { model.Amount, model.IsActive });
+
+            TempData["Success"] = "تم تحديث تكوين الرسم";
+            return RedirectToAction("FeeConfigurations");
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 11. Countries
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpGet]
+        [RequirePermission("Countries.Manage", "CanView")]
+        public async Task<IActionResult> Countries()
+        {
+            var countries = await _db.Countries
+                .OrderBy(c => c.Name)
+                .Select(c => new CountryViewModel
+                {
+                    ID = c.ID,
+                    Name = c.Name,
+                    NameAr = c.NameAr,
+                    Code = c.Code,
+                    IsActive = c.IsActive
+                })
+                .ToListAsync();
+
+            return View(countries);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Countries.Manage", "CanCreate")]
+        public async Task<IActionResult> Countries(CreateCountryViewModel model)
+        {
+            if (!ModelState.IsValid) return RedirectToAction("Countries");
+
+            var country = new Country
+            {
+                Name = model.Name,
+                NameAr = model.NameAr,
+                Code = model.Code,
+                IsActive = true
+            };
+            _db.Countries.Add(country);
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Country.Create", "Country", country.ID,
+                null, new { country.Name, country.Code });
+
+            TempData["Success"] = "تم إضافة الدولة";
+            return RedirectToAction("Countries");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Countries.Manage", "CanEdit")]
+        public async Task<IActionResult> EditCountry(EditCountryViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "بيانات غير صحيحة";
+                return RedirectToAction("Countries");
+            }
+
+            var country = await _db.Countries.FindAsync(model.ID);
+            if (country == null) return NotFound();
+
+            country.Name = model.Name;
+            country.NameAr = model.NameAr;
+            country.Code = model.Code;
+            country.IsActive = model.IsActive;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Country.Edit", "Country", model.ID,
+                null, new { model.Name, model.IsActive });
+
+            TempData["Success"] = "تم تحديث الدولة";
+            return RedirectToAction("Countries");
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 12. Student Categories
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpGet]
+        [RequirePermission("StudentCategories.Manage", "CanView")]
+        public async Task<IActionResult> StudentCategories()
+        {
+            var categories = await _db.StudentCategories
+                .OrderBy(c => c.Name)
+                .Select(c => new StudentCategoryViewModel
+                {
+                    ID = c.ID,
+                    Name = c.Name,
+                    Description = c.Description,
+                    IsActive = c.IsActive
+                })
+                .ToListAsync();
+
+            return View(categories);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("StudentCategories.Manage", "CanCreate")]
+        public async Task<IActionResult> StudentCategories(CreateStudentCategoryViewModel model)
+        {
+            if (!ModelState.IsValid) return RedirectToAction("StudentCategories");
+
+            var cat = new StudentCategory { Name = model.Name, Description = model.Description, IsActive = true };
+            _db.StudentCategories.Add(cat);
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "StudentCategory.Create", "StudentCategory", cat.ID,
+                null, new { cat.Name });
+
+            TempData["Success"] = "تم إضافة التصنيف";
+            return RedirectToAction("StudentCategories");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("StudentCategories.Manage", "CanEdit")]
+        public async Task<IActionResult> EditStudentCategory(EditStudentCategoryViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "بيانات غير صحيحة";
+                return RedirectToAction("StudentCategories");
+            }
+
+            var cat = await _db.StudentCategories.FindAsync(model.ID);
+            if (cat == null) return NotFound();
+
+            cat.Name = model.Name;
+            cat.Description = model.Description;
+            cat.IsActive = model.IsActive;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "StudentCategory.Edit", "StudentCategory", model.ID,
+                null, new { model.Name, model.IsActive });
+
+            TempData["Success"] = "تم تحديث التصنيف";
+            return RedirectToAction("StudentCategories");
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 13. Application Configuration
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpGet]
+        [RequirePermission("AppConfig.Manage", "CanView")]
+        public async Task<IActionResult> AppConfig(string? category = null)
+        {
+            var query = _db.ApplicationConfigurations.AsQueryable();
+            if (!string.IsNullOrEmpty(category))
+                query = query.Where(c => c.Category == category);
+
+            var configs = await query
+                .OrderBy(c => c.Category).ThenBy(c => c.ConfigKey)
+                .Select(c => new AppConfigViewModel
+                {
+                    ID = c.ID,
+                    ConfigKey = c.ConfigKey,
+                    ConfigValue = c.ConfigValue,
+                    Description = c.Description,
+                    Category = c.Category,
+                    IsActive = c.IsActive
+                })
+                .ToListAsync();
+
+            ViewBag.Categories = await _db.ApplicationConfigurations
+                .Select(c => c.Category).Distinct().ToListAsync();
+
+            return View(configs);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("AppConfig.Manage", "CanCreate")]
+        public async Task<IActionResult> AppConfig(CreateAppConfigViewModel model)
+        {
+            if (!ModelState.IsValid) return RedirectToAction("AppConfig");
+
+            var exists = await _db.ApplicationConfigurations.AnyAsync(c => c.ConfigKey == model.ConfigKey);
+            if (exists)
+            {
+                TempData["Error"] = "المفتاح موجود مسبقاً";
+                return RedirectToAction("AppConfig");
+            }
+
+            var config = new ApplicationConfiguration
+            {
+                ConfigKey = model.ConfigKey,
+                ConfigValue = model.ConfigValue,
+                Description = model.Description,
+                Category = model.Category,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = CurrentUserId
+            };
+            _db.ApplicationConfigurations.Add(config);
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "AppConfig.Create", "ApplicationConfiguration",
+                config.ID, null, new { config.ConfigKey, config.ConfigValue, config.Category });
+
+            TempData["Success"] = "تم إضافة الإعداد";
+            return RedirectToAction("AppConfig");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("AppConfig.Manage", "CanEdit")]
+        public async Task<IActionResult> EditAppConfig(EditAppConfigViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "بيانات غير صحيحة";
+                return RedirectToAction("AppConfig");
+            }
+
+            var config = await _db.ApplicationConfigurations.FindAsync(model.ID);
+            if (config == null) return NotFound();
+
+            var oldValue = config.ConfigValue;
+            config.ConfigValue = model.ConfigValue;
+            config.Description = model.Description;
+            config.IsActive = model.IsActive;
+            config.LastUpdatedAt = DateTime.UtcNow;
+            config.LastUpdatedBy = CurrentUserId;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "AppConfig.Edit", "ApplicationConfiguration",
+                model.ID, new { ConfigValue = oldValue }, new { model.ConfigValue, model.IsActive });
+
+            TempData["Success"] = "تم تحديث الإعداد";
+            return RedirectToAction("AppConfig");
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 14. Roles Management
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpGet]
+        [RequirePermission("Roles.Manage", "CanView")]
+        public async Task<IActionResult> Roles()
+        {
+            var roles = await _db.Roles
+                .OrderBy(r => r.Name)
+                .Select(r => new RoleViewModel
+                {
+                    ID = r.ID,
+                    Name = r.Name,
+                    Description = r.Description,
+                    IsActive = r.IsActive,
+                    UserCount = r.UserRoles.Count
+                })
+                .ToListAsync();
+
+            return View(roles);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Roles.Manage", "CanCreate")]
+        public async Task<IActionResult> Roles(CreateRoleViewModel model)
+        {
+            if (!ModelState.IsValid) return RedirectToAction("Roles");
+
+            var exists = await _db.Roles.AnyAsync(r => r.Name == model.Name);
+            if (exists)
+            {
+                TempData["Error"] = "اسم الدور موجود مسبقاً";
+                return RedirectToAction("Roles");
+            }
+
+            var role = new Role
+            {
+                Name = model.Name,
+                Description = model.Description,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = CurrentUserId
+            };
+            _db.Roles.Add(role);
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Role.Create", "Role", role.ID,
+                null, new { role.Name });
+
+            TempData["Success"] = "تم إضافة الدور";
+            return RedirectToAction("Roles");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Roles.Manage", "CanEdit")]
+        public async Task<IActionResult> EditRole(EditRoleViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "بيانات غير صحيحة";
+                return RedirectToAction("Roles");
+            }
+
+            var role = await _db.Roles.FindAsync(model.ID);
+            if (role == null) return NotFound();
+
+            role.Name = model.Name;
+            role.Description = model.Description;
+            role.IsActive = model.IsActive;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Role.Edit", "Role", model.ID,
+                null, new { model.Name, model.IsActive });
+
+            TempData["Success"] = "تم تحديث الدور";
+            return RedirectToAction("Roles");
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 15. Role Permissions Assignment
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpGet]
+        [RequirePermission("Permissions.Manage", "CanView")]
+        public async Task<IActionResult> RolePermissions(int roleId)
+        {
+            var role = await _db.Roles.FindAsync(roleId);
+            if (role == null) return NotFound();
+
+            var allGroups = await _db.PermissionGroups
+                .Include(g => g.Permissions)
+                .OrderBy(g => g.GroupName)
+                .ToListAsync();
+
+            var currentPerms = await _db.RolePermissions
+                .Where(rp => rp.RoleID == roleId)
+                .ToListAsync();
+
+            var permDict = currentPerms.ToDictionary(p => p.PermissionID);
+
+            var groups = allGroups.Select(g => new PermissionGroupViewModel
+            {
+                GroupID = g.ID,
+                GroupName = g.GroupName,
+                Description = g.Description,
+                Permissions = g.Permissions.Select(p => new PermissionItemViewModel
+                {
+                    PermissionID = p.ID,
+                    PermissionKey = p.PermissionKey,
+                    DisplayName = p.DisplayName,
+                    Category = p.Category,
+                    CanView = permDict.TryGetValue(p.ID, out var rp) && rp.CanView,
+                    CanCreate = permDict.TryGetValue(p.ID, out rp) && rp.CanCreate,
+                    CanEdit = permDict.TryGetValue(p.ID, out rp) && rp.CanEdit,
+                    CanDelete = permDict.TryGetValue(p.ID, out rp) && rp.CanDelete,
+                }).ToList()
+            }).ToList();
+
+            ViewBag.Role = role;
+            return View(groups);
+        }
+
+        [HttpPost]
+        [RequirePermission("Permissions.Manage", "CanCreate")]
+        public async Task<IActionResult> RolePermissions([FromBody] SaveRolePermissionsRequest request)
+        {
+            var existing = await _db.RolePermissions
+                .Where(rp => rp.RoleID == request.RoleID)
+                .ToListAsync();
+
+            var existingDict = existing.ToDictionary(rp => rp.PermissionID);
+            _db.RolePermissions.RemoveRange(existing);
+
+            foreach (var item in request.Permissions)
+            {
+                if (item.CanView || item.CanCreate || item.CanEdit || item.CanDelete)
+                {
+                    _db.RolePermissions.Add(new RolePermission
+                    {
+                        RoleID = request.RoleID,
+                        PermissionID = item.PermissionID,
+                        CanView = item.CanView,
+                        CanCreate = item.CanCreate,
+                        CanEdit = item.CanEdit,
+                        CanDelete = item.CanDelete
+                    });
+                }
+            }
+
+            await _db.SaveChangesAsync();
+            await _audit.LogAsync(CurrentUserId, "Staff", "RolePermissions.Update", "RolePermission", request.RoleID);
+
+            return Json(new { success = true });
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 16. Audit Log
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpGet]
+        [RequirePermission("AuditLog.View", "CanView")]
+        public async Task<IActionResult> AuditLog(int page = 1)
+        {
+            var query = _db.AuditLogs.AsQueryable();
+            var total = await query.CountAsync();
+
+            var logs = await query
+                .OrderByDescending(l => l.CreatedAt)
+                .Skip((page - 1) * 50)
+                .Take(50)
+                .ToListAsync();
+
+            var userIds = logs.Select(l => l.UserID).Distinct().ToList();
+            var userNames = await _db.SystemUsers
+                .Where(u => userIds.Contains(u.ID))
+                .ToDictionaryAsync(u => u.ID, u => u.Name);
+
+            var logVms = logs.Select(l => new AuditLogRowViewModel
+            {
+                ID = l.ID,
+                UserID = l.UserID,
+                UserType = l.UserType,
+                UserDisplayName = userNames.GetValueOrDefault(l.UserID, $"#{l.UserID}"),
+                Action = l.Action,
+                ActionDisplay = l.Action,
+                TableName = l.TableName,
+                RecordID = l.RecordID,
+                OldValues = l.OldValues,
+                NewValues = l.NewValues,
+                CreatedAt = l.CreatedAt
+            }).ToList();
+
+            ViewBag.Page = page;
+            ViewBag.TotalPages = (int)Math.Ceiling(total / 50.0);
+            return View(logVms);
+        }
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // 17. Advanced Student Operations
+        // ──────────────────────────────────────────────────────────────────────────────
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Students.Manage", "CanEdit")]
+        public async Task<IActionResult> CorrectNationalId(CorrectNationalIdViewModel model)
+        {
+            var student = await _db.Students.FindAsync(model.StudentID);
+            if (student == null) return Json(new { success = false, message = "الطالب غير موجود" });
+
+            var oldValue = student.NationalID;
+            var exists = await _db.Students.AnyAsync(s => s.NationalID == model.NewNationalID && s.ID != model.StudentID);
+            if (exists) return Json(new { success = false, message = "الرقم القومي مستخدم من قبل طالب آخر" });
+
+            student.NationalID = model.NewNationalID;
+            student.LastUpdatedAt = DateTime.UtcNow;
+            student.LastUpdatedBy = CurrentUserId;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Student.CorrectNationalID", "Student", model.StudentID,
+                new { NationalID = oldValue }, new { NationalID = model.NewNationalID, Reason = model.Reason });
+
+            return Json(new { success = true, message = "تم تصحيح الرقم القومي" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Students.Manage", "CanEdit")]
+        public async Task<IActionResult> ChangeStudentNumber(ChangeStudentNumberViewModel model)
+        {
+            var student = await _db.Students.FindAsync(model.StudentID);
+            if (student == null) return Json(new { success = false, message = "الطالب غير موجود" });
+
+            var oldValue = student.StudentCode;
+            student.StudentCode = model.NewStudentCode;
+            student.LastUpdatedAt = DateTime.UtcNow;
+            student.LastUpdatedBy = CurrentUserId;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Student.ChangeNumber", "Student", model.StudentID,
+                new { StudentCode = oldValue }, new { StudentCode = model.NewStudentCode, Reason = model.Reason });
+
+            return Json(new { success = true, message = "تم تغيير رقم الجلوس" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Coordination.Manage", "CanEdit")]
+        public async Task<IActionResult> ReverseAcceptance(ReverseAcceptanceViewModel model)
+        {
+            var app = await _db.Applications
+                .FirstOrDefaultAsync(a => a.StudentID == model.StudentID && a.Status == "Accepted");
+            if (app == null) return Json(new { success = false, message = "لا يوجد قبول نشط لهذا الطالب" });
+
+            var oldStatus = app.Status;
+            app.Status = "Pending";
+            app.RejectionReason = model.Reason;
+            app.LastUpdatedAt = DateTime.UtcNow;
+            app.LastUpdatedBy = CurrentUserId;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Application.ReverseAcceptance", "Application", app.ID,
+                new { Status = oldStatus }, new { Status = "Pending", Reason = model.Reason });
+
+            return Json(new { success = true, message = "تم إلغاء القبول" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Students.Manage", "CanEdit")]
+        public async Task<IActionResult> TransferUniversity(TransferUniversityViewModel model)
+        {
+            var student = await _db.Students.FindAsync(model.StudentID);
+            if (student == null) return Json(new { success = false, message = "الطالب غير موجود" });
+
+            var oldUniv = student.Faculty;
+            var newUniv = await _db.Universities.FindAsync(model.NewUniversityID);
+            if (newUniv == null) return Json(new { success = false, message = "الجامعة غير موجودة" });
+
+            student.Faculty = newUniv.Name;
+            student.LastUpdatedAt = DateTime.UtcNow;
+            student.LastUpdatedBy = CurrentUserId;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Student.TransferUniversity", "Student", model.StudentID,
+                new { Faculty = oldUniv }, new { Faculty = newUniv.Name, Reason = model.Reason });
+
+            return Json(new { success = true, message = "تم تحويل الطالب" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Students.Manage", "CanEdit")]
+        public async Task<IActionResult> ResetStudentPassword(int studentId)
+        {
+            var login = await _db.StudentLogins.FirstOrDefaultAsync(l => l.StudentID == studentId);
+            if (login == null) return Json(new { success = false, message = "لا يوجد حساب للطالب" });
+
+            login.PasswordHash = _passwordService.HashPassword(login.Username);
+            login.MustChangePassword = true;
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Student.ResetPassword", "StudentLogin", studentId,
+                null, new { ResetTo = "NationalID" });
+
+            return Json(new { success = true, message = "تم إعادة تعيين كلمة المرور لرقم القومي" });
         }
     }
 }

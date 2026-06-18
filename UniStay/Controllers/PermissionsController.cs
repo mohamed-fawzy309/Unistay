@@ -57,6 +57,7 @@ namespace UniStay.Controllers
         // ══════════════════════════════════════════════════════════════
 
         [HttpGet("Users")]
+        [RequirePermission("SystemUsers.Manage", "CanView")]
         public async Task<IActionResult> Users()
         {
             var guard = CheckSuperAdmin();
@@ -121,6 +122,7 @@ namespace UniStay.Controllers
 
         [HttpPost("Users")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("SystemUsers.Manage", "CanCreate")]
         public async Task<IActionResult> Users(CreateUserViewModel model)
         {
             var guard = CheckSuperAdmin();
@@ -176,6 +178,7 @@ namespace UniStay.Controllers
 
         // AJAX — تفعيل/تعطيل
         [HttpPost("ToggleActive")]
+        [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> ToggleActive(int id)
         {
             var guard = CheckSuperAdmin();
@@ -208,6 +211,7 @@ namespace UniStay.Controllers
 
         // AJAX — إعادة تعيين كلمة المرور
         [HttpPost("ResetPassword")]
+        [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> ResetPassword(int id)
         {
             var guard = CheckSuperAdmin();
@@ -240,6 +244,7 @@ namespace UniStay.Controllers
 
         // AJAX — حذف ناعم
         [HttpPost("DeleteUser")]
+        [RequirePermission("SystemUsers.Manage", "CanDelete")]
         public async Task<IActionResult> DeleteUser(int id)
         {
             var guard = CheckSuperAdmin();
@@ -271,6 +276,7 @@ namespace UniStay.Controllers
         // ══════════════════════════════════════════════════════════════
 
         [HttpGet("Assign")]
+        [RequirePermission("Permissions.Manage", "CanEdit")]
         public async Task<IActionResult> Assign(int userId)
         {
             var guard = CheckSuperAdmin();
@@ -366,6 +372,7 @@ namespace UniStay.Controllers
 
         // حفظ الصلاحيات — AJAX/JSON body
         [HttpPost("Assign")]
+        [RequirePermission("Permissions.Manage", "CanCreate")]
         public async Task<IActionResult> Assign([FromBody] SavePermissionsRequest request)
         {
             var guard = CheckSuperAdmin();
@@ -435,6 +442,7 @@ namespace UniStay.Controllers
         // تعيين دور في مدينة
         [HttpPost("AssignCityRole")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> AssignCityRole(AssignCityRoleViewModel model)
         {
             var guard = CheckSuperAdmin();
@@ -479,6 +487,7 @@ namespace UniStay.Controllers
 
         // إزالة دور من مدينة — AJAX
         [HttpPost("RemoveCityRole")]
+        [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> RemoveCityRole(int cityStaffId, int userId)
         {
             var guard = CheckSuperAdmin();
@@ -503,6 +512,7 @@ namespace UniStay.Controllers
         // ══════════════════════════════════════════════════════════════
 
         [HttpGet("DataScopes")]
+        [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> DataScopes(int userId)
         {
             var guard = CheckSuperAdmin();
@@ -558,6 +568,7 @@ namespace UniStay.Controllers
 
         [HttpPost("DataScopes")]
         [ValidateAntiForgeryToken]
+        [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> DataScopes(AddDataScopeViewModel model)
         {
             var guard = CheckSuperAdmin();
@@ -616,6 +627,7 @@ namespace UniStay.Controllers
 
         // إزالة نطاق — AJAX
         [HttpPost("RemoveDataScope")]
+        [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> RemoveDataScope(int dataScopeId, int userId)
         {
             var guard = CheckSuperAdmin();
@@ -640,6 +652,7 @@ namespace UniStay.Controllers
         // ══════════════════════════════════════════════════════════════
 
         [HttpGet("AuditLog")]
+        [RequirePermission("AuditLog.View", "CanView")]
         public async Task<IActionResult> AuditLog(AuditLogFilterViewModel filter)
         {
             var guard = CheckSuperAdmin();
