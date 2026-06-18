@@ -1,0 +1,117 @@
+@model List<UniStay.ViewModels.Permissions.PermissionGroupViewModel>
+@{
+    ViewData["Title"] = "صلاحيات الدور";
+    var role = ViewBag.Role as UniStay.Models.Role;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">صلاحيات الدور: @role?.Name</h2>
+    <a asp-action="Roles" class="btn btn-secondary">
+        <i class="bi bi-arrow-right"></i> العودة للأدوار
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show animate-fade-in">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show animate-fade-in">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<input type="hidden" id="roleId" value="@role?.ID" />
+
+<div class="accordion" id="permissionsAccordion">
+    @for (int g = 0; g < Model.Count; g++)
+    {
+        var group = Model[g];
+        <div class="accordion-item mb-2 border rounded-3">
+            <h2 class="accordion-header">
+                <button class="accordion-button @(g > 0 ? "collapsed" : "")" type="button" data-bs-toggle="collapse" data-bs-target="#group-@group.GroupID">
+                    <strong>@group.GroupName</strong>
+                    @if (!string.IsNullOrEmpty(group.Description))
+                    {
+                        <small class="text-muted ms-2">- @group.Description</small>
+                    }
+                </button>
+            </h2>
+            <div id="group-@group.GroupID" class="accordion-collapse collapse @(g == 0 ? "show" : "")" data-bs-parent="#permissionsAccordion">
+                <div class="accordion-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>الصلاحية</th>
+                                    <th class="text-center"><i class="bi bi-eye"></i> عرض</th>
+                                    <th class="text-center"><i class="bi bi-plus-circle"></i> إضافة</th>
+                                    <th class="text-center"><i class="bi bi-pencil"></i> تعديل</th>
+                                    <th class="text-center"><i class="bi bi-trash"></i> حذف</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var perm in group.Permissions)
+                                {
+                                    <tr>
+                                        <td>@perm.DisplayName</td>
+                                        <td class="text-center">
+                                            <input type="checkbox" class="form-check-input permission-check" data-permid="@perm.PermissionID" data-action="CanView" checked="@perm.CanView">
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" class="form-check-input permission-check" data-permid="@perm.PermissionID" data-action="CanCreate" checked="@perm.CanCreate">
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" class="form-check-input permission-check" data-permid="@perm.PermissionID" data-action="CanEdit" checked="@perm.CanEdit">
+                                        </td>
+                                        <td class="text-center">
+                                            <input type="checkbox" class="form-check-input permission-check" data-permid="@perm.PermissionID" data-action="CanDelete" checked="@perm.CanDelete">
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="mt-3">
+    <button id="savePermissionsBtn" class="btn btn-primary btn-lg w-100">
+        <i class="bi bi-save"></i> حفظ الصلاحيات
+    </button>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('savePermissionsBtn')?.addEventListener('click', function () {
+            var roleId = parseInt(document.getElementById('roleId').value);
+            var permissions = [];
+            document.querySelectorAll('.permission-check').forEach(function (cb) {
+                permissions.push({
+                    PermissionID: parseInt(cb.getAttribute('data-permid')),
+                    CanView: cb.getAttribute('data-action') === 'CanView' ? cb.checked : false,
+                    CanCreate: cb.getAttribute('data-action') === 'CanCreate' ? cb.checked : false,
+                    CanEdit: cb.getAttribute('data-action') === 'CanEdit' ? cb.checked : false,
+                    CanDelete: cb.getAttribute('data-action') === 'CanDelete' ? cb.checked : false
+                });
+            });
+
+            fetch('@Url.Action("RolePermissions")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ RoleID: roleId, Permissions: permissions })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert('تم حفظ الصلاحيات بنجاح');
+                } else {
+                    alert('حدث خطأ أثناء الحفظ');
+                }
+            })
+            .catch(() => alert('حدث خطأ في الاتصال'));
+        });
+    </script>
+}

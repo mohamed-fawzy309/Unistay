@@ -16,13 +16,15 @@ namespace UniStay.Controllers
         private readonly IAuditService _audit;
         private readonly IEmailService _email;
         private readonly IMealService _mealService;
+        private readonly IReportExportService _export;
 
-        public MealController(AssuitDbContext db, IAuditService audit, IEmailService email, IMealService mealService)
+        public MealController(AssuitDbContext db, IAuditService audit, IEmailService email, IMealService mealService, IReportExportService export)
         {
             _db = db;
             _audit = audit;
             _email = email;
             _mealService = mealService;
+            _export = export;
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
@@ -569,6 +571,43 @@ namespace UniStay.Controllers
                 Records = records,
                 Cities = ViewBag.Cities ?? new List<CityLookup>()
             });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ReportExportExcel(DateOnly? fromDate, DateOnly? toDate, int? cityId, string? mealType)
+        {
+            var query = _db.Meals.AsQueryable();
+            if (fromDate.HasValue) query = query.Where(m => m.MealDate >= fromDate.Value);
+            if (toDate.HasValue) query = query.Where(m => m.MealDate <= toDate.Value);
+            if (cityId.HasValue) query = query.Where(m => m.DormitoryCityID == cityId.Value);
+            if (!string.IsNullOrEmpty(mealType)) query = query.Where(m => m.MealType == mealType);
+            var rows = await query.GroupBy(m => new { m.MealDate, m.MealType }).OrderByDescending(g => g.Key.MealDate).Select(g => new {
+                Date = g.Key.MealDate, MealType = g.Key.MealType,
+                BookedCount = g.Count(), ConsumedCount = g.Count(m => m.IsConsumed == true),
+                CancelledCount = g.Count(m => m.IsActive == false), TotalRevenue = g.Where(m => m.IsConsumed == true).Sum(m => m.Price)
+            }).ToListAsync();
+            var columns = new[] { "التاريخ", "نوع الوجبة", "إجمالي الوجبات", "تم الاستهلاك", "ملغي", "إجمالي الإيرادات" };
+            var data = _export.ExportToExcel("تقرير الوجبات", columns, rows, r => new object?[] { r.Date.ToString("yyyy-MM-dd"), r.MealType, r.BookedCount, r.ConsumedCount, r.CancelledCount, r.TotalRevenue });
+            return File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Meals.xlsx");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ReportExportPdf(DateOnly? fromDate, DateOnly? toDate, int? cityId, string? mealType)
+        {
+            var query = _db.Meals.AsQueryable();
+            if (fromDate.HasValue) query = query.Where(m => m.MealDate >= fromDate.Value);
+            if (toDate.HasValue) query = query.Where(m => m.MealDate <= toDate.Value);
+            if (cityId.HasValue) query = query.Where(m => m.DormitoryCityID == cityId.Value);
+            if (!string.IsNullOrEmpty(mealType)) query = query.Where(m => m.MealType == mealType);
+            var rows = await query.GroupBy(m => new { m.MealDate, m.MealType }).OrderByDescending(g => g.Key.MealDate).Select(g => new {
+                Date = g.Key.MealDate, MealType = g.Key.MealType,
+                BookedCount = g.Count(), ConsumedCount = g.Count(m => m.IsConsumed == true),
+                CancelledCount = g.Count(m => m.IsActive == false), TotalRevenue = g.Where(m => m.IsConsumed == true).Sum(m => m.Price)
+            }).ToListAsync();
+            var columns = new[] { "التاريخ", "نوع الوجبة", "إجمالي الوجبات", "تم الاستهلاك", "ملغي", "إجمالي الإيرادات" };
+            var pdfRows = rows.Select(r => new[] { r.Date.ToString("yyyy-MM-dd"), r.MealType, r.BookedCount.ToString(), r.ConsumedCount.ToString(), r.CancelledCount.ToString(), r.TotalRevenue.ToString("N2") }).ToArray();
+            var data = _export.ExportToPdf("تقرير الوجبات", columns, pdfRows);
+            return File(data, "application/pdf", "Meals.pdf");
         }
     }
 }

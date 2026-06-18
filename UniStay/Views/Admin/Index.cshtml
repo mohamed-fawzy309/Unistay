@@ -1,98 +1,242 @@
-﻿@{
+﻿@model UniStay.ViewModels.Admin.DashboardViewModel
+@{
     ViewData["Title"] = "لوحة التحكم";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>لوحة التحكم</h2>
-    <span class="text-muted">@DateTime.Now.ToString("dddd, d MMMM yyyy")</span>
+    <h2 class="page-title">لوحة التحكم</h2>
+    <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-light text-dark px-3 py-2">
+            <i class="bi bi-calendar3 me-1"></i> @DateTime.Now.ToString("dddd، d MMMM yyyy")
+        </span>
+        <span class="badge bg-primary px-3 py-2">
+            <i class="bi bi-file-text me-1"></i> إجمالي الطلبات: @Model.TotalApplications
+        </span>
+    </div>
 </div>
 
+<!-- Row 1: Main Stats -->
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm bg-primary text-white">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="card-title mb-1">الطلبات المعلقة</h6>
-                    <h3 class="mb-0">@ViewBag.PendingCount</h3>
+    <div class="col-md-3 col-6">
+        <a asp-action="PendingApplications" class="text-decoration-none">
+            <div class="stat-card bg-white border-start border-primary border-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value text-primary">@Model.PendingCount</div>
+                        <div class="stat-label">الطلبات المعلقة</div>
+                    </div>
+                    <div class="icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-inbox"></i></div>
                 </div>
-                <i class="bi bi-inbox fs-1 opacity-50"></i>
             </div>
-            <a asp-action="PendingApplications" class="card-footer text-white text-center text-decoration-none small bg-dark bg-opacity-10">عرض الكل</a>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a asp-action="AllApplications" class="text-decoration-none">
+            <div class="stat-card bg-white border-start border-success border-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value text-success">@Model.AcceptedCount</div>
+                        <div class="stat-label">مقبول</div>
+                    </div>
+                    <div class="icon bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card bg-white border-start border-danger border-4">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-value text-danger">@Model.RejectedCount</div>
+                    <div class="stat-label">مرفوض</div>
+                </div>
+                <div class="icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-x-circle"></i></div>
+            </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm bg-success text-white">
-            <div class="card-body d-flex justify-content-between align-items-center">
+    <div class="col-md-3 col-6">
+        <div class="stat-card bg-white border-start border-warning border-4">
+            <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <h6 class="card-title mb-1">إجمالي الطلاب</h6>
-                    <h3 class="mb-0">@ViewBag.StudentCount</h3>
+                    <div class="stat-value text-warning">@Model.TodayApplications</div>
+                    <div class="stat-label">طلبات اليوم</div>
                 </div>
-                <i class="bi bi-people fs-1 opacity-50"></i>
+                <div class="icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-calendar-day"></i></div>
             </div>
-            <a asp-action="Students" class="card-footer text-white text-center text-decoration-none small bg-dark bg-opacity-10">عرض الكل</a>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm bg-warning text-white">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="card-title mb-1">المقيمون حالياً</h6>
-                    <h3 class="mb-0">@ViewBag.AllocatedCount</h3>
-                </div>
-                <i class="bi bi-house-check fs-1 opacity-50"></i>
-            </div>
-            <a asp-action="Students" class="card-footer text-white text-center text-decoration-none small bg-dark bg-opacity-10">عرض الكل</a>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card border-0 shadow-sm bg-info text-white">
-            <div class="card-body d-flex justify-content-between align-items-center">
-                <div>
-                    <h6 class="card-title mb-1">المدن الجامعية</h6>
-                    <h3 class="mb-0">@ViewBag.CityCount</h3>
-                </div>
-                <i class="bi bi-building fs-1 opacity-50"></i>
-            </div>
-            <a asp-action="Cities" class="card-footer text-white text-center text-decoration-none small bg-dark bg-opacity-10">إدارة المدن</a>
         </div>
     </div>
 </div>
 
-<div class="row g-3">
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white">
+<!-- Row 2: Infrastructure Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <a asp-action="Students" class="text-decoration-none">
+            <div class="stat-card bg-white border-start border-info border-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value text-info">@Model.TotalStudents</div>
+                        <div class="stat-label">إجمالي الطلاب</div>
+                    </div>
+                    <div class="icon bg-info bg-opacity-10 text-info"><i class="bi bi-people"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a asp-action="Cities" class="text-decoration-none">
+            <div class="stat-card bg-white border-start border-secondary border-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value text-secondary">@Model.CityCount</div>
+                        <div class="stat-label">المدن الجامعية</div>
+                    </div>
+                    <div class="icon bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-building"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a asp-action="Buildings" class="text-decoration-none">
+            <div class="stat-card bg-white border-start border-dark border-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value text-dark">@Model.BuildingCount</div>
+                        <div class="stat-label">المباني</div>
+                    </div>
+                    <div class="icon bg-dark bg-opacity-10 text-dark"><i class="bi bi-grid-3x3-gap-fill"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a asp-action="Rooms" class="text-decoration-none">
+            <div class="stat-card bg-white border-start" style="border-color:#6f42c1!important">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value" style="color:#6f42c1">@Model.RoomCount</div>
+                        <div class="stat-label">الغرف</div>
+                    </div>
+                    <div class="icon text-white" style="background:rgba(111,66,193,0.1);color:#6f42c1!important"><i class="bi bi-door-open"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Row 3: System Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <a asp-action="Students" class="text-decoration-none">
+            <div class="stat-card bg-white border-start" style="border-color:#00acc1!important">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value" style="color:#00acc1">@Model.AllocatedCount</div>
+                        <div class="stat-label">المقيمون حالياً</div>
+                    </div>
+                    <div class="icon" style="background:rgba(0,172,193,0.1);color:#00acc1"><i class="bi bi-house-check"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a asp-controller="Permissions" asp-action="Users" class="text-decoration-none">
+            <div class="stat-card bg-white border-start" style="border-color:#e91e63!important">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value" style="color:#e91e63">@Model.UserCount</div>
+                        <div class="stat-label">المستخدمين</div>
+                    </div>
+                    <div class="icon" style="background:rgba(233,30,99,0.1);color:#e91e63"><i class="bi bi-person-gear"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <a asp-action="Roles" class="text-decoration-none">
+            <div class="stat-card bg-white border-start" style="border-color:#ff6f00!important">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="stat-value" style="color:#ff6f00">@Model.RoleCount</div>
+                        <div class="stat-label">الأدوار</div>
+                    </div>
+                    <div class="icon" style="background:rgba(255,111,0,0.1);color:#ff6f00"><i class="bi bi-person-badge"></i></div>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="stat-card bg-white border-start" style="border-color:#2e7d32!important">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="stat-value" style="color:#2e7d32">@Model.AdminCount</div>
+                    <div class="stat-label">المشرفين</div>
+                </div>
+                <div class="icon" style="background:rgba(46,125,50,0.1);color:#2e7d32"><i class="bi bi-shield-check"></i></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content Row -->
+<div class="row g-4">
+    <!-- Quick Actions -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom d-flex align-items-center">
+                <i class="bi bi-lightning-charge-fill text-primary me-2"></i>
                 <h5 class="mb-0">إجراءات سريعة</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="list-group list-group-flush">
-                    <a asp-action="PendingApplications" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                    <a asp-action="PendingApplications" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
                         <i class="bi bi-list-check fs-4 text-primary"></i>
-                        <span>مراجعة الطلبات المعلقة</span>
+                        <div><span class="fw-semibold d-block">مراجعة الطلبات المعلقة</span><small class="text-muted">@Model.PendingCount طلب في انتظار المراجعة</small></div>
                     </a>
-                    <a asp-action="Students" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                    <a asp-action="Students" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
                         <i class="bi bi-people fs-4 text-success"></i>
-                        <span>إدارة الطلاب</span>
+                        <div><span class="fw-semibold d-block">إدارة الطلاب</span><small class="text-muted">@Model.TotalStudents طالب مسجل</small></div>
                     </a>
-                    <a asp-action="Announcements" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
-                        <i class="bi bi-megaphone fs-4 text-warning"></i>
-                        <span>إضافة إعلان جديد</span>
+                    <a asp-action="AllApplications" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
+                        <i class="bi bi-file-text fs-4 text-info"></i>
+                        <div><span class="fw-semibold d-block">كل الطلبات</span><small class="text-muted">@Model.TotalApplications طلب إجمالي</small></div>
                     </a>
-                    <a asp-action="Schedules" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
-                        <i class="bi bi-calendar-event fs-4 text-info"></i>
-                        <span>إدارة مواعيد التقديم</span>
+                    <a asp-action="Schedules" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
+                        <i class="bi bi-calendar-event fs-4 text-warning"></i>
+                        <div><span class="fw-semibold d-block">إدارة مواعيد التقديم</span><small class="text-muted">ضبط فترات التقديم</small></div>
                     </a>
-<a asp-action="Buildings" class="list-group-item list-group-item-action d-flex align-items-center gap-3">                        <i class="bi bi-map fs-4 text-danger"></i>
-                        <span>الكروكي التفاعلي للمباني</span>
+                    <a asp-action="Announcements" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
+                        <i class="bi bi-megaphone fs-4 text-danger"></i>
+                        <div><span class="fw-semibold d-block">إضافة إعلان جديد</span><small class="text-muted">نشر إعلان للطلاب</small></div>
+                    </a>
+                    <a asp-action="Roles" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
+                        <i class="bi bi-shield-lock fs-4 text-secondary"></i>
+                        <div><span class="fw-semibold d-block">إدارة الأدوار والصلاحيات</span><small class="text-muted">@Model.RoleCount دور متاح</small></div>
+                    </a>
+                    <a asp-action="Buildings" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
+                        <i class="bi bi-building fs-4 text-primary"></i>
+                        <div>
+                            <span class="fw-semibold d-block">إدارة المباني</span>
+                            <small class="text-muted">إضافة وتعديل المباني</small>
+                        </div>
+                    </a>
+                    <a asp-action="BuildingLayout" class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3">
+                        <i class="bi bi-map fs-4" style="color:#6f42c1"></i>
+                        <div><span class="fw-semibold d-block">الكروكي التفاعلي</span><small class="text-muted">عرض المباني والغرف</small></div>
                     </a>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white">
-                <h5 class="mb-0">آخر الطلبات</h5>
+
+    <!-- Latest Applications -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="bi bi-clock-history text-primary me-2"></i>
+                    <h5 class="mb-0 d-inline">آخر الطلبات</h5>
+                </div>
+                <a asp-action="AllApplications" class="btn btn-sm btn-outline-primary">عرض الكل</a>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
@@ -105,20 +249,71 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @if (ViewBag.LatestApplications != null)
+                            @if (Model.LatestApplications.Any())
                             {
-                                foreach (var app in ViewBag.LatestApplications)
+                                foreach (var app in Model.LatestApplications)
                                 {
                                     <tr>
-                                        <td>@app.StudentName</td>
+                                        <td class="fw-semibold small">@app.StudentName</td>
                                         <td>
                                             <span class="badge bg-@(app.Status switch { "Pending" => "secondary", "UnderReview" => "primary", "Accepted" => "success", "Rejected" => "danger", "Allocated" => "dark", _ => "light" })">
-                                                @app.Status
+                                                @(app.Status switch { "Pending" => "معلق", "UnderReview" => "قيد المراجعة", "Accepted" => "مقبول", "Rejected" => "مرفوض", "Allocated" => "تم التسكين", _ => app.Status })
                                             </span>
                                         </td>
-                                        <td>@app.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                        <td class="small text-muted">@app.CreatedAt.ToString("yyyy-MM-dd")</td>
                                     </tr>
                                 }
+                            }
+                            else
+                            {
+                                <tr><td colspan="3" class="text-center py-3 text-muted small">لا توجد طلبات حديثة</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Audit Activity -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between">
+                <div>
+                    <i class="bi bi-shield-check text-success me-2"></i>
+                    <h5 class="mb-0 d-inline">آخر النشاطات</h5>
+                </div>
+                <a asp-action="AuditLog" class="btn btn-sm btn-outline-success">عرض الكل</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>المستخدم</th>
+                                <th>الإجراء</th>
+                                <th>الوقت</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.RecentAuditLogs.Any())
+                            {
+                                foreach (var log in Model.RecentAuditLogs)
+                                {
+                                    <tr>
+                                        <td class="small fw-semibold">@log.UserDisplayName</td>
+                                        <td>
+                                            <span class="badge bg-@(log.ActionCategory)">
+                                                @log.ActionDisplay
+                                            </span>
+                                        </td>
+                                        <td class="small text-muted">@log.CreatedAt.ToString("HH:mm")</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr><td colspan="3" class="text-center py-3 text-muted small">لا توجد نشاطات حديثة</td></tr>
                             }
                         </tbody>
                     </table>

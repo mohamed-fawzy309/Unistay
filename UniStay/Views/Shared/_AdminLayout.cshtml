@@ -347,6 +347,32 @@
         /* Cursor pointer for clickable cards */
         .cursor-pointer { cursor: pointer; }
 
+        /* Collapsible menu groups */
+        .menu-header[role="button"] {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .menu-header[role="button"]:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .collapse-icon {
+            transition: transform 0.3s ease;
+        }
+        .menu-header[aria-expanded="true"] .collapse-icon,
+        .menu-header .collapse.show ~ .collapse-icon {
+            transform: rotate(-90deg);
+        }
+        .sidebar .collapse .nav-link {
+            padding-right: 2.5rem !important;
+        }
+        .sidebar .collapse .nav-link i {
+            width: 20px;
+            font-size: 1rem;
+        }
+        .sidebar .collapse .nav-link {
+            font-size: 0.85rem;
+        }
+
         /* Page title */
         .page-title {
             font-size: 1.5rem;
@@ -393,115 +419,275 @@
 
         <div class="py-2">
             <ul class="nav flex-column">
+
+                <!-- ===== لوحة التحكم ===== -->
                 <li class="nav-item">
                     <a class="nav-link active" asp-controller="Admin" asp-action="Index">
-                        <i class="bi bi-house-door"></i> لوحة التحكم
+                        <i class="bi bi-house-door-fill"></i> لوحة التحكم
                     </a>
                 </li>
 
-                <!-- الطلبات والتنسيق -->
-                <li class="menu-header">الطلبات والتنسيق</li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Admin" asp-action="PendingApplications">
-                        <i class="bi bi-list-check"></i> الطلبات المعلقة
-                    </a>
+                <!-- ===== التقديم والتنسيق ===== -->
+                <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuApplications" role="button">
+                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> التقديم والتنسيق
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Coordination" asp-action="Preview">
-                        <i class="bi bi-graph-up"></i> التنسيق الآلي
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Allocation" asp-action="ManualAllocation">
-                        <i class="bi bi-pin-map"></i> التسكين اليدوي
-                    </a>
-                </li>
+                <div class="collapse show" id="menuApplications">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="PendingApplications">
+                            <i class="bi bi-inbox"></i> الطلبات المعلقة
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="AllApplications">
+                            <i class="bi bi-list-ul"></i> كل الطلبات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Coordination" asp-action="Preview">
+                            <i class="bi bi-graph-up-arrow"></i> التنسيق الآلي
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Allocation" asp-action="ManualAllocation">
+                            <i class="bi bi-pin-map-fill"></i> التسكين اليدوي
+                        </a>
+                    </li>
+                </div>
 
-                <!-- الطلاب -->
-                <li class="menu-header">الطلاب والسكان</li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Admin" asp-action="Students">
-                        <i class="bi bi-people"></i> قائمة الطلاب
-                    </a>
+                <!-- ===== الطلاب ===== -->
+                <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuStudents" role="button">
+                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الطلاب
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Document" asp-action="AdminIndex">
-                        <i class="bi bi-file-earmark"></i> المستندات
-                    </a>
-                </li>
+                <div class="collapse show" id="menuStudents">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="Students">
+                            <i class="bi bi-people-fill"></i> قائمة الطلاب
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="AllApplications">
+                            <i class="bi bi-file-earmark-text"></i> طلبات الطلاب
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Document" asp-action="AdminIndex">
+                            <i class="bi bi-file-earmark-check"></i> المستندات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Reports" asp-action="StudentLists">
+                            <i class="bi bi-list-ul"></i> تقرير قوائم الطلاب
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Reports" asp-action="StudentsWithoutPhotos">
+                            <i class="bi bi-camera-off"></i> الطلاب بدون صور
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Reports" asp-action="SocialCase">
+                            <i class="bi bi-heart-pulse"></i> الحالات الاجتماعية
+                        </a>
+                    </li>
+                </div>
 
-                <!-- المدن والمباني -->
-                <li class="menu-header">المدن والمباني</li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Admin" asp-action="Cities">
-                        <i class="bi bi-building"></i> المدن الجامعية
-                    </a>
+                <!-- ===== المدن والمباني ===== -->
+                <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuHousing" role="button">
+                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> المدن والمباني
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Admin" asp-action="Buildings">
-                        <i class="bi bi-grid"></i> المباني والغرف
-                    </a>
-                </li>
+                <div class="collapse show" id="menuHousing">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="Cities">
+                            <i class="bi bi-building"></i> المدن الجامعية
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="Villages">
+                            <i class="bi bi-house-heart"></i> القرى
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="Buildings">
+                            <i class="bi bi-grid-3x3-gap-fill"></i> المباني
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="Rooms">
+                            <i class="bi bi-door-open"></i> الغرف
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="HousingTypes">
+                            <i class="bi bi-house-gear"></i> أنواع السكن
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="StudentCategories">
+                            <i class="bi bi-tags"></i> تصنيفات الطلاب
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="BuildingLayout">
+                            <i class="bi bi-map"></i> الكروكي التفاعلي
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Reports" asp-action="RoomOccupancy">
+                            <i class="bi bi-bar-chart"></i> تقرير إشغال الغرف
+                        </a>
+                    </li>
+                </div>
 
-                <!-- الوجبات -->
-                <li class="menu-header">الوجبات والتغذية</li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Meal" asp-action="Index">
-                        <i class="bi bi-cup-hot"></i> إدارة الوجبات
-                    </a>
+                <!-- ===== المواعيد والتعليمات ===== -->
+                <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuSchedules" role="button">
+                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> المواعيد والتعليمات
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Meal" asp-action="Consume">
-                        <i class="bi bi-upc-scan"></i> صرف الوجبات
-                    </a>
-                </li>
+                <div class="collapse show" id="menuSchedules">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="Schedules">
+                            <i class="bi bi-calendar-event"></i> مواعيد التقديم
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="Instructions">
+                            <i class="bi bi-info-circle"></i> التعليمات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="Announcements">
+                            <i class="bi bi-megaphone"></i> الإعلانات
+                        </a>
+                    </li>
+                </div>
 
-                <!-- المالية -->
-                <li class="menu-header">المالية</li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Payment" asp-action="Index">
-                        <i class="bi bi-currency-exchange"></i> الرسوم والمدفوعات
-                    </a>
+                <!-- ===== الوجبات والتغذية ===== -->
+                <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuMeals" role="button">
+                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الوجبات والتغذية
                 </li>
+                <div class="collapse show" id="menuMeals">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Meal" asp-action="Index">
+                            <i class="bi bi-cup-hot-fill"></i> إدارة الوجبات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Meal" asp-action="Consume">
+                            <i class="bi bi-upc-scan"></i> صرف الوجبات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="MealTypes">
+                            <i class="bi bi-list"></i> أنواع الوجبات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Meal" asp-action="Report">
+                            <i class="bi bi-graph-up"></i> تقرير الوجبات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Reports" asp-action="MealRestriction">
+                            <i class="bi bi-ban"></i> قيود الوجبات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Reports" asp-action="StudentMealHistory">
+                            <i class="bi bi-journal"></i> سجل الوجبات
+                        </a>
+                    </li>
+                </div>
 
-                <!-- الحضور -->
-                <li class="menu-header">الحضور والتصاريح</li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Attendance" asp-action="Report">
-                        <i class="bi bi-calendar-x"></i> الغيابات والتصاريح
-                    </a>
+                <!-- ===== الخدمات والانضباط ===== -->
+                <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuServices" role="button">
+                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الخدمات والانضباط
                 </li>
+                <div class="collapse show" id="menuServices">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Maintenance" asp-action="Index">
+                            <i class="bi bi-tools"></i> طلبات الصيانة
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Violation" asp-action="Add">
+                            <i class="bi bi-exclamation-triangle"></i> المخالفات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Attendance" asp-action="Report">
+                            <i class="bi bi-calendar-x"></i> الغيابات والتصاريح
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Violation" asp-action="Report">
+                            <i class="bi bi-exclamation-triangle"></i> تقرير المخالفات
+                        </a>
+                    </li>
+                </div>
 
-                <!-- الصيانة والمخالفات -->
-                <li class="menu-header">الصيانة والانضباط</li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Maintenance" asp-action="Index">
-                        <i class="bi bi-tools"></i> طلبات الصيانة
-                    </a>
+                <!-- ===== المالية ===== -->
+                <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuFinance" role="button">
+                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> المالية
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Violation" asp-action="Add">
-                        <i class="bi bi-exclamation-triangle"></i> المخالفات
-                    </a>
-                </li>
+                <div class="collapse show" id="menuFinance">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Payment" asp-action="Index">
+                            <i class="bi bi-currency-exchange"></i> الرسوم والمدفوعات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="FeeTypes">
+                            <i class="bi bi-tag"></i> أنواع الرسوم
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="FeeConfigurations">
+                            <i class="bi bi-gear"></i> تكوين الرسوم
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Payment" asp-action="Report">
+                            <i class="bi bi-cash-stack"></i> تقرير المدفوعات
+                        </a>
+                    </li>
+                </div>
 
-                <!-- الإعدادات -->
-                <li class="menu-header">الإعدادات والتقارير</li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Permissions" asp-action="Users">
-                        <i class="bi bi-shield-lock"></i> الصلاحيات والمستخدمين
-                    </a>
+                <!-- ===== الإدارة ===== -->
+                <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuAdmin" role="button">
+                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الإدارة
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Admin" asp-action="Instructions">
-                        <i class="bi bi-info-circle"></i> التعليمات والإعلانات
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Admin" asp-action="AuditLog">
-                        <i class="bi bi-clock-history"></i> سجل التدقيق
-                    </a>
-                </li>
+                <div class="collapse show" id="menuAdmin">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Permissions" asp-action="Users">
+                            <i class="bi bi-shield-lock"></i> المستخدمين والصلاحيات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="Roles">
+                            <i class="bi bi-person-badge"></i> الأدوار
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="Countries">
+                            <i class="bi bi-globe"></i> الدول
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="AppConfig">
+                            <i class="bi bi-sliders"></i> إعدادات التطبيق
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="AuditLog">
+                            <i class="bi bi-clock-history"></i> سجل التدقيق
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Reports" asp-action="PrintedCards">
+                            <i class="bi bi-credit-card-2-front"></i> طباعة البطاقات
+                        </a>
+                    </li>
+                </div>
+
             </ul>
         </div>
     </nav>
@@ -544,17 +730,48 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const currentPath = window.location.pathname.toLowerCase();
+
+            // Highlight active nav link and expand parent collapse
             document.querySelectorAll('.sidebar .nav-link').forEach(link => {
                 const href = link.getAttribute('href');
                 if (href && href !== '#' && currentPath.includes(href.toLowerCase())) {
                     link.classList.add('active');
+                    // Expand parent collapse group
+                    const collapse = link.closest('.collapse');
+                    if (collapse) {
+                        collapse.classList.add('show');
+                        const trigger = document.querySelector(`[data-bs-target="#${collapse.id}"]`);
+                        if (trigger) trigger.setAttribute('aria-expanded', 'true');
+                    }
                 }
             });
 
+            // Remove active from dashboard if another link is active
+            const activeLinks = document.querySelectorAll('.sidebar .nav-link.active');
+            if (activeLinks.length > 1) {
+                document.querySelector('.sidebar .nav-link[asp-action="Index"]')?.classList.remove('active');
+            }
+
+            // Toast auto-dismiss
             var toasts = document.querySelectorAll('.toast');
             toasts.forEach(function (t) {
                 var bsToast = new bootstrap.Toast(t, { delay: 5000 });
                 bsToast.show();
+            });
+
+            // Sync collapse icons on toggle
+            document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(toggle => {
+                toggle.addEventListener('click', function () {
+                    const icon = this.querySelector('.collapse-icon');
+                    if (icon) {
+                        const target = document.querySelector(this.getAttribute('data-bs-target'));
+                        if (target) {
+                            setTimeout(() => {
+                                icon.style.transform = target.classList.contains('show') ? 'rotate(-90deg)' : '';
+                            }, 100);
+                        }
+                    }
+                });
             });
         });
     </script>

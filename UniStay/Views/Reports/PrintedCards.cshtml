@@ -1,0 +1,149 @@
+@model UniStay.ViewModels.Reports.PrintedCardsReportViewModel
+@{
+    ViewData["Title"] = "طباعة البطاقات";
+    var totalRequests = Model.TotalQueued + Model.TotalPrinted + Model.TotalPending;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">طباعة البطاقات</h2>
+    <div class="btn-group">
+        <a asp-action="PrintedCardsExportExcel" asp-route-cityId="@Model.Filter.CityID" asp-route-status="@Model.Filter.Status" asp-route-fromDate="@Model.Filter.FromDate?.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.Filter.ToDate?.ToString("yyyy-MM-dd")" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        <a asp-action="PrintedCardsExportPdf" asp-route-cityId="@Model.Filter.CityID" asp-route-status="@Model.Filter.Status" asp-route-fromDate="@Model.Filter.FromDate?.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.Filter.ToDate?.ToString("yyyy-MM-dd")" class="btn btn-danger"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-card-checklist"></i></div>
+                <div>
+                    <div class="value">@totalRequests</div>
+                    <div class="label">إجمالي الطلبات</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-success bg-opacity-10 text-success"><i class="bi bi-printer-check"></i></div>
+                <div>
+                    <div class="value">@Model.TotalPrinted</div>
+                    <div class="label">مطبوع</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-hourglass"></i></div>
+                <div>
+                    <div class="value">@(Model.TotalQueued + Model.TotalPending)</div>
+                    <div class="label">قيد الانتظار</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="get" class="filter-bar row g-2 mb-3">
+    <div class="col-md-2">
+        <label class="form-label small">المدينة</label>
+        <select name="cityId" class="form-select" onchange="this.form.submit()">
+            <option value="">الكل</option>
+            @foreach (var c in Model.Cities)
+            {
+                <option value="@c.ID" selected="@(Model.Filter.CityID == c.ID)">@c.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">الحالة</label>
+        <select name="status" class="form-select" onchange="this.form.submit()">
+            <option value="">الكل</option>
+            <option value="Queued" selected="@(Model.Filter.Status == "Queued")">بقائمة الانتظار</option>
+            <option value="Printed" selected="@(Model.Filter.Status == "Printed")">مطبوع</option>
+            <option value="Pending" selected="@(Model.Filter.Status == "Pending")">معلق</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">من تاريخ</label>
+        <input type="date" name="fromDate" class="form-control" value="@Model.Filter.FromDate?.ToString("yyyy-MM-dd")">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">إلى تاريخ</label>
+        <input type="date" name="toDate" class="form-control" value="@Model.Filter.ToDate?.ToString("yyyy-MM-dd")">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">بحث</label>
+        <input type="text" name="search" class="form-control" placeholder="اسم الطالب..." value="@Model.Filter.Search">
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <a asp-action="PrintedCards" class="btn btn-secondary w-100">إعادة تعيين</a>
+    </div>
+</form>
+
+<div class="table-responsive bg-white rounded shadow-sm animate-fade-in">
+    <table class="table table-hover mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>الطالب</th>
+                <th>الرقم القومي</th>
+                <th>المدينة</th>
+                <th>رقم البطاقة</th>
+                <th>الحالة</th>
+                <th>تاريخ الطلب</th>
+                <th>تاريخ الطباعة</th>
+                <th>طابع بواسطة</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model.Cards)
+            {
+                <tr>
+                    <td class="fw-semibold">@c.StudentName</td>
+                    <td>@c.NationalID</td>
+                    <td>@(c.CityName ?? "—")</td>
+                    <td>@(c.CardNumber ?? "—")</td>
+                    <td>
+                        <span class="badge bg-@(c.Status switch { "Printed" => "success", "Queued" => "warning", "Pending" => "secondary", _ => "light" })">
+                            @(c.Status switch { "Printed" => "مطبوع", "Queued" => "بقائمة الانتظار", "Pending" => "معلق", _ => c.Status ?? "—" })
+                        </span>
+                    </td>
+                    <td><small>@c.QueuedAt?.ToString("yyyy/MM/dd HH:mm")</small></td>
+                    <td><small>@c.PrintedAt?.ToString("yyyy/MM/dd HH:mm")</small></td>
+                    <td>@(c.PrintedByName ?? "—")</td>
+                </tr>
+            }
+            @if (!Model.Cards.Any())
+            {
+                <tr><td colspan="8" class="text-center text-muted py-4">لا توجد بيانات</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination pagination-modern justify-content-center">
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" asp-action="PrintedCards" asp-route-page="@i" asp-route-cityId="@Model.Filter.CityID" asp-route-status="@Model.Filter.Status" asp-route-fromDate="@Model.Filter.FromDate?.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.Filter.ToDate?.ToString("yyyy-MM-dd")" asp-route-search="@Model.Filter.Search">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}

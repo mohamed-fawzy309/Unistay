@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UniStay.Data;
 
@@ -11,9 +12,11 @@ using UniStay.Data;
 namespace UniStay.Migrations
 {
     [DbContext(typeof(AssuitDbContext))]
-    partial class AssuitDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260616181744_AddNewModules")]
+    partial class AddNewModules
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

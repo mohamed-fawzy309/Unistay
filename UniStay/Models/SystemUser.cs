@@ -124,4 +124,16 @@ public partial class SystemUser
     public virtual ICollection<Violation> ViolationResolvedByNavigations { get; set; } = new List<Violation>();
 
     public virtual ICollection<DataScope> DataScopes { get; set; } = new List<DataScope>();
+
+    public virtual ICollection<Village> VillageCreatedByNavigations { get; set; } = new List<Village>();
+
+    public virtual ICollection<Village> VillageLastUpdatedByNavigations { get; set; } = new List<Village>();
+
+    public virtual ICollection<FeeConfiguration> FeeConfigurationCreatedByNavigations { get; set; } = new List<FeeConfiguration>();
+
+    public virtual ICollection<FeeConfiguration> FeeConfigurationLastUpdatedByNavigations { get; set; } = new List<FeeConfiguration>();
+
+    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+
+    public virtual ICollection<UserRole> UserRoleAssignedByNavigations { get; set; } = new List<UserRole>();
 }

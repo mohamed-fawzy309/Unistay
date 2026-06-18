@@ -1,0 +1,135 @@
+@model List<UniStay.ViewModels.Admin.FeeConfigurationViewModel>
+@{
+    ViewData["Title"] = "تكوين الرسوم";
+    var feeTypes = ViewBag.FeeTypes as List<UniStay.Models.FeeType> ?? new();
+    var cities = ViewBag.Cities as List<UniStay.Models.DormitoryCity> ?? new();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">تكوين الرسوم</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+        <i class="bi bi-plus-circle"></i> إضافة تكوين رسم
+    </button>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show animate-fade-in">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show animate-fade-in">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="table-responsive">
+    <table class="table table-hover table-bordered bg-white animate-fade-in">
+        <thead class="table-light">
+            <tr>
+                <th>#</th>
+                <th>نوع الرسم</th>
+                <th>المدينة</th>
+                <th>المبلغ</th>
+                <th>العام الدراسي</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model.Any())
+            {
+                int i = 1;
+                foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@(i++)</td>
+                        <td>@item.FeeTypeName</td>
+                        <td>@(item.CityName ?? "جميع المدن")</td>
+                        <td>@item.Amount.ToString("N2")</td>
+                        <td>@item.AcademicYear</td>
+                        <td><span class="badge @(item.IsActive ? "bg-success" : "bg-secondary")">@(item.IsActive ? "نشط" : "غير نشط")</span></td>
+                        <td>
+                            <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-@item.ID">
+                                <i class="bi bi-pencil"></i> تعديل
+                            </button>
+                        </td>
+                    </tr>
+
+                    <div class="modal fade" id="editModal-@item.ID" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <form asp-action="EditFeeConfiguration" method="post" class="modal-content">
+                                <input type="hidden" name="ID" value="@item.ID">
+                                <div class="modal-header">
+                                    <h5 class="modal-title fw-bold">تعديل تكوين الرسم</h5>
+                                    <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">المبلغ <span class="text-danger">*</span></label>
+                                        <input name="Amount" class="form-control" type="number" step="0.01" value="@item.Amount" required>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@item.IsActive" id="fc-active-@item.ID">
+                                        <label class="form-check-label" for="fc-active-@item.ID">نشط</label>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <tr><td colspan="7" class="text-center py-4 text-muted">لا توجد تكوينات رسوم مضافة بعد</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form asp-action="FeeConfigurations" method="post" class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title fw-bold">إضافة تكوين رسم</h4>
+                <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">نوع الرسم <span class="text-danger">*</span></label>
+                    <select name="FeeTypeID" class="form-select" required>
+                        <option value="" selected disabled>اختر نوع الرسم</option>
+                        @foreach (var ft in feeTypes.Where(f => f.IsActive))
+                        {
+                            <option value="@ft.ID">@ft.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">المدينة</label>
+                    <select name="DormitoryCityID" class="form-select">
+                        <option value="">جميع المدن</option>
+                        @foreach (var c in cities.Where(c => c.IsActive))
+                        {
+                            <option value="@c.ID">@c.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">المبلغ <span class="text-danger">*</span></label>
+                    <input name="Amount" class="form-control" type="number" step="0.01" placeholder="0.00" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">العام الدراسي</label>
+                    <input name="AcademicYear" class="form-control" placeholder="مثال: 2025-2026">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> إضافة</button>
+            </div>
+        </form>
+    </div>
+</div>
