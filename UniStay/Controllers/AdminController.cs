@@ -542,6 +542,7 @@ namespace UniStay.Controllers
             student.GradePercentage = model.GradePercentage;
             student.Governorate = model.Governorate;
             student.City = model.City;
+            student.Markaz = model.Markaz;
             student.DistanceFromUniv = model.DistanceFromUniv;
             student.HasMedicalCondition = model.HasMedicalCondition;
             student.MedicalDescription = model.MedicalDescription;

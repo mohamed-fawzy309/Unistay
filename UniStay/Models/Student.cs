@@ -39,6 +39,8 @@ public partial class Student
 
     public string? Governorate { get; set; }
 
+    public string? Markaz { get; set; }
+
     public string? City { get; set; }
 
     public string? Address { get; set; }

@@ -88,6 +88,7 @@
                 <th>النوع</th>
                 <th>الكلية</th>
                 <th>الهاتف</th>
+                <th>المركز</th>
                 <th>المدينة</th>
             </tr>
         </thead>
@@ -101,12 +102,13 @@
                     <td>@(s.Gender == "Male" ? "ذكر" : "أنثى")</td>
                     <td>@(s.Faculty ?? "—")</td>
                     <td>@(s.Phone ?? "—")</td>
+                    <td>@(s.Markaz ?? "—")</td>
                     <td>@(s.City ?? "—")</td>
                 </tr>
             }
             @if (!Model.Students.Any())
             {
-                <tr><td colspan="7" class="text-center text-muted py-4">لا توجد بيانات</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">لا توجد بيانات</td></tr>
             }
         </tbody>
     </table>

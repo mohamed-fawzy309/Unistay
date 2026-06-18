@@ -1,18 +1,21 @@
 ﻿@model UniStay.ViewModels.Account.LoginViewModel
 @{
     ViewData["Title"] = "تسجيل دخول الموظفين - UniStay";
-    Layout = "~/Views/Shared/_LoginLayout.cshtml";   // سننشئه لاحقاً
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
 }
 
 <div class="container">
-    <div class="row justify-content-center align-items-center min-vh-100">
+    <div class="row justify-content-center align-items-center" style="min-height:75vh">
         <div class="col-lg-5 col-md-7 col-sm-10">
-            <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
-                <div class="card-header bg-primary text-white text-center py-4">
-                    <h3 class="mb-0">نظام إدارة المدن الجامعية</h3>
-                    <p class="mb-0 mt-2">جامعة أسيوط - UniStay</p>
+            <div class="login-card">
+                <div class="login-header">
+                    <div style="margin-bottom:.5rem">
+                        <i class="fas fa-user-shield" style="font-size:2.2rem;color:var(--red);opacity:.8"></i>
+                    </div>
+                    <h4>نظام إدارة المدن الجامعية</h4>
+                    <p>جامعة أسيوط — UniStay</p>
                 </div>
-                <div class="card-body p-4 p-lg-5">
+                <div class="login-body">
                     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
                     {
                         <div class="alert alert-danger">@Model.ErrorMessage</div>
@@ -20,21 +23,21 @@
 
                     @if (TempData["Success"] != null)
                     {
-                        <div class="alert alert-success">@TempData["Success"]</div>
+                        <div class="alert" style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#10b981;border-radius:10px;font-size:.9rem;padding:.8rem 1rem;">@TempData["Success"]</div>
                     }
 
                     <form asp-action="Login" method="post" asp-route-returnUrl="@ViewData["ReturnUrl"]">
                         @Html.AntiForgeryToken()
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold">الرقم القومي</label>
-                            <input asp-for="NationalID" class="form-control form-control-lg" placeholder="أدخل الرقم القومي" />
+                            <label class="form-label">الرقم القومي</label>
+                            <input asp-for="NationalID" class="form-control" placeholder="أدخل الرقم القومي" />
                             <span asp-validation-for="NationalID" class="text-danger"></span>
                         </div>
 
                         <div class="mb-4">
-                            <label class="form-label fw-bold">كلمة المرور</label>
-                            <input asp-for="Password" type="password" class="form-control form-control-lg" placeholder="••••••••" />
+                            <label class="form-label">كلمة المرور</label>
+                            <input asp-for="Password" type="password" class="form-control" placeholder="••••••••" />
                             <span asp-validation-for="Password" class="text-danger"></span>
                         </div>
 
@@ -43,15 +46,20 @@
                                 <input asp-for="RememberMe" class="form-check-input" type="checkbox">
                                 <label asp-for="RememberMe" class="form-check-label">تذكرني</label>
                             </div>
-                            <a asp-action="ForgotPassword" class="text-decoration-none">نسيت كلمة المرور؟</a>
+                            <a asp-action="ForgotPassword" style="color:var(--red);text-decoration:none;font-weight:600;font-size:.88rem;transition:color .2s;" onmouseover="this.style.color='#ff6b7a'" onmouseout="this.style.color='var(--red)'">نسيت كلمة المرور؟</a>
                         </div>
 
-                        <button type="submit" class="btn btn-primary btn-lg w-100 mb-3">دخول</button>
+                        <button type="submit" class="btn-login">
+                            <i class="fas fa-arrow-left" style="margin-left:.5rem;"></i>
+                            دخول
+                        </button>
                     </form>
-
-                    <div class="text-center text-muted small mt-4">
-                        نظام UniStay v1.0 — بوابة الموظفين
-                    </div>
+                </div>
+                <div class="login-footer">
+                    <a href="/">
+                        <i class="fas fa-arrow-right" style="margin-left:.35rem;"></i>
+                        العودة للصفحة الرئيسية
+                    </a>
                 </div>
             </div>
         </div>

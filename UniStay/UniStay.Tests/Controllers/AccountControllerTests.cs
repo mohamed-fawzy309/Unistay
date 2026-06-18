@@ -144,8 +144,10 @@ namespace UniStay.Tests.Controllers
             // Arrange
             var user = new SystemUser
             {
+                Name = "Test User",
                 Email = "test@example.com",
                 NationalID = "12345678901234",
+                PasswordHash = "hash",
                 IsActive = true,
                 IsDeleted = false
             };
@@ -158,7 +160,7 @@ namespace UniStay.Tests.Controllers
             var result = await _controller.ForgotPassword(model);
 
             // Assert
-            _mockEmailService.Verify(e => e.SendAsync(user.Email, It.IsAny<string>(), It.IsAny<string>(), EmailType.General), Times.Once);
+            _mockEmailService.Verify(e => e.SendAsync(user.Email, It.IsAny<string>(), It.IsAny<string>(), EmailType.General, It.IsAny<int?>()), Times.Once);
             Assert.True(user.MustChangePassword);
         }
 

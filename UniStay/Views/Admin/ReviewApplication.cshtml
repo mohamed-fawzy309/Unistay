@@ -30,6 +30,7 @@
                     <div class="col-md-4 mb-2"><strong>التقدير:</strong> @student.GradePercentage%</div>
                     <div class="col-md-4 mb-2"><strong>المسافة:</strong> @student.DistanceFromUniv كم</div>
                     <div class="col-md-4 mb-2"><strong>المحافظة:</strong> @student.Governorate</div>
+                    <div class="col-md-4 mb-2"><strong>المركز:</strong> @(student.Markaz ?? "—")</div>
                     <div class="col-md-4 mb-2"><strong>العنوان:</strong> @student.Address</div>
                     <div class="col-md-4 mb-2"><strong>حالة مرضية:</strong> @(student.HasMedicalCondition == true ? "نعم" : "لا")</div>
                 </div>
