@@ -328,17 +328,24 @@
                             <input asp-for="Email" type="email" class="form-control" placeholder="example@domain.com" />
                             <span asp-validation-for="Email" class="text-danger"></span>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label asp-for="Governorate" class="field-label">المحافظة <span class="required">*</span></label>
                             <select asp-for="Governorate" class="form-select" id="governorateSelect">
                                 <option value="">-- اختر المحافظة --</option>
                             </select>
                             <span asp-validation-for="Governorate" class="text-danger"></span>
                         </div>
-                        <div class="col-md-6">
-                            <label asp-for="City" class="field-label">المركز / المدينة <span class="required">*</span></label>
-                            <select asp-for="City" class="form-select" id="citySelect">
+                        <div class="col-md-4">
+                            <label asp-for="Markaz" class="field-label">المركز <span class="required">*</span></label>
+                            <select asp-for="Markaz" class="form-select" id="markazSelect">
                                 <option value="">-- اختر المركز --</option>
+                            </select>
+                            <span asp-validation-for="Markaz" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="City" class="field-label">القرية / المدينة <span class="required">*</span></label>
+                            <select asp-for="City" class="form-select" id="villageSelect">
+                                <option value="">-- اختر القرية --</option>
                             </select>
                             <span asp-validation-for="City" class="text-danger"></span>
                         </div>
@@ -587,64 +594,59 @@
             document.getElementById('calculatedAge').value = age + ' سنة';
         }
 
-        // ── Governorates data
-        const governorates = [
-            "Cairo","Alexandria","Giza","Assuit","Qena","Luxor","Aswan","Sohag",
-            "RedSea","NewValley","Matrouh","Fayoum","Minya","BeniSuef","Sharqia",
-            "Dakahlia","Damietta","KafrElSheikh","Gharbia","Monufia","Beheira",
-            "Ismailia","PortSaid","Suez","NorthSinai","SouthSinai"
-        ];
-        const govArabic = {
-            Cairo:"القاهرة",Alexandria:"الإسكندرية",Giza:"الجيزة",Assuit:"أسيوط",
-            Qena:"قنا",Luxor:"الأقصر",Aswan:"أسوان",Sohag:"سوهاج",
-            RedSea:"البحر الأحمر",NewValley:"الوادي الجديد",Matrouh:"مطروح",
-            Fayoum:"الفيوم",Minya:"المنيا",BeniSuef:"بني سويف",Sharqia:"الشرقية",
-            Dakahlia:"الدقهلية",Damietta:"دمياط",KafrElSheikh:"كفر الشيخ",
-            Gharbia:"الغربية",Monufia:"المنوفية",Beheira:"البحيرة",
-            Ismailia:"الإسماعيلية",PortSaid:"بورسعيد",Suez:"السويس",
-            NorthSinai:"شمال سيناء",SouthSinai:"جنوب سيناء"
-        };
-        const cities = {
-            Assuit: ["أسيوط","ديروط","الفتح","أبنوب","منقباد","صدفا","الغنايم","ساحل سليم","القوصية"],
-            Cairo: ["الزمالك","مصر الجديدة","المعادي","حلوان","شبرا","العباسية","مدينة نصر","المرج","السلام"],
-            Giza: ["الدقي","العجوزة","المهندسين","الهرم","أكتوبر","الشيخ زايد","البدرشين","الصف"],
-            Alexandria: ["العطارين","محرم بك","سموحة","لوران","سبورتنج","المنتزه","برج العرب","السيوف"],
-            Qena: ["قنا","قوص","نجع حمادي","الأقصر","دشنا","الوقف"],
-            Luxor: ["البياضية","الطود","الزينية","البعيرات","القرنة","إسنا","أرمنت"],
-            Aswan: ["أسوان","إدفو","كوم أمبو","نصر النوبة","دراو"],
-            Sohag: ["سوهاج","جرجا","طهطا","الخزان","أخميم","البلينا","ساقلتة","دار السلام"],
-            RedSea: ["الغردقة","سفاجا","القصير","مرسى علم","الشلاتين","حلايب"],
-            NewValley: ["الخارجة","الداخلة","باريس","بلاط","الفرافرة"],
-            Matrouh: ["مرسى مطروح","النجيلة","السلوم","سيوة","العلمين","الحمام"],
-            Fayoum: ["الفيوم","إطسا","طامية","سنورس","أبشواي","يوسف الصديق"],
-            Minya: ["المنيا","ملوي","العدوة","مغاغة","أبو قرقاص","بني مزار","ديرمواس","سمالوط"],
-            BeniSuef: ["بني سويف","ناصر","الواسطى","إهناسيا","سمسطا","ببا","الفشن"],
-            Sharqia: ["الزقازيق","بلبيس","منيا القمح","أبو كبير","ههيا","ديرب نجم","كفر صقر","الإبراهيمية"],
-            Dakahlia: ["المنصورة","طلخا","نبروه","أجا","ميت غمر","دكرنس","بلقاس","شربين"],
-            Damietta: ["دمياط","فارسكور","كفر سعد","الزرقا","كفر البطيخ"],
-            KafrElSheikh: ["كفر الشيخ","دسوق","بيلا","قلين","الحامول","الرياض","سيدي سالم"],
-            Gharbia: ["طنطا","المحلة الكبرى","كفر الزيات","زفتى","السنطة","قطور","بسيون"],
-            Monufia: ["شبين الكوم","منوف","الباجور","قويسنا","بركة السبع","تلا","الشهداء","أشمون"],
-            Beheira: ["دمنهور","كفر الدوار","رشيد","أبو المطامير","إدكو","حوش عيسى","شبراخيت","يتاي البارود"],
-            Ismailia: ["الإسماعيلية","فايد","القنطرة شرق","القنطرة غرب","أبو صوير","التل الكبير"],
-            PortSaid: ["بورسعيد","بورفؤاد","الزهور","الجنوب","المناخ","الشرفا"],
-            Suez: ["السويس","الأربعين","عتاقة","فيصل","الجناين"],
-            NorthSinai: ["العريش","بئر العبد","الشيخ زويد","رفح","نخل"],
-            SouthSinai: ["الطور","شرم الشيخ","دهب","نويبع","رأس سدر","أبو زنيمة","كاترين"]
-        };
+        // ── Egypt locations: Governorate → Markaz → Village  (from JSON file)
+        let egyptData = [];
 
-        const govSelect = document.getElementById('governorateSelect');
-        governorates.forEach(g => {
-            const opt = document.createElement('option');
-            opt.value = g; opt.textContent = govArabic[g] || g;
-            govSelect.appendChild(opt);
+        fetch('/json/egypt_locations.json')
+            .then(r => r.json())
+            .then(data => {
+                egyptData = data;
+                populateGovernorates(data);
+            })
+            .catch(err => console.error('Failed to load locations:', err));
+
+        function populateGovernorates(data) {
+            const sel = document.getElementById('governorateSelect');
+            sel.innerHTML = '<option value="">-- اختر المحافظة --</option>';
+            data.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.name_ar;
+                opt.textContent = g.name_ar;
+                sel.appendChild(opt);
+            });
+        }
+
+        document.getElementById('governorateSelect').addEventListener('change', function() {
+            const markazSel = document.getElementById('markazSelect');
+            const villageSel = document.getElementById('villageSelect');
+            markazSel.innerHTML = '<option value="">-- اختر المركز --</option>';
+            villageSel.innerHTML = '<option value="">-- اختر القرية --</option>';
+            const gov = egyptData.find(g => g.name_ar === this.value);
+            if (gov && gov.centers) {
+                gov.centers.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.name_ar;
+                    opt.textContent = c.name_ar;
+                    markazSel.appendChild(opt);
+                });
+            }
         });
 
-        govSelect.addEventListener('change', function() {
-            const citySel = document.getElementById('citySelect');
-            citySel.innerHTML = '<option value="">-- اختر المركز --</option>';
-            const c = cities[this.value];
-            if (c) c.forEach(ct => { const o = document.createElement('option'); o.value = ct; o.textContent = ct; citySel.appendChild(o); });
+        document.getElementById('markazSelect').addEventListener('change', function() {
+            const villageSel = document.getElementById('villageSelect');
+            villageSel.innerHTML = '<option value="">-- اختر القرية --</option>';
+            const gov = egyptData.find(g => g.name_ar === document.getElementById('governorateSelect').value);
+            if (gov && gov.centers) {
+                const markaz = gov.centers.find(c => c.name_ar === this.value);
+                if (markaz && markaz.cities) {
+                    markaz.cities.forEach(v => {
+                        const opt = document.createElement('option');
+                        opt.value = v.name_ar;
+                        opt.textContent = v.name_ar;
+                        villageSel.appendChild(opt);
+                    });
+                }
+            }
         });
 
         // ── All Faculties

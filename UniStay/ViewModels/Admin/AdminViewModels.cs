@@ -84,6 +84,9 @@ namespace UniStay.ViewModels.Admin
         [StringLength(100)]
         public string? City { get; set; }
 
+        [StringLength(100)]
+        public string? Markaz { get; set; }
+
         [Range(0, 9999)]
         public decimal? DistanceFromUniv { get; set; }
 

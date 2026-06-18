@@ -1262,6 +1262,7 @@ public partial class AssuitDbContext : DbContext
 
             entity.Property(e => e.Address).HasMaxLength(500);
             entity.Property(e => e.City).HasMaxLength(100);
+            entity.Property(e => e.Markaz).HasMaxLength(100);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Department).HasMaxLength(100);
             entity.Property(e => e.DistanceFromUniv).HasColumnType("decimal(8, 2)");

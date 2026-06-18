@@ -103,6 +103,7 @@ namespace UniStay.Controllers
                 Religion = student.Religion,
                 Nationality = student.Nationality,
                 Governorate = student.Governorate,
+                Markaz = student.Markaz,
                 City = student.City,
                 Address = student.Address,
                 Email = student.Email,
@@ -137,6 +138,7 @@ namespace UniStay.Controllers
             student.Email = model.Email;
             student.Address = model.Address;
             student.City = model.City;
+            student.Markaz = model.Markaz;
             student.Governorate = model.Governorate;
             student.Faculty = model.Faculty;
             student.AcademicYear = (byte?)model.AcademicYear;
