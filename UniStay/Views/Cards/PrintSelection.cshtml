@@ -1,0 +1,198 @@
+@model PrintSelectionViewModel
+@{
+    ViewData["Title"] = "اختيار الطلاب للطباعة";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="page-title mb-0"><i class="bi bi-person-check"></i> @ViewData["Title"]</h5>
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Index"><i class="bi bi-arrow-right"></i> قائمة الطباعة</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-3">
+        <input name="search" class="form-control form-control-sm" placeholder="بحث بالاسم أو الرقم القومي" value="@Model.Filter.Search" />
+    </div>
+    <div class="col-md-2">
+        <select name="cityId" class="form-select form-select-sm" id="cityFilter">
+            <option value="">كل المدن</option>
+            @foreach (var c in Model.Cities)
+            {
+                <option value="@c.ID" selected="@(Model.Filter.CityID == c.ID)">@c.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="buildingId" class="form-select form-select-sm" id="buildingFilter">
+            <option value="">كل المباني</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="roomId" class="form-select form-select-sm" id="roomFilter">
+            <option value="">كل الغرف</option>
+        </select>
+    </div>
+    <div class="col-md-1">
+        <select name="hasPhoto" class="form-select form-select-sm">
+            <option value="">الكل</option>
+            <option value="true" selected="@(Model.Filter.HasPhoto == true)">بصورة</option>
+            <option value="false" selected="@(Model.Filter.HasPhoto == false)">بدون صورة</option>
+        </select>
+    </div>
+    <div class="col-md-1">
+        <button class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i></button>
+    </div>
+    <div class="col-md-1">
+        <a class="btn btn-outline-secondary btn-sm w-100" asp-action="PrintSelection"><i class="bi bi-x-lg"></i></a>
+    </div>
+</form>
+
+<form method="post" asp-action="AddToQueue" id="selectionForm">
+    @Html.AntiForgeryToken()
+    <div class="d-flex justify-content-between mb-2">
+        <span class="text-muted small">إجمالي: @Model.TotalCount طالب</span>
+        <div>
+            <button class="btn btn-sm btn-outline-info" type="button" onclick="toggleAll(true)">اختيار الكل</button>
+            <button class="btn btn-sm btn-outline-secondary" type="button" onclick="toggleAll(false)">إلغاء الكل</button>
+            <button class="btn btn-success btn-sm" type="submit"><i class="bi bi-plus-lg"></i> إضافة المحدد للطباعة</button>
+        </div>
+    </div>
+
+    <div class="table-responsive" style="max-height:600px">
+        <table class="table table-hover table-bordered align-middle small">
+            <thead class="table-dark sticky-top">
+                <tr>
+                    <th><input type="checkbox" id="selectAll" /></th>
+                    <th>الاسم</th>
+                    <th>الرقم القومي</th>
+                    <th>الكلية</th>
+                    <th>المدينة</th>
+                    <th>المبنى</th>
+                    <th>الغرفة</th>
+                    <th>الصورة</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Students.Any())
+                {
+                    <tr><td colspan="8" class="text-center text-muted">لا يوجد طلاب</td></tr>
+                }
+                @foreach (var s in Model.Students)
+                {
+                    <tr>
+                        <td><input type="checkbox" name="studentIds" value="@s.StudentID" class="rowCheck" /></td>
+                        <td>@s.FullName</td>
+                        <td>@s.NationalID</td>
+                        <td>@s.Faculty</td>
+                        <td>@s.CityName</td>
+                        <td>@s.BuildingName</td>
+                        <td>@s.RoomNumber</td>
+                        <td>
+                            @if (s.HasPhoto)
+                            {
+                                <span class="badge bg-success">يوجد</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">لا يوجد</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</form>
+
+@if (Model.TotalPages > 1)
+{
+    <nav><ul class="pagination justify-content-center">
+        @{
+            var qsp = new Dictionary<string, string?>
+            {
+                {"search", Model.Filter.Search},
+                {"cityId", Model.Filter.CityID?.ToString()},
+                {"buildingId", Model.Filter.BuildingID?.ToString()},
+                {"roomId", Model.Filter.RoomID?.ToString()},
+                {"hasPhoto", Model.Filter.HasPhoto?.ToString()?.ToLower()}
+            };
+        }
+        @for (int p = 1; p <= Model.TotalPages; p++)
+        {
+            <li class="page-item @(p == Model.Page ? "active" : "")">
+                <a class="page-link" asp-all-route-data="@(new Dictionary<string, string>(qsp.Where(kv => kv.Value != null).ToDictionary(kv => kv.Key, kv => kv.Value!)) { ["page"] = p.ToString() })">@p</a>
+            </li>
+        }
+    </ul></nav>
+}
+
+@section Scripts {
+    <script>
+        document.getElementById('selectAll')?.addEventListener('change', function() {
+            document.querySelectorAll('.rowCheck').forEach(c => c.checked = this.checked);
+        });
+
+        function toggleAll(checked) {
+            document.querySelectorAll('.rowCheck').forEach(c => c.checked = checked);
+            document.getElementById('selectAll').checked = checked;
+        }
+
+        const cityFilter = document.getElementById('cityFilter');
+        const buildingFilter = document.getElementById('buildingFilter');
+        const roomFilter = document.getElementById('roomFilter');
+
+        cityFilter.addEventListener('change', function() {
+            const cityId = this.value;
+            buildingFilter.innerHTML = '<option value="">كل المباني</option>';
+            roomFilter.innerHTML = '<option value="">كل الغرف</option>';
+            if (cityId) {
+                fetch('@Url.Action("GetBuildings", "Cards")/' + cityId)
+                    .then(r => r.json())
+                    .then(data => {
+                        data.forEach(b => {
+                            const opt = document.createElement('option');
+                            opt.value = b.id;
+                            opt.textContent = b.name;
+                            @if (Model.Filter.BuildingID.HasValue)
+                            {
+                                <text>if (b.id === @Model.Filter.BuildingID) opt.selected = true;</text>
+                            }
+                            buildingFilter.appendChild(opt);
+                        });
+                    });
+            }
+        });
+
+        buildingFilter.addEventListener('change', function() {
+            const buildingId = this.value;
+            roomFilter.innerHTML = '<option value="">كل الغرف</option>';
+            if (buildingId) {
+                fetch('@Url.Action("GetRooms", "Cards")/' + buildingId)
+                    .then(r => r.json())
+                    .then(data => {
+                        data.forEach(r => {
+                            const opt = document.createElement('option');
+                            opt.value = r.id;
+                            opt.textContent = r.roomNumber;
+                            @if (Model.Filter.RoomID.HasValue)
+                            {
+                                <text>if (r.id === @Model.Filter.RoomID) opt.selected = true;</text>
+                            }
+                            roomFilter.appendChild(opt);
+                        });
+                    });
+            }
+        });
+
+        @if (Model.Filter.CityID.HasValue)
+        {
+            <text>cityFilter.dispatchEvent(new Event('change'));
+            setTimeout(() => {
+                @if (Model.Filter.BuildingID.HasValue)
+                {
+                    <text>buildingFilter.dispatchEvent(new Event('change'));</text>
+                }
+            }, 500);
+            </text>
+        }
+    </script>
+}

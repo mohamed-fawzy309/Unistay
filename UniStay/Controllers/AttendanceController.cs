@@ -153,6 +153,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Attendance.Manage", "CanView")]
         public async Task<IActionResult> Report(
             DateOnly? fromDate = null,
             DateOnly? toDate = null,

@@ -1327,8 +1327,10 @@ namespace UniStay.Controllers
 
         [HttpGet]
         [RequirePermission("Buildings.Manage", "CanView")]
-        public async Task<IActionResult> BuildingLayout(int id)
+        public async Task<IActionResult> BuildingLayout(int id = 0)
         {
+            if (id <= 0)
+                return RedirectToAction(nameof(Buildings));
             var building = await _db.CityBuildings
                 .Include(b => b.DormitoryCity)
                 .Include(b => b.CityRooms)

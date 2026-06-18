@@ -1,0 +1,137 @@
+@using UniStay.ViewModels.Applications
+@model ApplicationsIndexViewModel
+@{ ViewData["Title"] = "مركز التطبيقات"; }
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-layout-text-window-reverse"></i> مركز التطبيقات</h5>
+        <div>
+            <a asp-action="ExportExcel" asp-route-status="@Model.Filter.Status" asp-route-cityId="@Model.Filter.CityID" class="btn btn-sm btn-light me-1"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            <a asp-action="ExportPdf" asp-route-status="@Model.Filter.Status" asp-route-cityId="@Model.Filter.CityID" class="btn btn-sm btn-light"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row g-2 mb-3">
+            <div class="col-md-3 col-6"><div class="border rounded p-2 text-center bg-light"><small class="text-muted d-block">معلق</small><strong class="fs-5 text-warning">@Model.PendingCount</strong></div></div>
+            <div class="col-md-3 col-6"><div class="border rounded p-2 text-center bg-light"><small class="text-muted d-block">قيد المراجعة</small><strong class="fs-5 text-info">@Model.UnderReviewCount</strong></div></div>
+            <div class="col-md-3 col-6"><div class="border rounded p-2 text-center bg-light"><small class="text-muted d-block">مقبول</small><strong class="fs-5 text-success">@Model.AcceptedCount</strong></div></div>
+            <div class="col-md-3 col-6"><div class="border rounded p-2 text-center bg-light"><small class="text-muted d-block">مرفوض</small><strong class="fs-5 text-danger">@Model.RejectedCount</strong></div></div>
+        </div>
+
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-3"><input type="text" name="Search" class="form-control" placeholder="بحث بالاسم أو الرقم القومي" value="@Model.Filter.Search" /></div>
+            <div class="col-md-2">
+                <select name="Status" class="form-select">
+                    <option value="">كل الحالات</option>
+                    <option value="Pending" selected="@(Model.Filter.Status == "Pending")">معلق</option>
+                    <option value="UnderReview" selected="@(Model.Filter.Status == "UnderReview")">قيد المراجعة</option>
+                    <option value="Accepted" selected="@(Model.Filter.Status == "Accepted")">مقبول</option>
+                    <option value="Rejected" selected="@(Model.Filter.Status == "Rejected")">مرفوض</option>
+                    <option value="Waitlist" selected="@(Model.Filter.Status == "Waitlist")">قائمة انتظار</option>
+                    <option value="Returned" selected="@(Model.Filter.Status == "Returned")">معاد للتصحيح</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="CityID" class="form-select">
+                    <option value="">كل المدن</option>
+                    @foreach (var c in Model.Cities) { <option value="@c.ID" selected="@(Model.Filter.CityID == c.ID)">@c.Name</option> }
+                </select>
+            </div>
+            <div class="col-md-2"><input type="text" name="Faculty" class="form-control" placeholder="الكلية" value="@Model.Filter.Faculty" /></div>
+            <div class="col-md-1"><button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button></div>
+            <div class="col-md-2"><a asp-action="Index" class="btn btn-outline-secondary w-100">إعادة تعيين</a></div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>الاسم</th>
+                        <th>الرقم القومي</th>
+                        <th>الكلية</th>
+                        <th>المدينة</th>
+                        <th>النوع</th>
+                        <th>الحالة</th>
+                        <th>التاريخ</th>
+                        <th>المستندات</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Applications.Any()) { <tr><td colspan="10" class="text-center text-muted py-4">لا توجد تطبيقات</td></tr> }
+                    @foreach (var app in Model.Applications)
+                    {
+                        <tr>
+                            <td>@app.ID</td>
+                            <td><a asp-action="Details" asp-route-id="@app.ID" class="fw-bold text-decoration-none">@app.StudentName</a></td>
+                            <td>@app.NationalID</td>
+                            <td>@app.Faculty</td>
+                            <td>@app.CityName</td>
+                            <td>@app.StudentType</td>
+                            <td><span class="badge @(app.Status switch { "Accepted" => "bg-success", "Rejected" => "bg-danger", "Pending" => "bg-warning text-dark", "UnderReview" => "bg-info text-dark", "Waitlist" => "bg-secondary", "Returned" => "bg-dark", _ => "bg-light text-dark" })">@app.StatusDisplay</span></td>
+                            <td>@app.CreatedAt.ToString("yyyy/MM/dd")</td>
+                            <td><small>@app.VerifiedDocCount/@app.DocumentCount</small></td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-gear"></i></button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" asp-action="Details" asp-route-id="@app.ID"><i class="bi bi-eye"></i> تفاصيل</a></li>
+                                        @if (app.Status != "Accepted") { <li><a class="dropdown-item text-success" href="#" onclick="quickAction(@app.ID,'accept')"><i class="bi bi-check-circle"></i> قبول</a></li> }
+                                        @if (app.Status != "Rejected") { <li><a class="dropdown-item text-danger" href="#" onclick="quickAction(@app.ID,'reject')"><i class="bi bi-x-circle"></i> رفض</a></li> }
+                                        <li><a class="dropdown-item text-info" href="#" onclick="quickAction(@app.ID,'review')"><i class="bi bi-arrow-repeat"></i> للمراجعة</a></li>
+                                        <li><a class="dropdown-item text-dark" href="#" onclick="quickAction(@app.ID,'return')"><i class="bi bi-arrow-return-left"></i> إعادة للتصحيح</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav><ul class="pagination justify-content-center">
+                @{
+                    var qs = new Dictionary<string, string?>
+                    {
+                        {"Search", Model.Filter.Search},
+                        {"Status", Model.Filter.Status},
+                        {"StudentType", Model.Filter.StudentType},
+                        {"CityID", Model.Filter.CityID?.ToString()},
+                        {"Faculty", Model.Filter.Faculty}
+                    };
+                }
+                @for (int p = 1; p <= Model.TotalPages; p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link" asp-all-route-data="@(new Dictionary<string, string>(qs.Where(kv => kv.Value != null).ToDictionary(kv => kv.Key, kv => kv.Value!)) { ["page"] = p.ToString() })">@p</a>
+                    </li>
+                }
+            </ul></nav>
+        }
+    </div>
+</div>
+
+<form id="quickActionForm" method="post" asp-action="QuickAction" style="display:none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="qa_id" />
+    <input type="hidden" name="action" id="qa_action" />
+    <input type="hidden" name="reason" id="qa_reason" />
+</form>
+
+@section Scripts {
+    <script>
+        function quickAction(id, action) {
+            if (action === 'reject') {
+                const r = prompt('سبب الرفض:');
+                if (!r) return;
+                document.getElementById('qa_reason').value = r;
+            }
+            document.getElementById('qa_id').value = id;
+            document.getElementById('qa_action').value = action;
+            document.getElementById('quickActionForm').submit();
+        }
+    </script>
+}

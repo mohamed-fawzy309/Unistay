@@ -15,6 +15,8 @@ public partial class MealBlock
 
     public DateOnly ToDate { get; set; }
 
+    public string? MealType { get; set; }
+
     public string? Reason { get; set; }
 
     public bool? IsActive { get; set; }

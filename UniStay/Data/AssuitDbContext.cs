@@ -986,6 +986,7 @@ public partial class AssuitDbContext : DbContext
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.MealType).HasMaxLength(20).IsUnicode(false);
             entity.Property(e => e.Reason).HasMaxLength(500);
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.MealBlocks)

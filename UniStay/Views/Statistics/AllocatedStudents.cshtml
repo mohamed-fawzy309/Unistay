@@ -1,0 +1,75 @@
+@model AllocatedStudentsStatisticsViewModel
+@{ ViewData["Title"] = "إحصائية الطلاب المقيمين"; }
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-door-open"></i> إحصائية الطلاب المقيمين بالسكن</h2>
+        <div>
+            <a asp-action="ExportAllocatedExcel" asp-route-cityId="@Model.FilterCityId" asp-route-academicYear="@Model.FilterAcademicYear" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            <a asp-action="ExportAllocatedPdf" asp-route-cityId="@Model.FilterCityId" asp-route-academicYear="@Model.FilterAcademicYear" class="btn btn-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        </div>
+    </div>
+
+    <form method="get" class="row g-2 mb-4">
+        <div class="col-md-3">
+            <select name="cityId" class="form-select form-select-sm">
+                <option value="">كل المدن</option>
+                @foreach (var c in Model.Cities) { <option value="@c.ID" selected="@(c.ID == Model.FilterCityId)">@c.Name</option> }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> تصفية</button>
+        </div>
+    </form>
+
+    <div class="row mb-4">
+        <div class="col-md-4 mb-2"><div class="card border-primary shadow-sm"><div class="card-body text-center"><h6 class="text-muted">إجمالي المقيمين</h6><h3 class="text-primary mb-0">@Model.TotalAllocated.ToString("N0")</h3></div></div></div>
+        <div class="col-md-4 mb-2"><div class="card border-info shadow-sm"><div class="card-body text-center"><h6 class="text-muted">إجمالي الأسرّة</h6><h3 class="text-info mb-0">@Model.TotalBeds.ToString("N0")</h3></div></div></div>
+        <div class="col-md-4 mb-2"><div class="card border-@(Model.OccupancyPercent >= 80 ? "danger" : "success") shadow-sm"><div class="card-body text-center"><h6 class="text-muted">نسبة الإشغال</h6><h3 class="mb-0 text-@(Model.OccupancyPercent >= 80 ? "danger" : "success")">@Model.OccupancyPercent%</h3></div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">التوزيع حسب المدينة</h6></div><div class="card-body"><canvas id="chartCity" height="220"></canvas></div></div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">التوزيع حسب المبنى</h6></div><div class="card-body"><div style="max-height:300px;overflow-y:auto"><canvas id="chartBuilding" height="400"></canvas></div></div></div>
+        </div>
+    </div>
+
+    @if (Model.ByCity.Any())
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light"><h6 class="mb-0">توزيع المقيمين حسب المدينة</h6></div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead><tr><th>المدينة</th><th>عدد المقيمين</th><th>نسبة الإشغال</th></tr></thead>
+                    <tbody>
+                        @foreach (var c in Model.ByCity)
+                        {
+                            <tr><td>@c.CityName</td><td>@c.Allocated</td><td>@c.OccupancyPercent%</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        new Chart(document.getElementById('chartCity'), {
+            type: 'pie', data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CityDistribution.Select(x => x.Label))),
+                datasets: [{ data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CityDistribution.Select(x => x.Value))), backgroundColor: ['#0d6efd','#198754','#dc3545','#ffc107','#6c757d','#0dcaf0','#d63384'] }]
+            }, options: { responsive: true, plugins: { legend: { position: 'left', rtl: true } } }
+        });
+        new Chart(document.getElementById('chartBuilding'), {
+            type: 'bar', data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByBuilding.Select(x => x.BuildingName))),
+                datasets: [{ label: 'مقيم', data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByBuilding.Select(x => x.Allocated))), backgroundColor: '#0d6efd' }]
+            }, options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
+    </script>
+}

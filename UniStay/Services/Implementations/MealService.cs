@@ -55,13 +55,34 @@ namespace UniStay.Services.Implementations
         public async Task<bool> CanConsumeAsync(int studentId, int cityId, DateTime date)
         {
             var d = DateOnly.FromDateTime(date);
-            var blocked = await db.MealBlocks.AnyAsync(b => b.StudentID == studentId && (b.IsActive ?? false) && d >= b.FromDate && d <= b.ToDate);
+            var blocked = await db.MealBlocks.AnyAsync(b =>
+                b.StudentID == studentId && (b.IsActive ?? false) &&
+                d >= b.FromDate && d <= b.ToDate);
             if (blocked) return false;
 
             return await db.Meals.AnyAsync(m =>
                 m.StudentID == studentId &&
                 m.DormitoryCityID == cityId &&
                 m.MealDate == d &&
+                (m.IsBooked ?? false) &&
+                !(m.IsConsumed ?? false) &&
+                (m.IsActive ?? true));
+        }
+
+        public async Task<bool> CanConsumeByTypeAsync(int studentId, int cityId, DateTime date, string mealType)
+        {
+            var d = DateOnly.FromDateTime(date);
+            var blocked = await db.MealBlocks.AnyAsync(b =>
+                b.StudentID == studentId && (b.IsActive ?? false) &&
+                d >= b.FromDate && d <= b.ToDate &&
+                (b.MealType == null || b.MealType == mealType));
+            if (blocked) return false;
+
+            return await db.Meals.AnyAsync(m =>
+                m.StudentID == studentId &&
+                m.DormitoryCityID == cityId &&
+                m.MealDate == d &&
+                m.MealType == mealType &&
                 (m.IsBooked ?? false) &&
                 !(m.IsConsumed ?? false) &&
                 (m.IsActive ?? true));

@@ -1,0 +1,70 @@
+@model StudentPhotoRowViewModel
+@{
+    ViewData["Title"] = "رفع صورة الطالب";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="page-title mb-0"><i class="bi bi-camera"></i> @ViewData["Title"]</h5>
+    <a class="btn btn-outline-secondary btn-sm" asp-action="Index"><i class="bi bi-arrow-right"></i> العودة</a>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 text-center mb-3">
+                <h6>الصورة الحالية</h6>
+                @if (Model.HasPhoto)
+                {
+                    <img src="@Model.PhotoPath" class="img-thumbnail" style="width:200px;height:200px;object-fit:cover" id="currentPhoto" />
+                    <div class="mt-2">
+                        <button class="btn btn-sm btn-outline-danger" onclick="deletePhoto(@Model.StudentID)">
+                            <i class="bi bi-trash"></i> حذف الصورة
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="border rounded d-flex align-items-center justify-content-center" style="width:200px;height:200px;margin:auto;background:#f8f9fa">
+                        <i class="bi bi-person-circle text-muted" style="font-size:5rem"></i>
+                    </div>
+                    <p class="text-muted mt-2">لا توجد صورة</p>
+                }
+            </div>
+            <div class="col-md-8">
+                <h6>بيانات الطالب</h6>
+                <table class="table table-bordered small">
+                    <tr><th style="width:120px">الاسم</th><td>@Model.FullName</td></tr>
+                    <tr><th>الرقم القومي</th><td>@Model.NationalID</td></tr>
+                    <tr><th>الكلية</th><td>@Model.Faculty</td></tr>
+                    <tr><th>المدينة</th><td>@Model.CityName</td></tr>
+                </table>
+
+                <hr />
+                <h6>رفع صورة جديدة</h6>
+                <form method="post" enctype="multipart/form-data" asp-action="Upload" asp-route-id="@Model.StudentID">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <input class="form-control" type="file" name="PhotoFile" accept=".jpg,.jpeg,.png" required />
+                        <small class="text-muted">الصيغ المسموحة: JPG, JPEG, PNG - الحجم الأقصى: 5MB</small>
+                    </div>
+                    <button class="btn btn-primary"><i class="bi bi-upload"></i> رفع الصورة</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function deletePhoto(id) {
+            if (!confirm("تأكيد حذف الصورة؟")) return;
+            fetch('@Url.Action("DeletePhoto", "Photos")/' + id, {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+            }).then(r => r.json()).then(d => {
+                if (d.success) location.reload();
+                else alert(d.message);
+            });
+        }
+    </script>
+}

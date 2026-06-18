@@ -1,0 +1,138 @@
+@model MealPreparationIndexViewModel
+@{
+    ViewData["Title"] = "مركز تجهيز الوجبات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title"><i class="bi bi-cup-hot-fill"></i> مركز تجهيز الوجبات</h2>
+    <div class="d-flex gap-2">
+        <a asp-action="DailySheet" asp-route-date="@Model.SelectedDate?.ToString("yyyy-MM-dd")" asp-route-cityId="@Model.CityId" class="btn btn-primary"><i class="bi bi-file-text"></i> ورقة التجهيز</a>
+        <a asp-action="KitchenReport" asp-route-date="@Model.SelectedDate?.ToString("yyyy-MM-dd")" asp-route-cityId="@Model.CityId" class="btn btn-info"><i class="bi bi-graph-up"></i> تقرير المطبخ</a>
+        <a asp-action="DistributionReport" asp-route-date="@Model.SelectedDate?.ToString("yyyy-MM-dd")" asp-route-cityId="@Model.CityId" class="btn btn-warning"><i class="bi bi-truck"></i> تقرير التوزيع</a>
+    </div>
+</div>
+
+<div class="filter-bar row g-3 align-items-end mb-4">
+    <div class="col-md-3">
+        <label class="form-label small">التاريخ</label>
+        <input type="date" class="form-control" value="@Model.SelectedDate?.ToString("yyyy-MM-dd")" onchange="window.location='@Url.Action("Index")?date='+this.value">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small">المدينة</label>
+        <select class="form-select" onchange="window.location='@Url.Action("Index")?date=@Model.SelectedDate?.ToString("yyyy-MM-dd")&cityId='+this.value">
+            <option value="">-- الكل --</option>
+            @foreach (var c in Model.Cities)
+            {
+                <option value="@c.ID" selected="@(c.ID == Model.CityId)">@c.Name</option>
+            }
+        </select>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-success bg-opacity-10 text-success"><i class="bi bi-sunrise"></i></div>
+                <div>
+                    <div class="value">@Model.BreakfastCount</div>
+                    <div class="label">فطور</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-sun"></i></div>
+                <div>
+                    <div class="value">@Model.LunchCount</div>
+                    <div class="label">غداء</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-moon"></i></div>
+                <div>
+                    <div class="value">@Model.DinnerCount</div>
+                    <div class="label">عشاء</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-info bg-opacity-10 text-info"><i class="bi bi-cup-hot"></i></div>
+                <div>
+                    <div class="value">@Model.TotalCount</div>
+                    <div class="label">الإجمالي</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white"><h5 class="mb-0">توزيع الوجبات حسب المدينة</h5></div>
+    <div class="card-body">
+        <div class="table-responsive animate-fade-in">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>المدينة</th>
+                        <th>فطور</th>
+                        <th>غداء</th>
+                        <th>عشاء</th>
+                        <th>الإجمالي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.CityBreakdowns.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">لا توجد وجبات لهذا اليوم</td></tr>
+                    }
+                    @foreach (var city in Model.CityBreakdowns)
+                    {
+                        <tr>
+                            <td><strong>@city.CityName</strong></td>
+                            <td>@city.BreakfastCount</td>
+                            <td>@city.LunchCount</td>
+                            <td>@city.DinnerCount</td>
+                            <td><strong>@city.TotalCount</strong></td>
+                        </tr>
+                        @if (city.Buildings.Any())
+                        {
+                            foreach (var bld in city.Buildings)
+                            {
+                                <tr class="table-light">
+                                    <td class="ps-4">- @bld.BuildingName</td>
+                                    <td>@bld.BreakfastCount</td>
+                                    <td>@bld.LunchCount</td>
+                                    <td>@bld.DinnerCount</td>
+                                    <td>@bld.TotalCount</td>
+                                </tr>
+                                @if (bld.Rooms.Any())
+                                {
+                                    foreach (var rm in bld.Rooms)
+                                    {
+                                        <tr>
+                                            <td class="ps-5 text-muted">@rm.RoomNumber</td>
+                                            <td>@rm.BreakfastCount</td>
+                                            <td>@rm.LunchCount</td>
+                                            <td>@rm.DinnerCount</td>
+                                            <td>@rm.TotalCount</td>
+                                        </tr>
+                                    }
+                                }
+                            }
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

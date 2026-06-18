@@ -1,0 +1,113 @@
+@model DailyPreparationSheetViewModel
+@{
+    ViewData["Title"] = "ورقة التجهيز اليومية";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title"><i class="bi bi-file-text"></i> ورقة التجهيز اليومية</h2>
+    <div class="d-flex gap-2">
+        <a asp-action="ExportDailySheetExcel" asp-route-date="@Model.PrepDate.ToString("yyyy-MM-dd")" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> إكسل</a>
+        <a asp-action="ExportDailySheetPdf" asp-route-date="@Model.PrepDate.ToString("yyyy-MM-dd")" class="btn btn-danger"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        <a asp-action="Index" asp-route-date="@Model.PrepDate.ToString("yyyy-MM-dd")" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">تاريخ: @Model.PrepDate.ToString("yyyy-MM-dd") | @Model.CityName</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 mb-4">
+            <div class="col-3">
+                <div class="border rounded p-3 text-center">
+                    <div class="fs-3 text-success">@Model.BreakfastCount</div>
+                    <div class="small">فطور</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="border rounded p-3 text-center">
+                    <div class="fs-3 text-warning">@Model.LunchCount</div>
+                    <div class="small">غداء</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="border rounded p-3 text-center">
+                    <div class="fs-3 text-primary">@Model.DinnerCount</div>
+                    <div class="small">عشاء</div>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="border rounded p-3 text-center">
+                    <div class="fs-3 text-info">@Model.TotalCount</div>
+                    <div class="small">الإجمالي</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>المدينة</th>
+                        <th>المبنى</th>
+                        <th>الغرفة</th>
+                        <th>فطور</th>
+                        <th>غداء</th>
+                        <th>عشاء</th>
+                        <th>الإجمالي</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var city in Model.CityBreakdowns)
+                    {
+                        if (city.Buildings.Any())
+                        {
+                            foreach (var bld in city.Buildings)
+                            {
+                                if (bld.Rooms.Any())
+                                {
+                                    foreach (var rm in bld.Rooms)
+                                    {
+                                        <tr>
+                                            <td>@city.CityName</td>
+                                            <td>@bld.BuildingName</td>
+                                            <td>@rm.RoomNumber</td>
+                                            <td>@rm.BreakfastCount</td>
+                                            <td>@rm.LunchCount</td>
+                                            <td>@rm.DinnerCount</td>
+                                            <td>@rm.TotalCount</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td>@city.CityName</td>
+                                        <td>@bld.BuildingName</td>
+                                        <td>-</td>
+                                        <td>@bld.BreakfastCount</td>
+                                        <td>@bld.LunchCount</td>
+                                        <td>@bld.DinnerCount</td>
+                                        <td>@bld.TotalCount</td>
+                                    </tr>
+                                }
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td>@city.CityName</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>@city.BreakfastCount</td>
+                                <td>@city.LunchCount</td>
+                                <td>@city.DinnerCount</td>
+                                <td>@city.TotalCount</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

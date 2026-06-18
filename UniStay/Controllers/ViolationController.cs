@@ -35,6 +35,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Violations.Manage", "CanCreate")]
         public async Task<IActionResult> Add()
         {
             ViewBag.ViolationTypes = new List<SelectListItem>
@@ -177,6 +178,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Violations.Manage", "CanView")]
         public async Task<IActionResult> Report(
             string? filterStatus = null,
             string? filterSeverity = null,

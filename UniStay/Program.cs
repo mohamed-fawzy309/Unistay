@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using QuestPDF.Infrastructure;
 using UniStay.Data;
 using UniStay.Helpers;
 using UniStay.Services.Implementations;
@@ -38,6 +39,9 @@ builder.Services.AddAntiforgery(options =>
 // ===== HttpClient =====
 builder.Services.AddScoped<IUniversityApiService, UniversityApiService>();
 
+// ===== QuestPDF License =====
+QuestPDF.Settings.License = LicenseType.Community;
+
 // ===== Application Services =====
 builder.Services.AddScoped<ICoordinationService, CoordinationService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
@@ -46,6 +50,12 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IPasswordService, PasswordService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IReportExportService, ReportExportService>();
+builder.Services.AddScoped<IPhotoService, PhotoService>();
+builder.Services.AddScoped<ICardPrintService, CardPrintService>();
+builder.Services.AddScoped<IMealRestrictionService, MealRestrictionService>();
+builder.Services.AddScoped<IMealReceivingService, MealReceivingService>();
+builder.Services.AddScoped<IMealBookingService, MealBookingService>();
+builder.Services.AddScoped<IMealPreparationService, MealPreparationService>();
 
 // ===== Settings =====
 builder.Services.Configure<UniversityApiSettings>(
