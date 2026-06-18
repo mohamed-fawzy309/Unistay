@@ -69,20 +69,61 @@
                 <label class="form-label">عدد الأسرة الأقصى في الغرفة</label>
                 <input asp-for="MaxBedsPerRoom" class="form-control" type="number">
             </div>
+            
             <div class="col-md-6 mb-3 d-flex align-items-end">
-                <div class="form-check">
-                    <input asp-for="AutoCoordinationEnabled" class="form-check-input" type="checkbox">
-                    <label class="form-check-label">تفعيل التنسيق الآلي</label>
-                </div>
-            </div>
-            <div class="col-md-6 mb-3 d-flex align-items-end">
-                <div class="form-check">
-                    <input asp-for="AllowStudentBedSelection" class="form-check-input" type="checkbox">
-                    <label class="form-check-label">السماح للطالب باختيار السرير</label>
-                </div>
+    <div class="form-check">
+   @if (Model.AutoCoordinationEnabled == true)
+{
+    <input type="checkbox"
+           name="AutoCoordinationEnabled"
+           class="form-check-input"
+           value="true"
+           checked />
+}
+else
+{
+    <input type="checkbox"
+           name="AutoCoordinationEnabled"
+           class="form-check-input"
+           value="true" />
+}
+
+<input type="hidden" name="AutoCoordinationEnabled" value="false" />
+        
+        <label class="form-check-label">
+            تفعيل التنسيق الآلي
+        </label>
+    </div>
+</div>
+
+<div class="col-md-6 mb-3 d-flex align-items-end">
+    <div class="form-check">
+  @if (Model.AllowStudentBedSelection == true)
+{
+    <input type="checkbox"
+           name="AllowStudentBedSelection"
+           class="form-check-input"
+           value="true"
+           checked />
+}
+else
+{
+    <input type="checkbox"
+           name="AllowStudentBedSelection"
+           class="form-check-input"
+           value="true" />
+}
+
+<input type="hidden" name="AllowStudentBedSelection" value="false" />
+             
+        <label class="form-check-label">
+            السماح للطالب باختيار السرير
+        </label>
+    </div>
+</div>
             </div>
         </div>
-    </div>
+    
 
     <div class="card-header bg-info text-white mt-3"><h5 class="mb-0">الكليات المسموحة / المستثناة</h5></div>
     <div class="card-body">
