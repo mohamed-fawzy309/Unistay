@@ -5,6 +5,7 @@ using UniStay.Data;
 using UniStay.Helpers;
 using UniStay.Models;
 using UniStay.Services.Interfaces;
+using UniStay.ViewModels;
 using UniStay.ViewModels.Applications;
 
 namespace UniStay.Controllers;

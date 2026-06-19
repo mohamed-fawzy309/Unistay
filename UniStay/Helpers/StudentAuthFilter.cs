@@ -38,7 +38,7 @@ namespace UniStay.Helpers
 
             var studentLogin = await _context.StudentLogins
                 .Include(s => s.Student)
-                .FirstOrDefaultAsync(s => s.ID == studentId);
+                .FirstOrDefaultAsync(s => s.StudentID == studentId);
 
             if (studentLogin == null || studentLogin.IsActive != true)
             {

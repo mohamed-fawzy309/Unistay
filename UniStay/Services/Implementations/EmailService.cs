@@ -10,11 +10,13 @@ namespace UniStay.Services.Implementations;
 
 public class EmailSettings
 {
-    public string Smtp { get; set; } = "";
+    public string Host { get; set; } = "";
     public int Port { get; set; } = 587;
-    public string User { get; set; } = "";
-    public string Pass { get; set; } = "";
-    public string From { get; set; } = "";
+    public bool EnableSsl { get; set; } = true;
+    public string Username { get; set; } = "";
+    public string Password { get; set; } = "";
+    public string SenderName { get; set; } = "UniStay";
+    public string SenderEmail { get; set; } = "";
 }
 
 public class EmailService : IEmailService
@@ -48,11 +50,11 @@ public class EmailService : IEmailService
         try
         {
             using var client = new SmtpClient();
-            await client.ConnectAsync(_c.Smtp, _c.Port, true);
-            await client.AuthenticateAsync(_c.User, _c.Pass);
+            await client.ConnectAsync(_c.Host, _c.Port, _c.EnableSsl);
+            await client.AuthenticateAsync(_c.Username, _c.Password);
 
             var msg = new MimeMessage();
-            msg.From.Add(new MailboxAddress("UniStay", _c.From));
+            msg.From.Add(new MailboxAddress(_c.SenderName, _c.SenderEmail));
             msg.To.Add(MailboxAddress.Parse(toEmail));
             msg.Subject = subject;
             msg.Body = new TextPart("html") { Text = body };

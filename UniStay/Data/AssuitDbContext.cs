@@ -570,6 +570,8 @@ public partial class AssuitDbContext : DbContext
 
             entity.ToTable("CoordinationResult");
 
+            entity.HasIndex(e => e.ApplicationID, "IX_CoordinationResult_ApplicationID");
+
             entity.Property(e => e.AcademicYear).HasMaxLength(10);
             entity.Property(e => e.AgeScore)
                 .HasDefaultValue(0m)
@@ -653,6 +655,10 @@ public partial class AssuitDbContext : DbContext
             entity.HasKey(e => e.ID).HasName("PK__Document__3214EC273EA5E377");
 
             entity.ToTable("Document");
+
+            entity.HasIndex(e => e.StudentID, "IX_Document_StudentID");
+
+            entity.HasIndex(e => e.ApplicationID, "IX_Document_ApplicationID");
 
             entity.Property(e => e.DocumentType)
                 .HasMaxLength(30)
@@ -798,6 +804,8 @@ public partial class AssuitDbContext : DbContext
 
             entity.ToTable("Guardian");
 
+            entity.HasIndex(e => e.StudentID, "IX_Guardian_StudentID");
+
             entity.Property(e => e.Address).HasMaxLength(500);
             entity.Property(e => e.FullName).HasMaxLength(200);
             entity.Property(e => e.GuardianType)
@@ -869,6 +877,8 @@ public partial class AssuitDbContext : DbContext
             entity.HasKey(e => e.ID).HasName("PK__IDCard__3214EC270F63707B");
 
             entity.ToTable("IDCard");
+
+            entity.HasIndex(e => e.StudentID, "IX_IDCard_StudentID");
 
             entity.HasIndex(e => e.CardNumber, "UQ_IDCard_CardNumber").IsUnique();
 
@@ -1192,6 +1202,8 @@ public partial class AssuitDbContext : DbContext
 
             entity.ToTable("SocialCase");
 
+            entity.HasIndex(e => e.StudentID, "IX_SocialCase_StudentID");
+
             entity.Property(e => e.CaseType).HasMaxLength(100);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Description).HasMaxLength(1000);
@@ -1218,6 +1230,10 @@ public partial class AssuitDbContext : DbContext
             entity.HasKey(e => e.ID).HasName("PK__SpecialC__3214EC2755A318C5");
 
             entity.ToTable("SpecialCase");
+
+            entity.HasIndex(e => e.StudentID, "IX_SpecialCase_StudentID");
+
+            entity.HasIndex(e => e.ApplicationID, "IX_SpecialCase_ApplicationID");
 
             entity.Property(e => e.CaseType)
                 .HasMaxLength(30)
@@ -1260,6 +1276,8 @@ public partial class AssuitDbContext : DbContext
             entity.HasIndex(e => e.NationalID, "IX_Student_NationalID");
 
             entity.HasIndex(e => e.NationalID, "UQ_Student_NationalID").IsUnique();
+
+            entity.HasIndex(e => e.Email, "IX_Student_Email");
 
             entity.Property(e => e.Address).HasMaxLength(500);
             entity.Property(e => e.City).HasMaxLength(100);
@@ -1400,6 +1418,8 @@ public partial class AssuitDbContext : DbContext
             entity.HasKey(e => e.ID).HasName("PK__StudentV__3214EC27B79FA509");
 
             entity.ToTable("StudentValidationLog");
+
+            entity.HasIndex(e => e.StudentID, "IX_StudentValidationLog_StudentID");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.IsResolved).HasDefaultValue(false);
@@ -1574,6 +1594,8 @@ public partial class AssuitDbContext : DbContext
             entity.HasKey(e => e.ID).HasName("PK__Violatio__3214EC27000AA28B");
 
             entity.ToTable("Violation");
+
+            entity.HasIndex(e => e.StudentID, "IX_Violation_StudentID");
 
             entity.Property(e => e.Description).HasMaxLength(1000);
             entity.Property(e => e.FineAmount)

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -30,6 +31,7 @@ namespace UniStay.Controllers
             _emailService = emailService;
         }
 
+        [AllowAnonymous]
         [HttpGet("Login")]
         public async Task<IActionResult> Login(string? returnUrl = null)
         {
@@ -41,6 +43,7 @@ namespace UniStay.Controllers
             return View(new StudentLoginViewModel());
         }
 
+        [AllowAnonymous]
         [HttpPost("Login")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(StudentLoginViewModel model, string? returnUrl = null)
@@ -90,12 +93,14 @@ namespace UniStay.Controllers
             return RedirectToLocal(returnUrl);
         }
 
+        [AllowAnonymous]
         [HttpGet("Register")]
         public IActionResult Register()
         {
             return RedirectToAction("Apply", "Application");
         }
 
+        [AllowAnonymous]
         [HttpPost("Register")]
         [ValidateAntiForgeryToken]
         public IActionResult Register(StudentRegisterViewModel model)
@@ -103,6 +108,7 @@ namespace UniStay.Controllers
             return RedirectToAction("Apply", "Application");
         }
 
+        [AllowAnonymous]
         [HttpGet("Logout")]
         public async Task<IActionResult> Logout()
         {

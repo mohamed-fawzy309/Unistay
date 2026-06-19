@@ -1,0 +1,205 @@
+@model StudentDetailsVM
+@{
+    ViewData["Title"] = "بيانات الطالب";
+}
+
+<div class="container-fluid" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-person-vcard"></i> بيانات الطالب</h4>
+        <div>
+            <a asp-action="Status" asp-route-id="@Model.BasicInfo.StudentId" class="btn btn-primary btn-sm"><i class="bi bi-card-list"></i> بيان حالة</a>
+            <a asp-action="SpecialCases" asp-route-id="@Model.BasicInfo.StudentId" class="btn btn-warning btn-sm"><i class="bi bi-exclamation-triangle"></i> الحالات</a>
+            <a asp-action="Print" asp-route-id="@Model.BasicInfo.StudentId" class="btn btn-secondary btn-sm" target="_blank"><i class="bi bi-printer"></i> طباعة</a>
+            <a asp-action="Index" class="btn btn-outline-dark btn-sm"><i class="bi bi-arrow-right"></i> عودة</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body text-center">
+                    @if (!string.IsNullOrEmpty(Model.BasicInfo.Photo))
+                    {
+                        <img src="~/uploads/@Model.BasicInfo.Photo" class="rounded-circle img-thumbnail mb-2" style="width:150px;height:150px;object-fit:cover;" alt="صورة" />
+                    }
+                    else
+                    {
+                        <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-2" style="width:150px;height:150px;">
+                            <i class="bi bi-person-fill text-white" style="font-size:4rem;"></i>
+                        </div>
+                    }
+                    <h5 class="mb-0">@Model.BasicInfo.Name</h5>
+                    <small class="text-muted">@Model.BasicInfo.StudentCode</small>
+                    <div class="mt-2">
+                        <span class="badge @(Model.BasicInfo.IsActive ? "bg-success" : "bg-secondary")">
+                            @(Model.BasicInfo.IsActive ? "نشط" : "غير نشط")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header"><i class="bi bi-house-door"></i> السكن الحالي</div>
+                <div class="card-body">
+                    @if (Model.HousingInfo.IsAllocated)
+                    {
+                        <p class="mb-1"><strong>المبنى:</strong> @Model.HousingInfo.BuildingName</p>
+                        <p class="mb-1"><strong>الغرفة:</strong> @Model.HousingInfo.RoomNumber</p>
+                        <p class="mb-1"><strong>السرير:</strong> @Model.HousingInfo.BedNumber</p>
+                        <p class="mb-0"><strong>الحالة:</strong> <span class="badge bg-success">@Model.HousingInfo.AllocationStatus</span></p>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">لا يوجد سكن حالي</p>
+                    }
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header"><i class="bi bi-info-circle"></i> خصائص</div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        @if (Model.BasicInfo.HasDisability) { <span class="badge bg-warning text-dark">ذو إعاقة</span> }
+                        @if (Model.BasicInfo.IsOrphan) { <span class="badge bg-secondary">يتيم</span> }
+                        @if (Model.BasicInfo.IsLowIncome) { <span class="badge bg-info text-dark">محدود الدخل</span> }
+                        @if (Model.BasicInfo.HasFamilyAbroad) { <span class="badge bg-primary">أسرة بالخارج</span> }
+                        @if (Model.BasicInfo.HasMedicalCondition) { <span class="badge bg-danger">حالة طبية</span> }
+                        @if (Model.BasicInfo.IsForeign) { <span class="badge bg-dark">وافد</span> }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header"><i class="bi bi-person-lines-fill"></i> المعلومات الأساسية</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>الاسم:</strong> @Model.BasicInfo.Name
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>الرقم القومي:</strong> @Model.BasicInfo.NationalID
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>تاريخ الميلاد:</strong> @Model.BasicInfo.BirthDate.ToString("yyyy/MM/dd")
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>النوع:</strong> @(Model.BasicInfo.Gender == "Male" ? "ذكر" : Model.BasicInfo.Gender == "Female" ? "أنثى" : Model.BasicInfo.Gender)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header"><i class="bi bi-telephone"></i> معلومات التواصل</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>الهاتف:</strong> @Model.ContactInfo.Phone
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>البريد:</strong> @Model.ContactInfo.Email
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>العنوان:</strong> @Model.ContactInfo.Address
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-header"><i class="bi bi-book"></i> المعلومات الأكاديمية</div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <strong>الكلية:</strong> @Model.AcademicInfo.Faculty
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>السنة الدراسية:</strong> @Model.AcademicInfo.AcademicYear
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>القسم:</strong> @Model.AcademicInfo.Department
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>النسبة المئوية:</strong> @Model.AcademicInfo.GradePercentage?.ToString("F2")
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <strong>التقدير:</strong> @Model.AcademicInfo.GradeText
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.Guardians.Any())
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header"><i class="bi bi-people"></i> أولياء الأمور</div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>النوع</th>
+                                    <th>الاسم</th>
+                                    <th>الرقم القومي</th>
+                                    <th>الهاتف</th>
+                                    <th>الوظيفة</th>
+                                    <th>متوفي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var g in Model.Guardians)
+                                {
+                                    <tr>
+                                        <td>@g.GuardianType</td>
+                                        <td>@g.FullName</td>
+                                        <td>@g.NationalID</td>
+                                        <td>@g.Phone</td>
+                                        <td>@g.Job</td>
+                                        <td>@(g.IsDeceased ? "نعم" : "لا")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+
+            @if (Model.Documents.Any())
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header"><i class="bi bi-file-earmark"></i> المستندات</div>
+                    <div class="card-body p-0">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>النوع</th>
+                                    <th>تاريخ الرفع</th>
+                                    <th>الحالة</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var d in Model.Documents)
+                                {
+                                    <tr>
+                                        <td>@d.DocumentType</td>
+                                        <td>@d.UploadDate?.ToString("yyyy/MM/dd")</td>
+                                        <td>
+                                            <span class="badge @(d.IsVerified ? "bg-success" : "bg-warning text-dark")">
+                                                @(d.IsVerified ? "موثق" : "غير موثق")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="~/uploads/@d.FilePath" class="btn btn-outline-primary btn-sm" target="_blank"><i class="bi bi-eye"></i></a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

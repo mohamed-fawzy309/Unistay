@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniStay.Data;
+using UniStay.Helpers;
 using UniStay.Models;
 
 namespace UniStay.Controllers
 {
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class HomeController : Controller
     {
         private readonly AssuitDbContext _db;
@@ -14,6 +17,7 @@ namespace UniStay.Controllers
             _db = db;
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Index()
         {
             var announcements = await _db.Announcements
@@ -31,6 +35,7 @@ namespace UniStay.Controllers
             return View();
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Announcements(int page = 1)
         {
             var query = _db.Announcements
@@ -50,6 +55,7 @@ namespace UniStay.Controllers
             return View(announcements);
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Cities()
         {
             var cities = await _db.DormitoryCities
@@ -61,6 +67,7 @@ namespace UniStay.Controllers
             return View(cities);
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> CityDetails(int id)
         {
             var city = await _db.DormitoryCities
@@ -79,11 +86,13 @@ namespace UniStay.Controllers
             return View(city);
         }
 
+        [AllowAnonymous]
         public IActionResult About()
         {
             return View();
         }
 
+        [AllowAnonymous]
         public async Task<IActionResult> Dates()
         {
             var schedules = await _db.ApplicationSchedules
@@ -96,11 +105,19 @@ namespace UniStay.Controllers
             return View();
         }
 
+        [AllowAnonymous]
         public IActionResult Accept()
         {
             return View();
         }
 
+        [AllowAnonymous]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> CheckAcceptance(string id)
         {

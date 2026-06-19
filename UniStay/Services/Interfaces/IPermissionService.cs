@@ -4,6 +4,8 @@
     public interface IPermissionService
     {
         bool HasPermission(int userId, string permissionKey, string action = "CanView");
+        HashSet<string> GetUserPermissionKeys(int userId);
+        int GetEffectivePermissionCount(int userId);
         bool IsInDataScope(int userId, int? cityId = null, int? buildingId = null, string? faculty = null);
         Task<bool> GrantPermissionAsync(int grantedBy, int targetUserId, int permissionId, object dto);
     }

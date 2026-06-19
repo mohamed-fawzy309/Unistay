@@ -137,15 +137,6 @@ public class GuardianInfoViewModel
     public string? Job { get; set; }
 }
 
-public class ReviewDecisionViewModel
-{
-    [Required(ErrorMessage = "يرجى اختيار القرار")]
-    public string Decision { get; set; } = null!;
-
-    public string? RejectionReason { get; set; }
-    public string? AdminNotes { get; set; }
-}
-
 public class ReturnForCorrectionViewModel
 {
     [Required(ErrorMessage = "ملاحظات التصحيح مطلوبة")]

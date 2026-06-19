@@ -2,6 +2,7 @@ using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using UniStay.Data;
 using UniStay.Models;
+using UniStay.Services.Helpers;
 using UniStay.Services.Interfaces;
 using UniStay.ViewModels.Meal;
 
@@ -14,10 +15,7 @@ public class MealReceivingService(AssuitDbContext db, IAuditService audit, IMeal
         if (string.IsNullOrWhiteSpace(searchTerm))
             return null;
 
-        var student = await db.Students
-            .Include(s => s.Allocations.Where(a => a.Status == "Active"))
-                .ThenInclude(a => a.CityRoom).ThenInclude(r => r.CityBuilding).ThenInclude(b => b.DormitoryCity)
-            .FirstOrDefaultAsync(s => s.NationalID == searchTerm || s.StudentCode == searchTerm || s.ID.ToString() == searchTerm);
+        var student = await StudentLookupHelper.FindStudentWithAllocationAsync(db, searchTerm);
 
         if (student == null)
             return new ScanResultViewModel
@@ -26,22 +24,11 @@ public class MealReceivingService(AssuitDbContext db, IAuditService audit, IMeal
                 EligibilityMessage = "الطالب غير موجود"
             };
 
-        var allocation = student.Allocations.FirstOrDefault();
-        var cityName = allocation?.CityRoom?.CityBuilding?.DormitoryCity?.Name ?? "";
+        var cityName = StudentLookupHelper.GetStudentCityName(student);
 
         var today = DateOnly.FromDateTime(DateTime.Today);
-        var cityId = allocation?.CityRoom?.CityBuilding?.DormitoryCityID ?? 0;
-
-        var hasRestriction = await db.MealBlocks.AnyAsync(b =>
-            b.StudentID == student.ID &&
-            b.IsActive == true &&
-            today >= b.FromDate && today <= b.ToDate);
-
-        var restriction = hasRestriction
-            ? await db.MealBlocks.FirstOrDefaultAsync(b =>
-                b.StudentID == student.ID && b.IsActive == true &&
-                today >= b.FromDate && today <= b.ToDate)
-            : null;
+        var cityId = student.Allocations.FirstOrDefault()?.CityRoom?.CityBuilding?.DormitoryCityID ?? 0;
+        var (hasRestriction, restriction) = await StudentLookupHelper.GetActiveRestrictionAsync(db, student.ID, today);
 
         var availableMeals = await db.Meals
             .Where(m => m.StudentID == student.ID && m.MealDate == today
@@ -149,11 +136,7 @@ public class MealReceivingService(AssuitDbContext db, IAuditService audit, IMeal
                 detail.MealDate = mealDateStr;
                 detail.MealType = mealType;
 
-                Student? student = null;
-                if (!string.IsNullOrEmpty(studentIdStr) && int.TryParse(studentIdStr, out var sid))
-                    student = await db.Students.FindAsync(sid);
-                if (student == null && !string.IsNullOrEmpty(nationalId))
-                    student = await db.Students.FirstOrDefaultAsync(s => s.NationalID == nationalId);
+                var student = await StudentLookupHelper.FindStudentByIdOrNationalIdAsync(db, studentIdStr, nationalId);
 
                 if (student == null)
                 {

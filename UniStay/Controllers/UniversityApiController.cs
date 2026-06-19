@@ -5,6 +5,7 @@ using UniStay.Data;
 using UniStay.Helpers;
 using UniStay.Models;
 using UniStay.Services.Interfaces;
+using UniStay.ViewModels.University;
 using System.ComponentModel.DataAnnotations;
 
 namespace UniStay.Controllers;
@@ -263,35 +264,4 @@ public class UniversityApiController : Controller
         var year = DateTime.Now.Year;
         return DateTime.Now.Month >= 9 ? $"{year}-{year + 1}" : $"{year - 1}-{year}";
     }
-}
-
-// ========== ViewModels ==========
-public class VerifyStudentRequest
-{
-    [Required]
-    [StringLength(14, MinimumLength = 14)]
-    public string NationalID { get; set; } = null!;
-    public int? ApplicationId { get; set; }
-}
-
-public class SearchStaffRequest
-{
-    [Required]
-    public string NationalID { get; set; } = null!;
-}
-
-public class BulkValidateViewModel
-{
-    [Display(Name = "أرقام قومية (واحد في كل سطر أو مفصول بفاصلة)")]
-    public string NationalIDsText { get; set; } = null!;
-}
-
-public class ValidationDetailViewModel
-{
-    public string NationalID { get; set; } = null!;
-    public bool LocalExists { get; set; }
-    public bool ServerFound { get; set; }
-    public bool IsMatch { get; set; }
-    public DateTime? LastSync { get; set; }
-    public string Status { get; set; } = null!;
 }

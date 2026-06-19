@@ -5,6 +5,7 @@ using UniStay.Data;
 using UniStay.Helpers;
 using UniStay.Models;
 using UniStay.Services.Interfaces;
+using UniStay.ViewModels;
 using UniStay.ViewModels.Admin;
 using UniStay.ViewModels.Permissions;
 
@@ -69,6 +70,7 @@ namespace UniStay.Controllers
 
             vm.LatestApplications = await _db.Applications
                 .Include(a => a.Student)
+                .Where(a => a.CreatedAt != null)
                 .OrderByDescending(a => a.CreatedAt)
                 .Take(10)
                 .Select(a => new ApplicationRowViewModel
@@ -86,12 +88,12 @@ namespace UniStay.Controllers
                 .OrderByDescending(l => l.CreatedAt)
                 .Take(5)
                 .ToListAsync();
-            var userIds = recentLogs.Where(l => l.UserType == "System").Select(l => l.UserID).Distinct().ToList();
+            var userIds = recentLogs.Where(l => l.UserType == "Staff").Select(l => l.UserID).Distinct().ToList();
             var userNames = await _db.SystemUsers.Where(u => userIds.Contains(u.ID)).ToDictionaryAsync(u => u.ID, u => u.Name);
             vm.RecentAuditLogs = recentLogs.Select(l => new AuditLogRowViewModel
             {
                 ID = l.ID,
-                UserDisplayName = l.UserType == "System" && userNames.ContainsKey(l.UserID) ? userNames[l.UserID] : l.UserID.ToString(),
+                UserDisplayName = l.UserType == "System" && l.UserID.HasValue && userNames.ContainsKey(l.UserID.Value) ? userNames[l.UserID.Value] : (l.UserID?.ToString() ?? ""),
                 UserType = l.UserType,
                 Action = l.Action,
                 ActionDisplay = l.Action,
@@ -2171,7 +2173,7 @@ namespace UniStay.Controllers
                 ID = l.ID,
                 UserID = l.UserID,
                 UserType = l.UserType,
-                UserDisplayName = userNames.GetValueOrDefault(l.UserID, $"#{l.UserID}"),
+                UserDisplayName = l.UserID.HasValue ? userNames.GetValueOrDefault(l.UserID.Value, $"#{l.UserID.Value}") : "",
                 Action = l.Action,
                 ActionDisplay = l.Action,
                 TableName = l.TableName,

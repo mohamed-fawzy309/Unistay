@@ -14,7 +14,7 @@
 $(function(){
     $('#usersTable').DataTable({
         language: { search:"بحث:", lengthMenu:"عرض _MENU_", info:"_START_-_END_ من _TOTAL_", paginate:{next:"التالي",previous:"السابق"}, zeroRecords:"لا توجد نتائج" },
-        order:[[0,'asc']], columnDefs:[{orderable:false,targets:[3,4,6]}]
+        order:[[0,'asc']], columnDefs:[{orderable:false,targets:[4,5,7]}]
     });
 
     // Toggle Active
@@ -128,6 +128,7 @@ $(function(){
                     <tr>
                         <th>#</th>
                         <th>الموظف</th>
+                        <th>الدور</th>
                         <th>الرقم القومي</th>
                         <th>الأدوار في المدن</th>
                         <th>الصلاحيات</th>
@@ -163,6 +164,22 @@ $(function(){
                                     </div>
                                 </div>
                             </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(user.RoleName))
+                                {
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                                        @user.RoleName
+                                    </span>
+                                }
+                                else if (user.IsSuperAdmin)
+                                {
+                                    <span class="badge text-white" style="background:linear-gradient(90deg,#7c3aed,#db2777)">SuperAdmin</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
                             <td><code class="text-secondary">@(user.NationalID ?? "—")</code></td>
                             <td>
                                 @if (user.CityRoles.Any())
@@ -181,7 +198,7 @@ $(function(){
                                 }
                                 else
                                 {
-                                    <span class="badge bg-light text-dark border">@user.PermissionsCount صلاحية</span>
+                                    <span class="badge bg-light text-dark border">@user.DirectPermCount صلاحية</span>
                                 }
                             </td>
                             <td>
@@ -197,6 +214,14 @@ $(function(){
                             </td>
                             <td>
                                 <div class="d-flex gap-1 flex-wrap">
+                                    <a asp-action="Details" asp-route-id="@user.ID"
+                                       class="btn btn-sm btn-outline-secondary" title="التفاصيل">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@user.ID"
+                                       class="btn btn-sm btn-outline-success" title="تعديل">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
                                     <a asp-action="Assign" asp-route-userId="@user.ID"
                                        class="btn btn-sm btn-outline-primary" title="تعيين الصلاحيات">
                                         <i class="bi bi-shield-lock"></i>
@@ -253,6 +278,38 @@ $(function(){
                     <div class="mb-3">
                         <label class="form-label fw-semibold">الرقم القومي</label>
                         <input name="NationalID" class="form-control" maxlength="14" placeholder="14 رقماً" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">الدور <span class="text-danger">*</span></label>
+                        <select name="RoleID" class="form-select" required>
+                            <option value="">-- اختر الدور --</option>
+                            @foreach (var r in Model.AvailableRoles)
+                            {
+                                <option value="@r.Value">@r.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">المدينة (اختياري)</label>
+                            <select name="DormitoryCityID" class="form-select">
+                                <option value="">-- بدون مدينة --</option>
+                                @foreach (var c in Model.AvailableCities)
+                                {
+                                    <option value="@c.Value">@c.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">الدور في المدينة</label>
+                            <select name="RoleInCity" class="form-select">
+                                <option value="">-- بدون --</option>
+                                @foreach (var ro in UserListViewModel.RoleInCityOptions)
+                                {
+                                    <option value="@ro">@ro</option>
+                                }
+                            </select>
+                        </div>
                     </div>
                     <div class="form-check form-switch">
                         <input name="IsSuperAdmin" type="checkbox" class="form-check-input" id="isSuperAdmin" value="true" />

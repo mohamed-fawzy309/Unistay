@@ -15,12 +15,14 @@ public class PhotosController : Controller
     private readonly AssuitDbContext _db;
     private readonly IPhotoService _photoService;
     private readonly IAuditService _audit;
+    private readonly IReportExportService _export;
 
-    public PhotosController(AssuitDbContext db, IPhotoService photoService, IAuditService audit)
+    public PhotosController(AssuitDbContext db, IPhotoService photoService, IAuditService audit, IReportExportService export)
     {
         _db = db;
         _photoService = photoService;
         _audit = audit;
+        _export = export;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
@@ -189,8 +191,7 @@ public class PhotosController : Controller
             .OrderByDescending(s => s.ID).ToListAsync();
 
         var columns = new[] { "الاسم", "الرقم القومي", "الكلية", "حالة الصورة", "رابط الصورة" };
-        var export = HttpContext.RequestServices.GetRequiredService<IReportExportService>();
-        var data = export.ExportToExcel("حالة الصور", columns, students, s => new object?[] {
+        var data = _export.ExportToExcel("حالة الصور", columns, students, s => new object?[] {
             s.FullName, s.NationalID, s.Faculty,
             string.IsNullOrEmpty(s.Photo) ? "بدون صورة" : "يوجد صورة",
             s.Photo

@@ -115,6 +115,6 @@ public class MealBookingController : Controller
         if (allocation == null)
             return Json(new { success = false, message = "لا يوجد تخصيص نشط للطالب" });
 
-        return Json(new { success = true, cityId = allocation.CityRoom.CityBuilding.DormitoryCityID });
+        return Json(new { success = true, cityId = allocation.CityRoom?.CityBuilding?.DormitoryCityID ?? 0 });
     }
 }

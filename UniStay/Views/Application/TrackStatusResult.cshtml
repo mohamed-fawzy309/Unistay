@@ -1,0 +1,123 @@
+@model UniStay.Models.Application
+
+@{
+    ViewData["Title"] = "نتيجة الاستعلام عن الطلب";
+    var student = Model?.Student;
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <i class="bi bi-search-heart fs-1"></i>
+                    <h3 class="mt-2 mb-0">نتيجة الاستعلام عن الطلب</h3>
+                </div>
+                <div class="card-body p-4 p-lg-5">
+                    @if (Model == null)
+                    {
+                        <div class="alert alert-danger text-center">
+                            <i class="bi bi-exclamation-triangle fs-4"></i>
+                            <p class="mb-0 mt-2">لم يتم العثور على الطلب. تأكد من البيانات المدخلة.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="info-card p-3 bg-light rounded-3">
+                                    <label class="text-muted small">رقم الطلب</label>
+                                    <p class="fw-bold fs-5 mb-0">@Model.ID.ToString("00000")</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-card p-3 bg-light rounded-3">
+                                    <label class="text-muted small">الاسم</label>
+                                    <p class="fw-bold mb-0">@student?.FullName</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-card p-3 bg-light rounded-3">
+                                    <label class="text-muted small">الرقم القومي</label>
+                                    <p class="fw-bold mb-0">@student?.NationalID</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-card p-3 bg-light rounded-3">
+                                    <label class="text-muted small">الحالة</label>
+                                    <p class="mb-0">
+                                        @switch (Model.Status)
+                                        {
+                                            case "Pending":
+                                                <span class="badge bg-warning fs-6">قيد المراجعة</span>
+                                                break;
+                                            case "Accepted":
+                                                <span class="badge bg-success fs-6">مقبول</span>
+                                                break;
+                                            case "Rejected":
+                                                <span class="badge bg-danger fs-6">مرفوض</span>
+                                                break;
+                                            case "Waitlisted":
+                                                <span class="badge bg-info fs-6">قائمة انتظار</span>
+                                                break;
+                                            default:
+                                                <span class="badge bg-secondary fs-6">@Model.Status</span>
+                                                break;
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-card p-3 bg-light rounded-3">
+                                    <label class="text-muted small">العام الدراسي</label>
+                                    <p class="fw-bold mb-0">@Model.AcademicYear</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-card p-3 bg-light rounded-3">
+                                    <label class="text-muted small">تاريخ التقديم</label>
+                                    <p class="fw-bold mb-0">@(Model.CreatedAt?.ToString("yyyy/MM/dd") ?? "—")</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if (Model.Status == "Accepted")
+                        {
+                            <div class="alert alert-success mt-4">
+                                <i class="bi bi-check-circle-fill"></i>
+                                تم قبول طلبك. يمكنك الآن متابعة إجراءات التسكين.
+                                <a href="/Student/Login" class="alert-link">تسجيل الدخول إلى بوابة الطالب</a>
+                            </div>
+                        }
+                    }
+
+                    <div class="text-center mt-4">
+                        <a href="/Application/TrackStatus" class="btn btn-outline-primary btn-lg px-5">
+                            <i class="bi bi-arrow-right"></i> استعلام جديد
+                        </a>
+                        <a href="/" class="btn btn-outline-secondary btn-lg px-5 me-2">
+                            <i class="bi bi-house"></i> العودة للرئيسية
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .info-card {
+            border: 1px solid #e9ecef;
+            transition: transform 0.2s;
+        }
+        .info-card:hover {
+            transform: translateY(-2px);
+        }
+        .info-card label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+}

@@ -2,29 +2,31 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniStay.Data;
+using UniStay.Helpers;
 using UniStay.Models;
 using UniStay.Services.Interfaces;
 using UniStay.ViewModels.Staff;
 
 namespace UniStay.Controllers;
 
-[Authorize(AuthenticationSchemes = "StaffCookie")]
-public class StaffController : Controller
-{
-    private readonly AssuitDbContext _db;
-    private readonly IAuditService _audit;
-    private readonly IEmailService _email;
-
-    public StaffController(AssuitDbContext db, IAuditService audit, IEmailService email)
+    [Authorize(AuthenticationSchemes = "StaffCookie")]
+    public class StaffController : Controller
     {
-        _db = db;
-        _audit = audit;
-        _email = email;
-    }
+        private readonly AssuitDbContext _db;
+        private readonly IAuditService _audit;
+        private readonly IEmailService _email;
 
-    private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
+        public StaffController(AssuitDbContext db, IAuditService audit, IEmailService email)
+        {
+            _db = db;
+            _audit = audit;
+            _email = email;
+        }
 
-    public async Task<IActionResult> Index()
+        private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
+
+        [RequirePermission("Dashboard.View", "CanView")]
+        public async Task<IActionResult> Index()
     {
         var userId = CurrentUserId;
 
