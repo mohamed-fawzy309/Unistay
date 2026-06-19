@@ -76,8 +76,8 @@ namespace UniStay.Controllers
             // 🔥 غير القيم دي
             string name = "admin";
             string email = "admin@unistay.com";
-            string nationalId = "12345678912346";
-            string password = "moh7elw7";
+            string nationalId = "12345678912347";
+            string password = "nada1234";
 
             // تحقق لو موجود
             var existing = await _context.SystemUsers

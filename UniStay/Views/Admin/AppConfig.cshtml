@@ -71,43 +71,6 @@
                             </button>
                         </td>
                     </tr>
-
-                    <div class="modal fade" id="editModal-@item.ID" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <form asp-action="EditAppConfig" method="post" class="modal-content">
-                                <input type="hidden" name="ID" value="@item.ID">
-                                <div class="modal-header">
-                                    <h5 class="modal-title fw-bold">تعديل @item.ConfigKey</h5>
-                                    <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">القيمة <span class="text-danger">*</span></label>
-                                        @if (item.ConfigValue?.Length > 100)
-                                        {
-                                            <textarea name="ConfigValue" class="form-control" rows="3" required>@item.ConfigValue</textarea>
-                                        }
-                                        else
-                                        {
-                                            <input name="ConfigValue" class="form-control" value="@item.ConfigValue" required>
-                                        }
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">الوصف</label>
-                                        <textarea name="Description" class="form-control" rows="2">@item.Description</textarea>
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@item.IsActive" id="ac-active-@item.ID">
-                                        <label class="form-check-label" for="ac-active-@item.ID">نشط</label>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                 }
             }
             else
@@ -117,6 +80,66 @@
         </tbody>
     </table>
 </div>
+
+@* Modals section *@
+@if (Model.Any())
+{
+    foreach (var item in Model)
+    {
+        <div class="modal fade" id="editModal-@item.ID" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <form asp-action="EditAppConfig" method="post" class="modal-content">
+                    <input type="hidden" name="ID" value="@item.ID">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold">تعديل @item.ConfigKey</h5>
+                        <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">المفتاح <span class="text-danger">*</span></label>
+                            <input name="ConfigKey" class="form-control" value="@item.ConfigKey" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">القيمة <span class="text-danger">*</span></label>
+                            @if (item.ConfigValue?.Length > 100)
+                            {
+                                <textarea name="ConfigValue" class="form-control" rows="3" required>@item.ConfigValue</textarea>
+                            }
+                            else
+                            {
+                                <input name="ConfigValue" class="form-control" value="@item.ConfigValue" required>
+                            }
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">الوصف</label>
+                            <textarea name="Description" class="form-control" rows="2">@item.Description</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">التصنيف <span class="text-danger">*</span></label>
+                            <input name="Category" class="form-control" value="@item.Category" required>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   name="IsActive"
+                                   value="true"
+                                   @(item.IsActive ? "checked" : "")
+                                   id="ac-active-@item.ID">
+
+                            <label class="form-check-label" for="ac-active-@item.ID">
+                                نشط
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+}
 
 <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">

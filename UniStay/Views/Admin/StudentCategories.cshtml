@@ -42,41 +42,17 @@
                         <td>@item.Description</td>
                         <td><span class="badge @(item.IsActive ? "bg-success" : "bg-secondary")">@(item.IsActive ? "نشط" : "غير نشط")</span></td>
                         <td>
-                            <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-@item.ID">
+                            <button class="btn btn-outline-warning btn-sm edit-btn"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editModal"
+                                    data-id="@item.ID"
+                                    data-name="@item.Name"
+                                    data-desc="@item.Description"
+                                    data-active="@item.IsActive.ToString().ToLower()">
                                 <i class="bi bi-pencil"></i> تعديل
                             </button>
                         </td>
                     </tr>
-
-                    <div class="modal fade" id="editModal-@item.ID" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <form asp-action="EditStudentCategory" method="post" class="modal-content">
-                                <input type="hidden" name="ID" value="@item.ID">
-                                <div class="modal-header">
-                                    <h5 class="modal-title fw-bold">تعديل @item.Name</h5>
-                                    <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">الاسم <span class="text-danger">*</span></label>
-                                        <input name="Name" class="form-control" value="@item.Name" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">الوصف</label>
-                                        <textarea name="Description" class="form-control" rows="2">@item.Description</textarea>
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@item.IsActive" id="sc-active-@item.ID">
-                                        <label class="form-check-label" for="sc-active-@item.ID">نشط</label>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                 }
             }
             else
@@ -85,6 +61,36 @@
             }
         </tbody>
     </table>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form asp-action="EditStudentCategory" method="post" class="modal-content">
+            <input type="hidden" id="editID" name="ID">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">تعديل التصنيف</h5>
+                <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">الاسم <span class="text-danger">*</span></label>
+                    <input name="Name" id="editName" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">الوصف</label>
+                    <textarea name="Description" id="editDesc" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="form-check form-switch">
+                    <input name="IsActive" class="form-check-input" type="checkbox" value="true" id="editActive">
+                    <label class="form-check-label" for="editActive">نشط</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
@@ -111,3 +117,16 @@
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var editModal = document.getElementById('editModal');
+        editModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            document.getElementById('editID').value = button.getAttribute('data-id');
+            document.getElementById('editName').value = button.getAttribute('data-name');
+            document.getElementById('editDesc').value = button.getAttribute('data-desc');
+            document.getElementById('editActive').checked = button.getAttribute('data-active') === 'true';
+        });
+    });
+</script>

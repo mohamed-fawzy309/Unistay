@@ -48,37 +48,19 @@
                         <td>@item.AcademicYear</td>
                         <td><span class="badge @(item.IsActive ? "bg-success" : "bg-secondary")">@(item.IsActive ? "نشط" : "غير نشط")</span></td>
                         <td>
-                            <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-@item.ID">
+                            <button class="btn btn-outline-warning btn-sm edit-btn"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editModal"
+                                    data-id="@item.ID"
+                                    data-feetypeid="@item.FeeTypeID"
+                                    data-cityid="@item.DormitoryCityID"
+                                    data-amount="@item.Amount"
+                                    data-academicyear="@item.AcademicYear"
+                                    data-active="@item.IsActive.ToString().ToLower()">
                                 <i class="bi bi-pencil"></i> تعديل
                             </button>
                         </td>
                     </tr>
-
-                    <div class="modal fade" id="editModal-@item.ID" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <form asp-action="EditFeeConfiguration" method="post" class="modal-content">
-                                <input type="hidden" name="ID" value="@item.ID">
-                                <div class="modal-header">
-                                    <h5 class="modal-title fw-bold">تعديل تكوين الرسم</h5>
-                                    <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">المبلغ <span class="text-danger">*</span></label>
-                                        <input name="Amount" class="form-control" type="number" step="0.01" value="@item.Amount" required>
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@item.IsActive" id="fc-active-@item.ID">
-                                        <label class="form-check-label" for="fc-active-@item.ID">نشط</label>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                 }
             }
             else
@@ -87,6 +69,55 @@
             }
         </tbody>
     </table>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form asp-action="EditFeeConfiguration" method="post" class="modal-content">
+            <input type="hidden" id="editID" name="ID">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">تعديل تكوين الرسم</h5>
+                <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">نوع الرسم <span class="text-danger">*</span></label>
+                    <select name="FeeTypeID" id="editFeeTypeID" class="form-select" required>
+                        @foreach (var ft in feeTypes.Where(f => f.IsActive))
+                        {
+                            <option value="@ft.ID">@ft.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">المدينة</label>
+                    <select name="DormitoryCityID" id="editCityID" class="form-select">
+                        <option value="">جميع المدن</option>
+                        @foreach (var c in cities.Where(c => c.IsActive))
+                        {
+                            <option value="@c.ID">@c.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">المبلغ <span class="text-danger">*</span></label>
+                    <input name="Amount" id="editAmount" class="form-control" type="number" step="0.01" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">العام الدراسي</label>
+                    <input name="AcademicYear" id="editAcademicYear" class="form-control">
+                </div>
+                <div class="form-check form-switch">
+                    <input name="IsActive" class="form-check-input" type="checkbox" value="true" id="editActive">
+                    <label class="form-check-label" for="editActive">نشط</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
@@ -133,3 +164,18 @@
         </form>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var editModal = document.getElementById('editModal');
+        editModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            document.getElementById('editID').value = button.getAttribute('data-id');
+            document.getElementById('editFeeTypeID').value = button.getAttribute('data-feetypeid');
+            document.getElementById('editCityID').value = button.getAttribute('data-cityid');
+            document.getElementById('editAmount').value = button.getAttribute('data-amount');
+            document.getElementById('editAcademicYear').value = button.getAttribute('data-academicyear');
+            document.getElementById('editActive').checked = button.getAttribute('data-active') === 'true';
+        });
+    });
+</script>

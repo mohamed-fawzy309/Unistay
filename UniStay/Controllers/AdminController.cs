@@ -1711,6 +1711,7 @@ namespace UniStay.Controllers
             var oldName = village.Name;
             village.Name = model.Name;
             village.IsActive = model.IsActive;
+            village.DormitoryCityID = model.DormitoryCityID;
             village.LastUpdatedAt = DateTime.UtcNow;
             village.LastUpdatedBy = CurrentUserId;
 
@@ -2003,6 +2004,9 @@ namespace UniStay.Controllers
             if (config == null) return NotFound();
 
             var oldAmount = config.Amount;
+            config.FeeTypeID = model.FeeTypeID;
+            config.DormitoryCityID = model.DormitoryCityID;
+            config.AcademicYear = model.AcademicYear;
             config.Amount = model.Amount;
             config.IsActive = model.IsActive;
             config.LastUpdatedAt = DateTime.UtcNow;
@@ -2236,6 +2240,8 @@ namespace UniStay.Controllers
             if (config == null) return NotFound();
 
             var oldValue = config.ConfigValue;
+            config.ConfigKey = model.ConfigKey;       
+            config.Category = model.Category;
             config.ConfigValue = model.ConfigValue;
             config.Description = model.Description;
             config.IsActive = model.IsActive;
