@@ -1336,18 +1336,28 @@ namespace UniStay.Controllers
         // ──────────────────────────────────────────────────────────────────────────────
         // 5. الكروكي — خريطة المبنى
         // ──────────────────────────────────────────────────────────────────────────────
-
         [HttpGet]
         [RequirePermission("Buildings.Manage", "CanView")]
-        public async Task<IActionResult> BuildingLayout(int id)
+        public async Task<IActionResult> BuildingLayout(int? id)
         {
+            ViewBag.AllBuildings = await _db.CityBuildings
+                .Include(b => b.DormitoryCity)
+                .Where(b => !b.IsDeleted)
+                .Select(b => new { b.ID, b.BuildingName, CityName = b.DormitoryCity.Name })
+                .ToListAsync();
+
+            ViewBag.SelectedId = id;
+
+            if (id == null)
+                return View((BuildingLayoutViewModel?)null);
+
             var building = await _db.CityBuildings
                 .Include(b => b.DormitoryCity)
                 .Include(b => b.CityRooms)
                 .FirstOrDefaultAsync(b => b.ID == id && !b.IsDeleted);
 
             if (building == null)
-                return Content("Building Not Found");
+                return View((BuildingLayoutViewModel?)null);
 
             var layout = new BuildingLayoutViewModel
             {
