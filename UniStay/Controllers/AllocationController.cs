@@ -293,6 +293,13 @@ namespace UniStay.Controllers
                     .Where(c => c.IsActive == true && c.IsDeleted != true)
                     .Select(c => new CityLookupViewModel { ID = c.ID, Name = c.Name })
                     .ToListAsync();
+
+               ViewBag.Students = await _db.Students
+                    .Where(s => s.IsDeleted != true)
+                    .OrderBy(s => s.FullName)
+                    .Take(50)
+                    .Select(s => new StudentLookupViewModel { ID = s.ID, FullName = s.FullName, NationalID = s.NationalID })
+                    .ToListAsync();
                 return View(model);
             }
 
@@ -305,6 +312,7 @@ namespace UniStay.Controllers
 
             var alloc = new Allocation
             {
+                ApplicationID = model.ApplicationID,
                 StudentID = model.StudentID,
                 CityRoomID = model.CityRoomID,
                 BedNumber = model.BedNumber,
@@ -416,6 +424,21 @@ namespace UniStay.Controllers
                 .Select(r => new { r.ID, r.RoomNumber, r.FloorNumber, r.BedsCount, r.CurrentOccupancy, Available = (int)r.BedsCount - (int)r.CurrentOccupancy })
                 .ToListAsync();
             return Json(rooms);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetApplicationByStudent(int studentId)
+        {
+            var app = await _db.Applications
+                .Where(a => a.StudentID == studentId && a.Status == "Accepted" && a.Allocation == null)
+                .OrderByDescending(a => a.ID)
+                .Select(a => new { a.ID, a.AcademicYear })
+                .FirstOrDefaultAsync();
+
+            if (app == null)
+                return Json(new { found = false, message = "لا يوجد طلب مقبول لهذا الطالب بدون تسكين" });
+
+            return Json(new { found = true, applicationId = app.ID, academicYear = app.AcademicYear });
         }
 
         [HttpGet]

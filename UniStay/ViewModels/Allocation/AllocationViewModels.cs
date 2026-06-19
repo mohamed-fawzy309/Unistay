@@ -115,6 +115,9 @@ namespace UniStay.ViewModels.Allocation
         [Required(ErrorMessage = "الغرفة مطلوبة")]
         public int CityRoomID { get; set; }
 
+        [Required(ErrorMessage = "لا يوجد طلب مقبول لهذا الطالب")]
+        public int ApplicationID { get; set; }
+
         [Required(ErrorMessage = "السرير مطلوب")]
         [Range(1, 8)]
         public byte BedNumber { get; set; } = 1;
