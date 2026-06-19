@@ -1,0 +1,164 @@
+@model UniStay.ViewModels.Admin.AdminSocialCaseViewModel
+@{
+    ViewData["Title"] = "حالات البحث الاجتماعى";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-heart-pulse"></i> حالات البحث الاجتماعى</h2>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-2 mb-3">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm" style="background:var(--black-2)">
+            <div class="card-body text-center">
+                <h5 class="text-muted mb-1">إجمالي الحالات</h5>
+                <span class="fs-3 fw-bold">@Model.TotalCases</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm" style="background:var(--black-2)">
+            <div class="card-body text-center">
+                <h5 class="text-muted mb-1">مفتوحة</h5>
+                <span class="fs-3 fw-bold text-warning">@Model.OpenCases</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm" style="background:var(--black-2)">
+            <div class="card-body text-center">
+                <h5 class="text-muted mb-1">تم الحل</h5>
+                <span class="fs-3 fw-bold text-success">@Model.ResolvedCases</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm" style="background:var(--black-2)">
+            <div class="card-body text-center">
+                <h5 class="text-muted mb-1">أولوية عالية</h5>
+                <span class="fs-3 fw-bold text-danger">@Model.HighPriority</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<form method="get" class="row g-2 mb-3" style="background:var(--black-2);border:1px solid var(--border);border-radius:12px;padding:1rem;">
+    <div class="col-md-3">
+        <select name="caseType" class="form-control" onchange="this.form.submit()">
+            <option value="">نوع الحالة</option>
+            <option value="Orphan" selected="@(Model.CaseType == "Orphan")">يتيم</option>
+            <option value="LowIncome" selected="@(Model.CaseType == "LowIncome")">ضعف دخل</option>
+            <option value="Disability" selected="@(Model.CaseType == "Disability")">إعاقة</option>
+            <option value="Medical" selected="@(Model.CaseType == "Medical")">حالة مرضية</option>
+            <option value="FamilyAbroad" selected="@(Model.CaseType == "FamilyAbroad")">عائلة بالخارج</option>
+            <option value="Foreign" selected="@(Model.CaseType == "Foreign")">طالب وافد</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="status" class="form-control" onchange="this.form.submit()">
+            <option value="">الحالة</option>
+            <option value="Open" selected="@(Model.Status == "Open")">مفتوحة</option>
+            <option value="Resolved" selected="@(Model.Status == "Resolved")">تم الحل</option>
+            <option value="Closed" selected="@(Model.Status == "Closed")">مغلقة</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="priority" class="form-control" onchange="this.form.submit()">
+            <option value="">الأولوية</option>
+            <option value="High" selected="@(Model.Priority == "High")">عالية</option>
+            <option value="Medium" selected="@(Model.Priority == "Medium")">متوسطة</option>
+            <option value="Low" selected="@(Model.Priority == "Low")">منخفضة</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="text" name="search" class="form-control" placeholder="بحث باسم الطالب أو الرقم القومي" value="@Model.Search">
+    </div>
+    <div class="col-md-2">
+        <a asp-action="SocialCases" class="btn btn-secondary w-100">إعادة تعيين</a>
+    </div>
+</form>
+
+<!-- Table -->
+<div class="table-responsive" style="background:var(--black-2);border:1px solid var(--border);border-radius:12px;">
+    <table class="table table-hover mb-0">
+        <thead style="background:var(--black-4);color:var(--text);">
+            <tr>
+                <th>الطالب</th>
+                <th>الرقم القومي</th>
+                <th>الكلية</th>
+                <th>نوع الحالة</th>
+                <th>الحالة</th>
+                <th>الأولوية</th>
+                <th>المسؤول</th>
+                <th>تاريخ الإنشاء</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model.Cases)
+            {
+                <tr>
+                    <td>@c.StudentName</td>
+                    <td>@c.NationalID</td>
+                    <td>@c.Faculty</td>
+                    <td>@c.CaseType</td>
+                    <td>
+                        <span class="badge bg-@(c.Status == "Open" ? "warning" : c.Status == "Resolved" ? "success" : "secondary")">
+                            @(c.Status == "Open" ? "مفتوحة" : c.Status == "Resolved" ? "تم الحل" : "مغلقة")
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-@(c.Priority == "High" ? "danger" : c.Priority == "Medium" ? "warning" : "info")">
+                            @(c.Priority == "High" ? "عالية" : c.Priority == "Medium" ? "متوسطة" : "منخفضة")
+                        </span>
+                    </td>
+                    <td>@c.AssignedTo</td>
+                    <td>@c.CreatedAt?.ToString("yyyy/MM/dd")</td>
+                    <td>
+                        @if (c.Status == "Open")
+                        {
+                            <button class="btn btn-sm btn-success" onclick="updateStatus(@c.ID, 'Resolved')" title="تم الحل"><i class="bi bi-check-circle"></i></button>
+                            <button class="btn btn-sm btn-secondary" onclick="updateStatus(@c.ID, 'Closed')" title="إغلاق"><i class="bi bi-x-circle"></i></button>
+                        }
+                        else if (c.Status == "Resolved")
+                        {
+                            <button class="btn btn-sm btn-outline-warning" onclick="updateStatus(@c.ID, 'Open')" title="إعادة فتح"><i class="bi bi-arrow-counterclockwise"></i></button>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (!Model.Cases.Any())
+            {
+                <tr><td colspan="10" class="text-center text-muted py-4">لا توجد حالات</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination justify-content-center">
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" href="@Url.Action("SocialCases", new { page = i, caseType = Model.CaseType, status = Model.Status, priority = Model.Priority, search = Model.Search })">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}
+
+@section Scripts {
+    <script>
+        function updateStatus(id, status) {
+            if (!confirm('تأكيد تغيير الحالة؟')) return;
+            $.post('@Url.Action("UpdateSocialCaseStatus")', { id: id, status: status }, function (res) {
+                if (res.success) location.reload();
+                else alert(res.message);
+            });
+        }
+    </script>
+}
