@@ -1,0 +1,210 @@
+@model UniStay.ViewModels.Admin.StudentStatementViewModel
+@{
+    ViewData["Title"] = "بيان حالة";
+}
+
+@if (Model == null)
+{
+    <div class="container-fluid py-4">
+        <h2>بيان حالة</h2>
+        <form method="get" class="row g-2 mb-4">
+            <div class="col-md-3">
+                <select name="id" class="form-select">
+                    <option value="">-- اختر الطالب --</option>
+                    @foreach (var s in (IEnumerable<dynamic>)ViewBag.StudentsList)
+                    {
+                        <option value="@s.ID">@s.FullName — @s.NationalID</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" placeholder="أو اكتب اسم الطالب">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="nationalId" class="form-control" placeholder="أو الرقم القومي">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">عرض</button>
+            </div>
+        </form>
+    </div>
+    return;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-file-text"></i> بيان حالة: @Model.BasicInfo.FullName</h2>
+    <a asp-action="StudentStatement" class="btn btn-outline-secondary">بحث آخر</a>
+</div>
+
+<div class="row g-3">
+    <!-- Basic Info -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0"><i class="bi bi-person"></i> البيانات الأساسية</h5></div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr><td class="fw-bold" style="width:130px">الاسم</td><td>@Model.BasicInfo.FullName</td></tr>
+                    <tr><td class="fw-bold">الرقم القومي</td><td>@Model.BasicInfo.NationalID</td></tr>
+                    <tr><td class="fw-bold">النوع</td><td>@(Model.BasicInfo.Gender == "Male" ? "ذكر" : "أنثى")</td></tr>
+                    <tr><td class="fw-bold">الكلية</td><td>@Model.BasicInfo.Faculty</td></tr>
+                    <tr><td class="fw-bold">الفرقة</td><td>@Model.BasicInfo.AcademicYear</td></tr>
+                    <tr><td class="fw-bold">التليفون</td><td>@Model.BasicInfo.Phone</td></tr>
+                    <tr><td class="fw-bold">البريد</td><td>@Model.BasicInfo.Email</td></tr>
+                    <tr><td class="fw-bold">المحافظة</td><td>@Model.BasicInfo.Governorate</td></tr>
+                    <tr><td class="fw-bold">المركز</td><td>@Model.BasicInfo.Markaz</td></tr>
+                    <tr><td class="fw-bold">المدينة</td><td>@Model.BasicInfo.City</td></tr>
+                    <tr><td class="fw-bold">التقدير</td><td>@Model.BasicInfo.GradePercentage%</td></tr>
+                    <tr><td class="fw-bold">الحالة</td><td>@(Model.BasicInfo.IsActive ? "نشط" : "غير نشط")</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Housing -->
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-dark text-white"><h5 class="mb-0"><i class="bi bi-building"></i> السكن الحالي</h5></div>
+            <div class="card-body">
+                @if (Model.CurrentHousing != null)
+                {
+                    <table class="table table-sm table-borderless">
+                        <tr><td class="fw-bold" style="width:130px">المدينة</td><td>@Model.CurrentHousing.CityName</td></tr>
+                        <tr><td class="fw-bold">المبنى</td><td>@Model.CurrentHousing.BuildingName</td></tr>
+                        <tr><td class="fw-bold">الغرفة</td><td>@Model.CurrentHousing.RoomNumber</td></tr>
+                        <tr><td class="fw-bold">السرير</td><td>@Model.CurrentHousing.BedNumber</td></tr>
+                        <tr><td class="fw-bold">من</td><td>@Model.CurrentHousing.StartDate?.ToString("yyyy-MM-dd")</td></tr>
+                        <tr><td class="fw-bold">إلى</td><td>@Model.CurrentHousing.EndDate?.ToString("yyyy-MM-dd")</td></tr>
+                        <tr><td class="fw-bold">الحالة</td><td><span class="badge bg-success">@Model.CurrentHousing.Status</span></td></tr>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">لا يوجد سكن حالي</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white"><h5 class="mb-0"><i class="bi bi-currency-exchange"></i> المدفوعات</h5></div>
+            <div class="card-body p-0">
+                @if (Model.Payments.Any())
+                {
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>#</th><th>النوع</th><th>المبلغ</th><th>المدفوع</th><th>الحالة</th><th>التاريخ</th></tr></thead>
+                        <tbody>
+                            @foreach (var p in Model.Payments)
+                            {
+                                <tr>
+                                    <td>@p.ID</td>
+                                    <td>@p.PaymentType</td>
+                                    <td>@p.Amount.ToString("N2")</td>
+                                    <td>@p.PaidAmount.ToString("N2")</td>
+                                    <td><span class="badge bg-@(p.Status == "Paid" ? "success" : p.Status == "Pending" ? "warning" : "secondary")">@p.Status</span></td>
+                                    <td>@p.RecordedAt?.ToString("yyyy-MM-dd")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="p-3 text-muted">لا توجد مدفوعات</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Violations -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-danger text-white"><h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> المخالفات</h5></div>
+            <div class="card-body p-0">
+                @if (Model.Violations.Any())
+                {
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>النوع</th><th>الوصف</th><th>الخطورة</th><th>الغرامة</th><th>الحالة</th></tr></thead>
+                        <tbody>
+                            @foreach (var v in Model.Violations)
+                            {
+                                <tr>
+                                    <td>@v.ViolationType</td>
+                                    <td>@v.Description</td>
+                                    <td><span class="badge bg-@(v.Severity == "High" ? "danger" : v.Severity == "Medium" ? "warning" : "info")">@v.Severity</span></td>
+                                    <td>@v.FineAmount?.ToString("N2")</td>
+                                    <td>@v.Status</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="p-3 text-muted">لا توجد مخالفات</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Absences -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning"><h5 class="mb-0"><i class="bi bi-calendar-x"></i> الغيابات</h5></div>
+            <div class="card-body p-0">
+                @if (Model.Absences.Any())
+                {
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>التاريخ</th><th>النوع</th><th>السبب</th><th>الحالة</th></tr></thead>
+                        <tbody>
+                            @foreach (var a in Model.Absences)
+                            {
+                                <tr>
+                                    <td>@a.AbsenceDate.ToString("yyyy-MM-dd")</td>
+                                    <td>@a.AbsenceType</td>
+                                    <td>@a.Reason</td>
+                                    <td><span class="badge bg-@(a.Status == "Approved" ? "success" : a.Status == "Pending" ? "warning" : "danger")">@a.Status</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="p-3 text-muted">لا توجد غيابات</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Applications -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white"><h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> الطلبات</h5></div>
+            <div class="card-body p-0">
+                @if (Model.Applications.Any())
+                {
+                    <table class="table table-sm mb-0">
+                        <thead><tr><th>#</th><th>العام</th><th>الحالة</th><th>التاريخ</th></tr></thead>
+                        <tbody>
+                            @foreach (var a in Model.Applications)
+                            {
+                                <tr>
+                                    <td>@a.ID</td>
+                                    <td>@a.AcademicYear</td>
+                                    <td><span class="badge bg-@(a.Status switch { "Pending" => "secondary", "UnderReview" => "primary", "Accepted" => "success", "Rejected" => "danger", "Allocated" => "dark", _ => "light" })">@a.Status</span></td>
+                                    <td>@a.CreatedAt?.ToString("yyyy-MM-dd")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="p-3 text-muted">لا توجد طلبات</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -427,11 +427,38 @@
                     </a>
                 </li>
 
+                <!-- ===== بيانات وحالات الطلاب ===== -->
+                <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuStudents" role="button">
+                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> بيانات وحالات الطلاب
+                </li>
+                <div class="collapse" id="menuStudents">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="Students">
+                            <i class="bi bi-people-fill"></i> بيانات اساسية
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="StudentStatement">
+                            <i class="bi bi-file-text"></i> بيان حالة
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Coordination" asp-action="SpecialCases">
+                            <i class="bi bi-star-fill"></i> قبول الحالات الخاصة
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Admin" asp-action="SocialCases">
+                            <i class="bi bi-heart-pulse"></i> حالات البحث الاجتماعى
+                        </a>
+                    </li>
+                </div>
+
                 <!-- ===== التقديم والتنسيق ===== -->
                 <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuApplications" role="button">
                     <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> التقديم والتنسيق
                 </li>
-                <div class="collapse show" id="menuApplications">
+                <div class="collapse" id="menuApplications">
                     <li class="nav-item">
                         <a class="nav-link" asp-controller="Admin" asp-action="PendingApplications">
                             <i class="bi bi-inbox"></i> الطلبات المعلقة
@@ -452,17 +479,8 @@
                             <i class="bi bi-pin-map-fill"></i> التسكين اليدوي
                         </a>
                     </li>
-                </div>
-
-                <!-- ===== الطلاب ===== -->
-                <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuStudents" role="button">
-                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الطلاب
-                </li>
-                <div class="collapse show" id="menuStudents">
                     <li class="nav-item">
-                        <a class="nav-link" asp-controller="Admin" asp-action="Students">
-                            <i class="bi bi-people-fill"></i> قائمة الطلاب
-                        </a>
+                        <hr class="dropdown-divider" style="border-color:var(--border);margin:.5rem 1rem;">
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" asp-controller="Admin" asp-action="AllApplications">
@@ -484,18 +502,13 @@
                             <i class="bi bi-camera-off"></i> الطلاب بدون صور
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="Reports" asp-action="SocialCase">
-                            <i class="bi bi-heart-pulse"></i> الحالات الاجتماعية
-                        </a>
-                    </li>
                 </div>
 
                 <!-- ===== المدن والمباني ===== -->
                 <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuHousing" role="button">
                     <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> المدن والمباني
                 </li>
-                <div class="collapse show" id="menuHousing">
+                <div class="collapse" id="menuHousing">
                     <li class="nav-item">
                         <a class="nav-link" asp-controller="Admin" asp-action="Cities">
                             <i class="bi bi-building"></i> المدن الجامعية
@@ -542,7 +555,7 @@
                 <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuSchedules" role="button">
                     <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> المواعيد والتعليمات
                 </li>
-                <div class="collapse show" id="menuSchedules">
+                <div class="collapse" id="menuSchedules">
                     <li class="nav-item">
                         <a class="nav-link" asp-controller="Admin" asp-action="Schedules">
                             <i class="bi bi-calendar-event"></i> مواعيد التقديم
@@ -564,7 +577,7 @@
                 <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuMeals" role="button">
                     <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الوجبات والتغذية
                 </li>
-                <div class="collapse show" id="menuMeals">
+                <div class="collapse" id="menuMeals">
                     <li class="nav-item">
                         <a class="nav-link" asp-controller="Meal" asp-action="Index">
                             <i class="bi bi-cup-hot-fill"></i> إدارة الوجبات
@@ -601,7 +614,7 @@
                 <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuServices" role="button">
                     <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الخدمات والانضباط
                 </li>
-                <div class="collapse show" id="menuServices">
+                <div class="collapse" id="menuServices">
                     <li class="nav-item">
                         <a class="nav-link" asp-controller="Maintenance" asp-action="Index">
                             <i class="bi bi-tools"></i> طلبات الصيانة
@@ -628,7 +641,7 @@
                 <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuFinance" role="button">
                     <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> المالية
                 </li>
-                <div class="collapse show" id="menuFinance">
+                <div class="collapse" id="menuFinance">
                     <li class="nav-item">
                         <a class="nav-link" asp-controller="Payment" asp-action="Index">
                             <i class="bi bi-currency-exchange"></i> الرسوم والمدفوعات
@@ -655,7 +668,7 @@
                 <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuAdmin" role="button">
                     <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الإدارة
                 </li>
-                <div class="collapse show" id="menuAdmin">
+                <div class="collapse" id="menuAdmin">
                     <li class="nav-item">
                         <a class="nav-link" asp-controller="Permissions" asp-action="Users">
                             <i class="bi bi-shield-lock"></i> المستخدمين والصلاحيات

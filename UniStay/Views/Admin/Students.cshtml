@@ -1,30 +1,64 @@
 @model List<UniStay.ViewModels.Admin.StudentRowViewModel>
 @{
-    ViewData["Title"] = "الطلاب";
+    ViewData["Title"] = "بيانات اساسية";
+    var q = Context.Request.Query;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2>الطلاب</h2>
+    <h2>بيانات اساسية</h2>
 </div>
 
 <form method="get" class="row g-2 mb-3 bg-white p-3 rounded shadow-sm">
-    <div class="col-md-4">
-        <input type="text" name="search" class="form-control" placeholder="بحث بالاسم أو الرقم القومي..." value="@Context.Request.Query["search"]">
+    <div class="col-md-3">
+        <input type="text" name="search" class="form-control" placeholder="بحث بالاسم أو الرقم القومي..." value="@q["search"]">
     </div>
     <div class="col-md-2">
         <select name="faculty" class="form-select" onchange="this.form.submit()">
             <option value="">كل الكليات</option>
             @foreach (var f in ViewBag.Faculties ?? new List<string>())
             {
-                <option value="@f" selected="@(Context.Request.Query["faculty"] == f)">@f</option>
+                <option value="@f" selected="@(q["faculty"] == f)">@f</option>
             }
         </select>
     </div>
     <div class="col-md-2">
         <select name="gender" class="form-select" onchange="this.form.submit()">
-            <option value="">الكل</option>
-            <option value="Male" selected="@(Context.Request.Query["gender"] == "Male")">ذكر</option>
-            <option value="Female" selected="@(Context.Request.Query["gender"] == "Female")">أنثى</option>
+            <option value="">النوع</option>
+            <option value="Male" selected="@(q["gender"] == "Male")">ذكر</option>
+            <option value="Female" selected="@(q["gender"] == "Female")">أنثى</option>
+        </select>
+    </div>
+    <div class="col-md-1">
+        <select name="academicYear" class="form-select" onchange="this.form.submit()">
+            <option value="">الفرقة</option>
+            @for (byte y = 1; y <= 7; y++)
+            {
+                <option value="@y" selected="@(q["academicYear"] == y.ToString())">@y</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="cityId" class="form-select" onchange="this.form.submit()">
+            <option value="">المدينة</option>
+            @foreach (var c in ViewBag.Cities ?? new List<UniStay.Models.DormitoryCity>())
+            {
+                <option value="@c.ID" selected="@(q["cityId"] == c.ID.ToString())">@c.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="housingStatus" class="form-select" onchange="this.form.submit()">
+            <option value="">حالة السكن</option>
+            <option value="Active" selected="@(q["housingStatus"] == "Active")">مسكن</option>
+            <option value="Reserved" selected="@(q["housingStatus"] == "Reserved")">محجوز</option>
+            <option value="Evicted" selected="@(q["housingStatus"] == "Evicted")">مخلى</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="isActive" class="form-select" onchange="this.form.submit()">
+            <option value="">الحالة</option>
+            <option value="true" selected="@(q["isActive"] == "true")">نشط</option>
+            <option value="false" selected="@(q["isActive"] == "false")">غير نشط</option>
         </select>
     </div>
     <div class="col-md-2">
@@ -45,8 +79,9 @@
                 <th>النوع</th>
                 <th>الكلية</th>
                 <th>الفرقة</th>
-                <th>التليفون</th>
-                <th>البريد</th>
+                <th>المدينة</th>
+                <th>المبنى</th>
+                <th>الغرفة</th>
                 <th>آخر حالة</th>
                 <th>تاريخ التسجيل</th>
                 <th></th>
@@ -62,8 +97,9 @@
                     <td>@(s.Gender == "Male" ? "ذكر" : "أنثى")</td>
                     <td>@s.Faculty</td>
                     <td>@s.AcademicYear</td>
-                    <td>@s.Phone</td>
-                    <td>@s.Email</td>
+                    <td>@s.CityName</td>
+                    <td>@s.BuildingName</td>
+                    <td>@(s.BedNumber.HasValue ? $"{s.RoomNumber} / سرير {s.BedNumber}" : s.RoomNumber)</td>
                     <td>
                         <span class="badge bg-@(s.LatestApplicationStatus switch { "Pending" => "secondary", "UnderReview" => "primary", "Accepted" => "success", "Rejected" => "danger", "Allocated" => "dark", _ => "light" })">
                             @(s.LatestApplicationStatus ?? "لا يوجد")
@@ -72,12 +108,13 @@
                     <td>@s.CreatedAt.ToString("yyyy-MM-dd")</td>
                     <td>
                         <a asp-action="StudentDetails" asp-route-id="@s.ID" class="btn btn-info btn-sm">تفاصيل</a>
+                        <a asp-action="StudentStatement" asp-route-id="@s.ID" class="btn btn-outline-primary btn-sm">بيان حالة</a>
                     </td>
                 </tr>
             }
             @if (!Model.Any())
             {
-                <tr><td colspan="11" class="text-center text-muted py-4">لا يوجد طلاب</td></tr>
+                <tr><td colspan="12" class="text-center text-muted py-4">لا يوجد طلاب</td></tr>
             }
         </tbody>
     </table>
@@ -90,7 +127,17 @@
             @for (int i = 1; i <= ViewBag.TotalPages; i++)
             {
                 <li class="page-item @(i == ViewBag.Page ? "active" : "")">
-                    <a class="page-link" href="@Url.Action("Students", new { page = i, search = Context.Request.Query["search"], faculty = Context.Request.Query["faculty"], gender = Context.Request.Query["gender"] })">@i</a>
+                    <a class="page-link" href="@Url.Action("Students", new {
+                        page = i,
+                        search = q["search"],
+                        faculty = q["faculty"],
+                        gender = q["gender"],
+                        cityId = q["cityId"],
+                        buildingId = q["buildingId"],
+                        housingStatus = q["housingStatus"],
+                        academicYear = q["academicYear"],
+                        isActive = q["isActive"]
+                    })">@i</a>
                 </li>
             }
         </ul>
