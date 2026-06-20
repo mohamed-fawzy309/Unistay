@@ -10,7 +10,7 @@ using UniStay.ViewModels.Violation;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class ViolationController : Controller
     {
         private readonly AssuitDbContext _db;

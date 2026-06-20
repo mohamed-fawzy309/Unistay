@@ -4,6 +4,7 @@
     var userId = 0;
     int.TryParse(userIdClaim, out userId);
     var perms = userId > 0 ? _permService.GetUserPermissionKeys(userId) : new HashSet<string>();
+    bool isSuperAdmin = User.HasClaim("UserType", "Admin");
     bool HasAny(params string[] keys) => keys.Any(k => perms.Contains(k));
 }
 <ul class="nav flex-column">
@@ -362,6 +363,14 @@
                     </a>
                 </li>
             }
+            @if (HasAny("Cards.View", "Cards.Print"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Reports" asp-action="PrintedCards">
+                        <i class="bi bi-file-earmark-bar-graph"></i> تقرير البطاقات المطبوعة
+                    </a>
+                </li>
+            }
         </div>
     }
 
@@ -392,6 +401,16 @@
                 <li class="nav-item">
                     <a class="nav-link" asp-controller="Meal" asp-action="Report">
                         <i class="bi bi-graph-up"></i> تقرير الوجبات
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Meal" asp-action="RamadanSchedule">
+                        <i class="bi bi-moon-stars"></i> جداول رمضان
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Meal" asp-action="ChristianSchedule">
+                        <i class="bi bi-cross"></i> جداول المسيحيين
                     </a>
                 </li>
             }
@@ -489,6 +508,19 @@
                     </a>
                 </li>
             }
+            @if (HasAny("Inventory.Manage"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Inventory" asp-action="Items">
+                        <i class="bi bi-box-seam"></i> المخزون والمستلزمات
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Inventory" asp-action="Report">
+                        <i class="bi bi-file-earmark-bar-graph"></i> تقرير المخزون
+                    </a>
+                </li>
+            }
         </div>
     }
 
@@ -528,14 +560,6 @@
                     </a>
                 </li>
             }
-            @if (HasAny("Payments.View", "Payments.Manage"))
-            {
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Payment" asp-action="Report">
-                        <i class="bi bi-cash-stack"></i> تقرير المدفوعات
-                    </a>
-                </li>
-            }
         </div>
     }
 
@@ -546,7 +570,7 @@
             <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الإدارة
         </li>
         <div class="collapse show" id="menuAdmin">
-            @if (HasAny("SystemUsers.Manage", "Permissions.Manage"))
+            @if (isSuperAdmin && HasAny("SystemUsers.Manage", "Permissions.Manage"))
             {
                 <li class="nav-item">
                     <a class="nav-link" asp-controller="Permissions" asp-action="Users">
@@ -554,10 +578,10 @@
                     </a>
                 </li>
             }
-            @if (HasAny("Roles.Manage"))
+            @if (isSuperAdmin && HasAny("Roles.Manage"))
             {
                 <li class="nav-item">
-                    <a class="nav-link" asp-controller="Admin" asp-action="Roles">
+                    <a class="nav-link" asp-controller="Permissions" asp-action="Roles">
                         <i class="bi bi-person-badge"></i> الأدوار
                     </a>
                 </li>
@@ -582,7 +606,28 @@
             {
                 <li class="nav-item">
                     <a class="nav-link" asp-controller="Admin" asp-action="AuditLog">
-                        <i class="bi bi-clock-history"></i> سجل التدقيق
+                        <i class="bi bi-clock-history"></i> سجل التدقيق (مبسط)
+                    </a>
+                </li>
+            }
+            @if (isSuperAdmin && HasAny("AuditLog.View"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Permissions" asp-action="AuditLog">
+                        <i class="bi bi-search"></i> سجل التدقيق (متقدم)
+                    </a>
+                </li>
+            }
+            @if (HasAny("UniversityApi.Validate"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="UniversityApi" asp-action="ValidationLog">
+                        <i class="bi bi-diagram-3"></i> سجل التحقق من الجامعة
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="UniversityApi" asp-action="BulkValidate">
+                        <i class="bi bi-cloud-upload"></i> التحقق الدفعي
                     </a>
                 </li>
             }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using UniStay.Data;
@@ -11,7 +12,7 @@ using System.ComponentModel.DataAnnotations;
 namespace UniStay.Controllers;
 
 [Route("[controller]")]
-[StaffAuthorize]
+[Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
 public class UniversityApiController : Controller
 {
     private readonly AssuitDbContext _db; // <-- تغيير لـ AssuitDbContext

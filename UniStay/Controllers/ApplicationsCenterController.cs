@@ -10,7 +10,7 @@ using UniStay.ViewModels.Applications;
 
 namespace UniStay.Controllers;
 
-[Authorize(AuthenticationSchemes = "AdminCookie")]
+[Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
 public class ApplicationsCenterController : Controller
 {
     private readonly AssuitDbContext _db;

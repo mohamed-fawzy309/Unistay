@@ -92,7 +92,7 @@
             if (val.length < 1) { document.getElementById('studentResult').innerHTML = ''; return; }
             searchTimeout = setTimeout(async () => {
                 try {
-                    const response = await fetch('/api/students/search?q=' + encodeURIComponent(val));
+                    const response = await fetch('/StudentProfiles/SearchStudents?term=' + encodeURIComponent(val));
                     const data = await response.json();
                     const div = document.getElementById('studentResult');
                     if (data.length > 0) {

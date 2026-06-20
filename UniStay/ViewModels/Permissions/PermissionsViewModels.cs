@@ -33,7 +33,7 @@ namespace UniStay.ViewModels.Permissions
         public bool      MustChangePassword  { get; set; }
         public DateTime? LastLoginAt         { get; set; }
         public DateTime  CreatedAt           { get; set; }
-        public string?   RoleName            { get; set; }
+        public List<string> RoleNames        { get; set; } = new();
         public int       DirectPermCount     { get; set; }
         public List<string> CityRoles        { get; set; } = new();
     }
@@ -56,13 +56,15 @@ namespace UniStay.ViewModels.Permissions
 
         public bool IsSuperAdmin { get; set; } = false;
 
-        [Required(ErrorMessage = "الدور مطلوب")]
-        [Range(1, int.MaxValue, ErrorMessage = "يرجى اختيار دور")]
-        public int RoleID { get; set; }
+        public List<int> SelectedRoleIds { get; set; } = new();
 
         public int? DormitoryCityID { get; set; }
 
         public string? RoleInCity { get; set; }
+
+        public List<int> SelectedPermissionIds { get; set; } = new();
+
+        public List<PermissionGroupViewModel> PermissionGroups { get; set; } = new();
     }
 
     public class EditUserViewModel
@@ -79,19 +81,24 @@ namespace UniStay.ViewModels.Permissions
         [Phone(ErrorMessage = "رقم هاتف غير صحيح")]
         public string? Phone { get; set; }
 
+        [StringLength(14, MinimumLength = 14, ErrorMessage = "الرقم القومي 14 رقم")]
+        public string? NationalID { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public bool IsSuperAdmin { get; set; }
 
-        [Required(ErrorMessage = "الدور مطلوب")]
-        [Range(1, int.MaxValue, ErrorMessage = "يرجى اختيار دور")]
-        public int RoleID { get; set; }
+        public List<int> SelectedRoleIds { get; set; } = new();
 
         public int? DormitoryCityID { get; set; }
 
         public string? RoleInCity { get; set; }
 
         public bool ResetPassword { get; set; }
+
+        public List<int> SelectedPermissionIds { get; set; } = new();
+
+        public List<PermissionGroupViewModel> PermissionGroups { get; set; } = new();
     }
 
     public class UserDetailsViewModel

@@ -1,8 +1,10 @@
 @model UniStay.ViewModels.Permissions.UserListViewModel
+@using UniStay.ViewModels.Permissions
 @{
     ViewData["Title"] = "إدارة المستخدمين";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
     var currentUID = (int)(ViewBag.CurrentUserID ?? 0);
+    var permGroups = ViewBag.PermissionGroups as List<PermissionGroupViewModel> ?? new();
 }
 
 @section Scripts {
@@ -39,6 +41,13 @@ $(function(){
         if(!confirm(`حذف "${name}"؟ لا يمكن التراجع.`)) return;
         $.post('/Permissions/DeleteUser',{id,__RequestVerificationToken:$('[name=__RequestVerificationToken]').val()})
          .done(r=>{ if(r.success) location.reload(); else toast(r.message,'danger'); });
+    });
+
+    // Select All per group (create modal)
+    $(document).on('change','.chk-all-create',function(){
+        const checked=$(this).prop('checked');
+        const gid=$(this).data('group');
+        $(`.perm-check-create[data-group="${gid}"]`).prop('checked',checked);
     });
 
     function toast(msg,type='success'){
@@ -165,11 +174,12 @@ $(function(){
                                 </div>
                             </td>
                             <td>
-                                @if (!string.IsNullOrEmpty(user.RoleName))
+                                @if (user.RoleNames.Any())
                                 {
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
-                                        @user.RoleName
-                                    </span>
+                                    @foreach (var rn in user.RoleNames)
+                                    {
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 me-1">@rn</span>
+                                    }
                                 }
                                 else if (user.IsSuperAdmin)
                                 {
@@ -280,14 +290,14 @@ $(function(){
                         <input name="NationalID" class="form-control" maxlength="14" placeholder="14 رقماً" />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">الدور <span class="text-danger">*</span></label>
-                        <select name="RoleID" class="form-select" required>
-                            <option value="">-- اختر الدور --</option>
+                        <label class="form-label fw-semibold">الأدوار <small class="text-muted">(اختياري، متعدد)</small></label>
+                        <select name="SelectedRoleIds" class="form-select" multiple size="4">
                             @foreach (var r in Model.AvailableRoles)
                             {
                                 <option value="@r.Value">@r.Text</option>
                             }
                         </select>
+                        <small class="text-muted">اضغط Ctrl للتحديد المتعدد. يمكن تركها فارغة واستخدام الصلاحيات المباشرة.</small>
                     </div>
                     <div class="row g-2 mb-3">
                         <div class="col-md-6">
@@ -311,12 +321,49 @@ $(function(){
                             </select>
                         </div>
                     </div>
-                    <div class="form-check form-switch">
+                    <div class="form-check form-switch mb-3">
                         <input name="IsSuperAdmin" type="checkbox" class="form-check-input" id="isSuperAdmin" value="true" />
                         <input name="IsSuperAdmin" type="hidden" value="false" />
                         <label class="form-check-label text-danger fw-semibold" for="isSuperAdmin">
                             <i class="bi bi-shield-fill-exclamation me-1"></i>منح صلاحيات SuperAdmin الكاملة
                         </label>
+                    </div>
+
+                    @* ─── الصلاحيات المباشرة ─── *@
+                    <div class="border rounded p-2">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-semibold small"><i class="bi bi-shield-check me-1"></i>الصلاحيات المباشرة</span>
+                            <a class="small text-decoration-none" data-bs-toggle="collapse" href="#createPermsCollapse">عرض/إخفاء</a>
+                        </div>
+                        <div class="collapse" id="createPermsCollapse">
+                            @if (!permGroups.Any())
+                            {
+                                <div class="text-muted small p-2">لا توجد صلاحيات</div>
+                            }
+                            else
+                            {
+                                foreach (var group in permGroups)
+                                {
+                                    <div class="mb-2">
+                                        <div class="d-flex align-items-center gap-1">
+                                            <input type="checkbox" class="form-check-input chk-all-create" data-group="@group.GroupID" style="cursor:pointer">
+                                            <span class="fw-semibold small">@group.GroupName</span>
+                                        </div>
+                                        <div class="row g-1 ps-3">
+                                            @foreach (var perm in group.Permissions)
+                                            {
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input perm-check-create" name="SelectedPermissionIds" value="@perm.PermissionID" data-group="@group.GroupID" id="cp_@perm.PermissionID">
+                                                        <label class="form-check-label small" for="cp_@perm.PermissionID">@perm.DisplayName</label>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

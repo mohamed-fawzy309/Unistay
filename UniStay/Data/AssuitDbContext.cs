@@ -1473,8 +1473,7 @@ public partial class AssuitDbContext : DbContext
 
             // ✅ بعد
             entity.HasMany(d => d.DataScopes).WithMany(p => p.SystemUsers)
-                .UsingEntity<UserDataScope>(
-                    "UserDataScope",
+               .UsingEntity<UserDataScope>(
                     r => r.HasOne(ud => ud.DataScope).WithMany()
                         .HasForeignKey(ud => ud.DataScopeID)
                         .OnDelete(DeleteBehavior.ClientSetNull)

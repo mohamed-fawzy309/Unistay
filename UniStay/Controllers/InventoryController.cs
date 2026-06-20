@@ -9,7 +9,7 @@ using UniStay.ViewModels.Inventory;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class InventoryController : Controller
     {
         private readonly AssuitDbContext _db;

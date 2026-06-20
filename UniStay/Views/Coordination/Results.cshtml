@@ -211,7 +211,7 @@
         };
         fetch('/Coordination/ManualOverrideSave', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('input[name="__RequestVerificationToken"]').value },
             body: JSON.stringify(data)
         }).then(r => r.json()).then(resp => {
             if (resp.success) {

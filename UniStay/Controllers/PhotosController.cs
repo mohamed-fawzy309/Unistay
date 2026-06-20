@@ -9,7 +9,7 @@ using UniStay.ViewModels.Photos;
 
 namespace UniStay.Controllers;
 
-[Authorize(AuthenticationSchemes = "AdminCookie")]
+[Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
 public class PhotosController : Controller
 {
     private readonly AssuitDbContext _db;

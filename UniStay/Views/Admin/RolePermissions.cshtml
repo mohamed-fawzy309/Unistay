@@ -87,16 +87,16 @@
     <script>
         document.getElementById('savePermissionsBtn')?.addEventListener('click', function () {
             var roleId = parseInt(document.getElementById('roleId').value);
-            var permissions = [];
+            var permMap = {};
             document.querySelectorAll('.permission-check').forEach(function (cb) {
-                permissions.push({
-                    PermissionID: parseInt(cb.getAttribute('data-permid')),
-                    CanView: cb.getAttribute('data-action') === 'CanView' ? cb.checked : false,
-                    CanCreate: cb.getAttribute('data-action') === 'CanCreate' ? cb.checked : false,
-                    CanEdit: cb.getAttribute('data-action') === 'CanEdit' ? cb.checked : false,
-                    CanDelete: cb.getAttribute('data-action') === 'CanDelete' ? cb.checked : false
-                });
+                var pid = parseInt(cb.getAttribute('data-permid'));
+                var action = cb.getAttribute('data-action');
+                if (!permMap[pid]) {
+                    permMap[pid] = { PermissionID: pid, CanView: false, CanCreate: false, CanEdit: false, CanDelete: false };
+                }
+                permMap[pid][action] = cb.checked;
             });
+            var permissions = Object.values(permMap);
 
             fetch('@Url.Action("RolePermissions")', {
                 method: 'POST',
@@ -104,14 +104,23 @@
                 body: JSON.stringify({ RoleID: roleId, Permissions: permissions })
             })
             .then(r => r.json())
-            .then(data => {
+            .then(function (data) {
                 if (data.success) {
-                    alert('تم حفظ الصلاحيات بنجاح');
+                    var el = document.getElementById('roleToast');
+                    if (!el) {
+                        el = document.createElement('div');
+                        el.id = 'roleToast';
+                        el.className = 'toast align-items-center text-bg-success border-0 position-fixed bottom-0 end-0 m-3 show';
+                        el.style.zIndex = '9999';
+                        el.innerHTML = '<div class="d-flex"><div class="toast-body">' + 'تم حفظ الصلاحيات بنجاح' + '</div><button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+                        document.body.appendChild(el);
+                        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3500);
+                    }
                 } else {
                     alert('حدث خطأ أثناء الحفظ');
                 }
             })
-            .catch(() => alert('حدث خطأ في الاتصال'));
+            .catch(function () { alert('حدث خطأ في الاتصال'); });
         });
     </script>
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using UniStay.Data;
 using UniStay.Helpers;
@@ -9,7 +10,7 @@ using UniStay.ViewModels.Payment;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class PaymentController : Controller
     {
         private readonly AssuitDbContext _db;
@@ -244,6 +245,13 @@ namespace UniStay.Controllers
             var cityName = cityId.HasValue
                 ? (await _db.DormitoryCities.FindAsync(cityId))?.Name ?? ""
                 : "الكل";
+
+            var cities = await _db.DormitoryCities
+                .Where(c => c.IsActive == true && c.IsDeleted != true)
+                .Select(c => new SelectListItem(c.Name, c.ID.ToString()))
+                .ToListAsync();
+
+            ViewBag.Cities = cities;
 
             return View(new PaymentReportViewModel
             {

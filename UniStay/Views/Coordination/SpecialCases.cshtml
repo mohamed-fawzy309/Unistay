@@ -85,6 +85,7 @@
                 <div class="card-header bg-success text-white"><h5 class="mb-0">إضافة حالة خاصة</h5></div>
                 <div class="card-body">
                     <form asp-action="AddSpecialCase" method="post" id="addSpecialCaseForm">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="NewSpecialCase.ApplicationID" />
                         <div class="mb-3">
                             <label class="form-label">الطالب</label>
@@ -119,7 +120,8 @@
     <script>
         function reviewCase(id, status) {
             var notes = prompt('ملاحظات المراجعة:');
-            $.post('@Url.Action("ReviewSpecialCase")', { id: id, status: status, reviewNotes: notes }, function (res) {
+            var token = $('#addSpecialCaseForm input[name="__RequestVerificationToken"]').val();
+            $.post('@Url.Action("ReviewSpecialCase")', { id: id, status: status, reviewNotes: notes, __RequestVerificationToken: token }, function (res) {
                 if (res.success) { location.reload(); } else { alert(res.message); }
             });
         }

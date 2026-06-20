@@ -8,7 +8,7 @@ using UniStay.ViewModels.Applications;
 
 namespace UniStay.Controllers;
 
-[Authorize(AuthenticationSchemes = "AdminCookie")]
+[Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
 public class OnlineReviewController : Controller
 {
     private readonly AssuitDbContext _db;

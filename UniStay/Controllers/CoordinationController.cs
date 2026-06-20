@@ -9,7 +9,7 @@ using UniStay.ViewModels.Coordination;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class CoordinationController : Controller
     {
         private readonly AssuitDbContext _db;

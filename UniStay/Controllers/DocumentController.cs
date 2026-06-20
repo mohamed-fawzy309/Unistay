@@ -9,7 +9,7 @@ using UniStay.ViewModels.Document;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class DocumentController : Controller
     {
         private readonly AssuitDbContext _db;

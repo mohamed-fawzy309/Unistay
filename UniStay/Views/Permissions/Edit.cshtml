@@ -1,9 +1,23 @@
 @model UniStay.ViewModels.Permissions.EditUserViewModel
+@using UniStay.ViewModels.Permissions
 @{
     ViewData["Title"] = "تعديل المستخدم";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-    var availRoles = ViewBag.AvailableRoles as List<UniStay.ViewModels.Permissions.SelectItem> ?? new();
-    var availCities = ViewBag.AvailableCities as List<UniStay.ViewModels.Permissions.SelectItem> ?? new();
+    var availRoles = ViewBag.AvailableRoles as List<SelectItem> ?? new();
+    var availCities = ViewBag.AvailableCities as List<SelectItem> ?? new();
+}
+
+@section Scripts {
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+$(function(){
+    $(document).on('change','.chk-all-edit',function(){
+        const checked=$(this).prop('checked');
+        const gid=$(this).data('group');
+        $(`.perm-check-edit[data-group="${gid}"]`).prop('checked',checked);
+    });
+});
+</script>
 }
 
 <div class="container-fluid py-3">
@@ -38,14 +52,19 @@
                         <input name="Phone" class="form-control" value="@Model.Phone" />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label fw-semibold">الدور <span class="text-danger">*</span></label>
-                        <select name="RoleID" class="form-select" required>
-                            <option value="">-- اختر الدور --</option>
+                        <label class="form-label fw-semibold">الرقم القومي</label>
+                        <input name="NationalID" class="form-control" maxlength="14" value="@Model.NationalID" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">الأدوار <small class="text-muted">(اختياري، متعدد)</small></label>
+                        <select name="SelectedRoleIds" class="form-select" multiple size="4">
                             @foreach (var r in availRoles)
                             {
-                                <option value="@r.Value" selected="@(Model.RoleID.ToString() == r.Value)">@r.Text</option>
+                                var isSelected = Model.SelectedRoleIds.Any(id => id.ToString() == r.Value);
+                                <option value="@r.Value" selected="@isSelected">@r.Text</option>
                             }
                         </select>
+                        <small class="text-muted">اضغط Ctrl للتحديد المتعدد</small>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">المدينة (اختياري)</label>
@@ -84,6 +103,51 @@
                             <label class="form-check-label fw-semibold" for="editResetPw">إعادة تعيين كلمة المرور</label>
                         </div>
                     </div>
+                </div>
+
+                @* ─── الصلاحيات المباشرة ─── *@
+                <hr />
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold"><i class="bi bi-shield-check me-1 text-primary"></i>الصلاحيات المباشرة</span>
+                        @if (Model.IsSuperAdmin)
+                        {
+                            <span class="badge text-white" style="background:linear-gradient(90deg,#7c3aed,#db2777)">SuperAdmin — كل الصلاحيات ممنوحة تلقائياً</span>
+                        }
+                    </div>
+                    @if (!Model.IsSuperAdmin)
+                    {
+                        <a class="small text-decoration-none" data-bs-toggle="collapse" href="#editPermsCollapse">عرض/إخفاء الصلاحيات</a>
+                        <div class="collapse mt-2" id="editPermsCollapse">
+                            @if (!Model.PermissionGroups.Any())
+                            {
+                                <div class="text-muted small p-2 border rounded">لا توجد صلاحيات</div>
+                            }
+                            else
+                            {
+                                foreach (var group in Model.PermissionGroups)
+                                {
+                                    <div class="mb-2 border rounded p-2">
+                                        <div class="d-flex align-items-center gap-1">
+                                            <input type="checkbox" class="form-check-input chk-all-edit" data-group="@group.GroupID" style="cursor:pointer">
+                                            <span class="fw-semibold small">@group.GroupName</span>
+                                        </div>
+                                        <div class="row g-1 ps-3">
+                                            @foreach (var perm in group.Permissions)
+                                            {
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input perm-check-edit" name="SelectedPermissionIds" value="@perm.PermissionID" data-group="@group.GroupID" id="ep_@perm.PermissionID" @(perm.CanView ? "checked" : "")>
+                                                        <label class="form-check-label small" for="ep_@perm.PermissionID">@perm.DisplayName</label>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
                 </div>
 
                 <hr />

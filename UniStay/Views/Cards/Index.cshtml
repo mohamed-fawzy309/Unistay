@@ -110,7 +110,7 @@
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown"></button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" asp-action="PrintSingleFromQueue" asp-route-id="@q.QueueID"><i class="bi bi-printer"></i> طباعة</a></li>
+                                    <li><form asp-action="PrintSingleFromQueue" method="post" style="display:inline"><input type="hidden" name="id" value="@q.QueueID" />@Html.AntiForgeryToken()<button type="submit" class="dropdown-item"><i class="bi bi-printer"></i> طباعة</button></form></li>
                                     <li><a class="dropdown-item" asp-action="Preview" asp-route-studentId="@q.StudentID" target="_blank"><i class="bi bi-eye"></i> معاينة</a></li>
                                     @if (q.Status == "Pending")
                                     {
@@ -165,21 +165,21 @@
         function markPrinted(id) {
             if (!confirm('تأكيد طباعة البطاقة؟')) return;
             fetch('@Url.Action("MarkPrinted", "Cards")/' + id, {
-                method: 'POST', headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+                method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('input[name="__RequestVerificationToken"]').value }
             }).then(r => r.json()).then(d => { if (d.success) location.reload(); });
         }
 
         function markFailed(id) {
             if (!confirm('تأكيد فشل الطباعة؟')) return;
             fetch('@Url.Action("MarkFailed", "Cards")/' + id, {
-                method: 'POST', headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+                method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('input[name="__RequestVerificationToken"]').value }
             }).then(r => r.json()).then(d => { if (d.success) location.reload(); });
         }
 
         function removeFromQueue(id) {
             if (!confirm('تأكيد حذف العنصر؟')) return;
             fetch('@Url.Action("RemoveFromQueue", "Cards")/' + id, {
-                method: 'POST', headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value }
+                method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('input[name="__RequestVerificationToken"]').value }
             }).then(r => r.json()).then(d => { if (d.success) location.reload(); });
         }
     </script>

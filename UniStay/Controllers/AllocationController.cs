@@ -9,7 +9,7 @@ using UniStay.ViewModels.Allocation;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class AllocationController : Controller
     {
         private readonly AssuitDbContext _db;
@@ -381,11 +381,13 @@ namespace UniStay.Controllers
                 return Json(new { success = false, message = "الغرفة الجديدة ممتلئة" });
 
             var oldValues = new { alloc.CityRoomID, alloc.BedNumber };
+            var oldRoomId = alloc.CityRoomID;
+
             alloc.CityRoomID = model.NewCityRoomID;
             alloc.BedNumber = model.NewBedNumber;
             alloc.Notes = model.Reason;
 
-            var oldRoom = await _db.CityRooms.FindAsync(alloc.CityRoomID);
+            var oldRoom = await _db.CityRooms.FindAsync(oldRoomId);
             if (oldRoom != null && oldRoom.CurrentOccupancy > 0) oldRoom.CurrentOccupancy--;
 
             newRoom.CurrentOccupancy++;

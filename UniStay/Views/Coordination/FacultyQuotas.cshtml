@@ -57,6 +57,7 @@
                 <div class="card-header bg-success text-white"><h5 class="mb-0">إضافة حصة</h5></div>
                 <div class="card-body">
                     <form asp-action="AddFacultyQuota" method="post" id="addQuotaForm">
+                        @Html.AntiForgeryToken()
                         <input type="hidden" name="cityId" value="@Model.DormitoryCityID" />
                         <div class="mb-3">
                             <label class="form-label">الكلية</label>

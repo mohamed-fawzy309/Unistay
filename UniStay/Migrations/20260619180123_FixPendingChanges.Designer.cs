@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UniStay.Data;
 
@@ -11,9 +12,11 @@ using UniStay.Data;
 namespace UniStay.Migrations
 {
     [DbContext(typeof(AssuitDbContext))]
-    partial class AssuitDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619180123_FixPendingChanges")]
+    partial class FixPendingChanges
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3210,27 +3213,6 @@ namespace UniStay.Migrations
                     b.ToTable("UniversityPhoto", (string)null);
                 });
 
-            modelBuilder.Entity("UniStay.Models.UserDataScope", b =>
-                {
-                    b.Property<int>("SystemUserID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DataScopeID")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DataScopeID1")
-                        .HasColumnType("int");
-
-                    b.HasKey("SystemUserID", "DataScopeID")
-                        .HasName("PK__UserData__FDB49D8B7483810F");
-
-                    b.HasIndex("DataScopeID");
-
-                    b.HasIndex("DataScopeID1");
-
-                    b.ToTable("UserDataScope", (string)null);
-                });
-
             modelBuilder.Entity("UniStay.Models.UserPermission", b =>
                 {
                     b.Property<int>("ID")
@@ -3446,6 +3428,27 @@ namespace UniStay.Migrations
                     b.HasIndex(new[] { "StudentID" }, "IX_Violation_StudentID");
 
                     b.ToTable("Violation", (string)null);
+                });
+
+            modelBuilder.Entity("UserDataScope", b =>
+                {
+                    b.Property<int>("SystemUserID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DataScopeID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DataScopeID1")
+                        .HasColumnType("int");
+
+                    b.HasKey("SystemUserID", "DataScopeID")
+                        .HasName("PK__UserData__FDB49D8B7483810F");
+
+                    b.HasIndex("DataScopeID");
+
+                    b.HasIndex("DataScopeID1");
+
+                    b.ToTable("UserDataScope", (string)null);
                 });
 
             modelBuilder.Entity("UniStay.Models.Absence", b =>
@@ -4373,29 +4376,6 @@ namespace UniStay.Migrations
                     b.Navigation("DormitoryCity");
                 });
 
-            modelBuilder.Entity("UniStay.Models.UserDataScope", b =>
-                {
-                    b.HasOne("UniStay.Models.DataScope", "DataScope")
-                        .WithMany()
-                        .HasForeignKey("DataScopeID")
-                        .IsRequired()
-                        .HasConstraintName("FK_UserDataScope_DataScope");
-
-                    b.HasOne("UniStay.Models.DataScope", null)
-                        .WithMany("UserDataScopes")
-                        .HasForeignKey("DataScopeID1");
-
-                    b.HasOne("UniStay.Models.SystemUser", "SystemUser")
-                        .WithMany()
-                        .HasForeignKey("SystemUserID")
-                        .IsRequired()
-                        .HasConstraintName("FK_UserDataScope_SystemUser");
-
-                    b.Navigation("DataScope");
-
-                    b.Navigation("SystemUser");
-                });
-
             modelBuilder.Entity("UniStay.Models.UserPermission", b =>
                 {
                     b.HasOne("UniStay.Models.SystemUser", "GrantedByNavigation")
@@ -4504,6 +4484,29 @@ namespace UniStay.Migrations
                     b.Navigation("ResolvedByNavigation");
 
                     b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("UserDataScope", b =>
+                {
+                    b.HasOne("UniStay.Models.DataScope", "DataScope")
+                        .WithMany()
+                        .HasForeignKey("DataScopeID")
+                        .IsRequired()
+                        .HasConstraintName("FK_UserDataScope_DataScope");
+
+                    b.HasOne("UniStay.Models.DataScope", null)
+                        .WithMany("UserDataScopes")
+                        .HasForeignKey("DataScopeID1");
+
+                    b.HasOne("UniStay.Models.SystemUser", "SystemUser")
+                        .WithMany()
+                        .HasForeignKey("SystemUserID")
+                        .IsRequired()
+                        .HasConstraintName("FK_UserDataScope_SystemUser");
+
+                    b.Navigation("DataScope");
+
+                    b.Navigation("SystemUser");
                 });
 
             modelBuilder.Entity("UniStay.Models.Allocation", b =>

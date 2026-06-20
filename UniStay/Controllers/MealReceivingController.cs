@@ -8,7 +8,7 @@ using UniStay.ViewModels.Meal;
 
 namespace UniStay.Controllers;
 
-[Authorize(AuthenticationSchemes = "AdminCookie")]
+[Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
 public class MealReceivingController : Controller
 {
     private readonly IMealReceivingService _receivingService;

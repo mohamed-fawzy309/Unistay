@@ -4,6 +4,7 @@ using UniStay.Data;
 using UniStay.Helpers;
 using UniStay.Models;
 using UniStay.Services.Interfaces;
+using UniStay.ViewModels.Admin;
 using UniStay.ViewModels.Permissions;
 
 namespace UniStay.Controllers
@@ -67,7 +68,7 @@ namespace UniStay.Controllers
                 .GroupBy(x => x.SystemUserID)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            // أسماء الأدوار
+            // أسماء الأدوار (متعددة)
             var userRoles = await _db.UserRoles
                 .Where(ur => ids.Contains(ur.SystemUserID))
                 .Include(ur => ur.Role)
@@ -75,7 +76,7 @@ namespace UniStay.Controllers
 
             var roleDict = userRoles
                 .GroupBy(ur => ur.SystemUserID)
-                .ToDictionary(g => g.Key, g => g.First().Role.Name);
+                .ToDictionary(g => g.Key, g => g.Select(ur => ur.Role.Name).ToList());
 
             var users = rawUsers.Select(u => new UserRowViewModel
             {
@@ -89,7 +90,7 @@ namespace UniStay.Controllers
                 MustChangePassword = u.MustChangePassword,
                 LastLoginAt = u.LastLoginAt,
                 CreatedAt = u.CreatedAt ?? DateTime.Now,
-                RoleName = roleDict.GetValueOrDefault(u.ID),
+                RoleNames = roleDict.GetValueOrDefault(u.ID) ?? new(),
                 DirectPermCount = _db.UserPermissions.Count(up => up.SystemUserID == u.ID),
                 CityRoles = cityRoleDict.TryGetValue(u.ID, out var roles)
                     ? roles.Select(r => $"{r.Name} — {MapRole(r.RoleInCity)}").ToList()
@@ -116,7 +117,25 @@ namespace UniStay.Controllers
                 AvailableCities = availableCities
             };
 
+            var allGroups = await _db.PermissionGroups
+                .Include(g => g.Permissions)
+                .OrderBy(g => g.GroupName)
+                .ToListAsync();
+
             ViewBag.CurrentUserID = CurrentUserID();
+            ViewBag.PermissionGroups = allGroups.Select(g => new PermissionGroupViewModel
+            {
+                GroupID = g.ID,
+                GroupName = g.GroupName,
+                Description = g.Description,
+                Permissions = g.Permissions.Select(p => new PermissionItemViewModel
+                {
+                    PermissionID = p.ID,
+                    PermissionKey = p.PermissionKey,
+                    DisplayName = p.DisplayName,
+                    Category = p.Category
+                }).ToList()
+            }).ToList();
             return View(vm);
         }
 
@@ -132,23 +151,26 @@ namespace UniStay.Controllers
                 return RedirectToAction(nameof(Users));
             }
 
-            if (model.RoleID <= 0)
-            {
-                TempData["Error"] = "يرجى اختيار دور للموظف";
-                return RedirectToAction(nameof(Users));
-            }
-
-            var role = await _db.Set<Role>().FindAsync(model.RoleID);
-            if (role == null || !role.IsActive)
-            {
-                TempData["Error"] = "الدور المحدد غير موجود";
-                return RedirectToAction(nameof(Users));
-            }
-
             if (await _db.SystemUsers.AnyAsync(u => u.Email == model.Email && !u.IsDeleted))
             {
                 TempData["Error"] = "البريد الإلكتروني مستخدم من قبل";
                 return RedirectToAction(nameof(Users));
+            }
+
+            if (!string.IsNullOrEmpty(model.NationalID) && await _db.SystemUsers.AnyAsync(u => u.NationalID == model.NationalID && !u.IsDeleted))
+            {
+                TempData["Error"] = "الرقم القومي مستخدم من قبل";
+                return RedirectToAction(nameof(Users));
+            }
+
+            foreach (var rid in model.SelectedRoleIds)
+            {
+                var role = await _db.Set<Role>().FindAsync(rid);
+                if (role == null || !role.IsActive)
+                {
+                    TempData["Error"] = $"الدور ({rid}) غير موجود";
+                    return RedirectToAction(nameof(Users));
+                }
             }
 
             var tempPw = GenerateTempPassword();
@@ -171,13 +193,16 @@ namespace UniStay.Controllers
             _db.SystemUsers.Add(user);
             await _db.SaveChangesAsync();
 
-            _db.UserRoles.Add(new UserRole
+            foreach (var rid in model.SelectedRoleIds)
             {
-                SystemUserID = user.ID,
-                RoleID = model.RoleID,
-                AssignedAt = DateTime.Now,
-                AssignedBy = CurrentUserID()
-            });
+                _db.UserRoles.Add(new UserRole
+                {
+                    SystemUserID = user.ID,
+                    RoleID = rid,
+                    AssignedAt = DateTime.Now,
+                    AssignedBy = CurrentUserID()
+                });
+            }
 
             if (model.DormitoryCityID.HasValue && model.DormitoryCityID > 0 && !string.IsNullOrEmpty(model.RoleInCity))
             {
@@ -196,6 +221,26 @@ namespace UniStay.Controllers
                 }
             }
 
+            if (model.SelectedPermissionIds?.Any() == true)
+            {
+                var validIds = await _db.Permissions
+                    .Where(p => model.SelectedPermissionIds.Contains(p.ID))
+                    .Select(p => p.ID)
+                    .ToListAsync();
+
+                foreach (var pid in validIds)
+                {
+                    _db.UserPermissions.Add(new UserPermission
+                    {
+                        SystemUserID = user.ID,
+                        PermissionID = pid,
+                        CanView = true,
+                        GrantedBy = CurrentUserID(),
+                        GrantedAt = DateTime.Now
+                    });
+                }
+            }
+
             await _db.SaveChangesAsync();
 
             await _emailService.SendAsync(
@@ -208,7 +253,7 @@ namespace UniStay.Controllers
             await _auditService.LogAsync(
                 CurrentUserID(), "Staff", "User.Create",
                 "SystemUser", user.ID,
-                null, new { user.Name, user.Email, model.IsSuperAdmin, RoleID = model.RoleID });
+                null, new { user.Name, user.Email, model.IsSuperAdmin, RoleIDs = model.SelectedRoleIds, PermCount = model.SelectedPermissionIds?.Count ?? 0 });
 
             TempData["Success"] = $"تم إنشاء حساب {model.Name} — تم إرسال بيانات الدخول على {model.Email}";
             return RedirectToAction(nameof(Users));
@@ -216,6 +261,7 @@ namespace UniStay.Controllers
 
         // AJAX — تفعيل/تعطيل
         [HttpPost("ToggleActive")]
+        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> ToggleActive(int id)
         {
@@ -247,6 +293,7 @@ namespace UniStay.Controllers
 
         // AJAX — إعادة تعيين كلمة المرور
         [HttpPost("ResetPassword")]
+        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> ResetPassword(int id)
         {
@@ -278,6 +325,7 @@ namespace UniStay.Controllers
 
         // AJAX — حذف ناعم
         [HttpPost("DeleteUser")]
+        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanDelete")]
         public async Task<IActionResult> DeleteUser(int id)
         {
@@ -288,6 +336,9 @@ namespace UniStay.Controllers
 
             if (user.ID == CurrentUserID())
                 return Json(new { success = false, message = "لا يمكنك حذف حسابك الخاص" });
+
+            if (user.IsSuperAdmin)
+                return Json(new { success = false, message = "لا يمكن حذف مستخدم SuperAdmin" });
 
             user.IsDeleted = true;
             user.IsActive = false;
@@ -304,7 +355,202 @@ namespace UniStay.Controllers
         }
 
         // ══════════════════════════════════════════════════════════════
-        // 1b. Employee Details & Edit
+        // 1b. Roles
+        // ══════════════════════════════════════════════════════════════
+
+        [HttpGet("Roles")]
+        [RequirePermission("Roles.Manage", "CanView")]
+        public async Task<IActionResult> Roles()
+        {
+            var roles = await _db.Set<Role>()
+                .Select(r => new RoleViewModel
+                {
+                    ID = r.ID,
+                    Name = r.Name ?? "",
+                    Description = r.Description,
+                    IsActive = r.IsActive,
+                    UserCount = r.UserRoles.Count
+                })
+                .OrderByDescending(r => r.UserCount)
+                .ToListAsync();
+
+            return View(roles);
+        }
+
+        [HttpPost("CreateRole")]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Roles.Manage", "CanCreate")]
+        public async Task<IActionResult> CreateRole(CreateRoleViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "بيانات غير صحيحة";
+                return RedirectToAction(nameof(Roles));
+            }
+
+            if (await _db.Set<Role>().AnyAsync(r => r.Name == model.Name))
+            {
+                TempData["Error"] = "اسم الدور موجود مسبقاً";
+                return RedirectToAction(nameof(Roles));
+            }
+
+            var role = new Role
+            {
+                Name = model.Name,
+                Description = model.Description,
+                IsActive = true,
+                CreatedAt = DateTime.Now,
+                CreatedBy = CurrentUserID()
+            };
+            _db.Set<Role>().Add(role);
+            await _db.SaveChangesAsync();
+
+            await _auditService.LogAsync(CurrentUserID(), "Staff", "Role.Create", "Role", role.ID,
+                null, new { model.Name, model.Description });
+
+            TempData["Success"] = "تم إنشاء الدور";
+            return RedirectToAction(nameof(Roles));
+        }
+
+        [HttpPost("EditRole")]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Roles.Manage", "CanEdit")]
+        public async Task<IActionResult> EditRole(EditRoleViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = "بيانات غير صحيحة";
+                return RedirectToAction(nameof(Roles));
+            }
+
+            var role = await _db.Set<Role>().FindAsync(model.ID);
+            if (role == null) return NotFound();
+
+            if (await _db.Set<Role>().AnyAsync(r => r.Name == model.Name && r.ID != model.ID))
+            {
+                TempData["Error"] = "اسم الدور موجود مسبقاً";
+                return RedirectToAction(nameof(Roles));
+            }
+
+            role.Name = model.Name;
+            role.Description = model.Description;
+            role.IsActive = model.IsActive;
+            await _db.SaveChangesAsync();
+
+            await _auditService.LogAsync(CurrentUserID(), "Staff", "Role.Edit", "Role", model.ID,
+                null, new { model.Name, model.IsActive });
+
+            TempData["Success"] = "تم تحديث الدور";
+            return RedirectToAction(nameof(Roles));
+        }
+
+        [HttpPost("DeleteRole")]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Roles.Manage", "CanDelete")]
+        public async Task<IActionResult> DeleteRole(int id)
+        {
+            var role = await _db.Set<Role>().FindAsync(id);
+            if (role == null) return NotFound();
+
+            var userCount = await _db.UserRoles.CountAsync(ur => ur.RoleID == id);
+            if (userCount > 0)
+            {
+                return Json(new { success = false, message = $"لا يمكن حذف الدور — لا يزال مستخدماً من قبل {userCount} مستخدم" });
+            }
+
+            _db.RolePermissions.RemoveRange(_db.Set<RolePermission>().Where(rp => rp.RoleID == id));
+            _db.Set<Role>().Remove(role);
+            await _db.SaveChangesAsync();
+
+            await _auditService.LogAsync(CurrentUserID(), "Staff", "Role.Delete", "Role", id,
+                new { role.Name }, null);
+
+            return Json(new { success = true, message = "تم حذف الدور" });
+        }
+
+        [HttpGet("RolePermissions")]
+        [RequirePermission("Roles.Manage", "CanEdit")]
+        public async Task<IActionResult> RolePermissions(int roleId)
+        {
+            var role = await _db.Set<Role>().FindAsync(roleId);
+            if (role == null)
+            {
+                TempData["Error"] = "الدور غير موجود";
+                return RedirectToAction(nameof(Roles));
+            }
+
+            var allGroups = await _db.PermissionGroups
+                .Include(g => g.Permissions)
+                .OrderBy(g => g.GroupName)
+                .ToListAsync();
+
+            var currentPerms = await _db.RolePermissions
+                .Where(rp => rp.RoleID == roleId)
+                .ToListAsync();
+
+            var permDict = currentPerms.ToDictionary(rp => rp.PermissionID);
+
+            var groups = allGroups.Select(g => new PermissionGroupViewModel
+            {
+                GroupID = g.ID,
+                GroupName = g.GroupName,
+                Description = g.Description,
+                Permissions = g.Permissions.Select(p => new PermissionItemViewModel
+                {
+                    PermissionID = p.ID,
+                    PermissionKey = p.PermissionKey,
+                    DisplayName = p.DisplayName,
+                    Category = p.Category,
+                    CanView = permDict.TryGetValue(p.ID, out var rp) && rp.CanView,
+                    CanCreate = permDict.TryGetValue(p.ID, out rp) && rp.CanCreate,
+                    CanEdit = permDict.TryGetValue(p.ID, out rp) && rp.CanEdit,
+                    CanDelete = permDict.TryGetValue(p.ID, out rp) && rp.CanDelete,
+                }).ToList()
+            }).ToList();
+
+            ViewBag.RoleName = role.Name;
+            ViewBag.RoleID = roleId;
+            return View(groups);
+        }
+
+        [HttpPost("RolePermissions")]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Roles.Manage", "CanEdit")]
+        public async Task<IActionResult> RolePermissions([FromBody] SaveRolePermissionsRequest request)
+        {
+            var roleId = request.RoleID;
+
+            var existing = await _db.RolePermissions
+                .Where(rp => rp.RoleID == roleId)
+                .ToListAsync();
+
+            _db.RolePermissions.RemoveRange(existing);
+
+            foreach (var item in request.Permissions)
+            {
+                if (item.CanView || item.CanCreate || item.CanEdit || item.CanDelete)
+                {
+                    _db.RolePermissions.Add(new RolePermission
+                    {
+                        RoleID = roleId,
+                        PermissionID = item.PermissionID,
+                        CanView = item.CanView,
+                        CanCreate = item.CanCreate,
+                        CanEdit = item.CanEdit,
+                        CanDelete = item.CanDelete
+                    });
+                }
+            }
+
+            await _db.SaveChangesAsync();
+
+            await _auditService.LogAsync(CurrentUserID(), "Staff", "Role.Permissions.Edit", "RolePermission", roleId);
+
+            return Json(new { success = true });
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // 1c. Employee Details & Edit
         // ══════════════════════════════════════════════════════════════
 
         [HttpGet("Details")]
@@ -320,10 +566,11 @@ namespace UniStay.Controllers
                 return RedirectToAction(nameof(Users));
             }
 
-            var userRole = await _db.UserRoles
+            var userRoleNames = await _db.UserRoles
                 .Where(ur => ur.SystemUserID == id)
                 .Include(ur => ur.Role)
-                .FirstOrDefaultAsync();
+                .Select(ur => ur.Role.Name)
+                .ToListAsync();
 
             var cityStaff = await _db.CityStaffs
                 .Where(cs => cs.SystemUserID == id && cs.IsPrimary)
@@ -347,7 +594,7 @@ namespace UniStay.Controllers
                 MustChangePassword = user.MustChangePassword,
                 LastLoginAt = user.LastLoginAt,
                 CreatedAt = user.CreatedAt ?? DateTime.Now,
-                RoleName = userRole?.Role.Name,
+                RoleName = userRoleNames.Any() ? string.Join("، ", userRoleNames) : null,
                 CityName = cityStaff?.CityName,
                 RoleInCity = cityStaff?.RoleInCity != null ? MapRole(cityStaff.RoleInCity) : null,
                 EffectivePermissionsCount = effectiveCount,
@@ -370,11 +617,23 @@ namespace UniStay.Controllers
                 return RedirectToAction(nameof(Users));
             }
 
-            var userRole = await _db.UserRoles
-                .FirstOrDefaultAsync(ur => ur.SystemUserID == id);
+            var userRoleIds = await _db.UserRoles
+                .Where(ur => ur.SystemUserID == id)
+                .Select(ur => ur.RoleID)
+                .ToListAsync();
 
             var cityStaff = await _db.CityStaffs
                 .FirstOrDefaultAsync(cs => cs.SystemUserID == id && cs.IsPrimary);
+
+            var currentPermIds = await _db.UserPermissions
+                .Where(up => up.SystemUserID == id && up.CanView == true)
+                .Select(up => up.PermissionID)
+                .ToListAsync();
+
+            var allGroups = await _db.PermissionGroups
+                .Include(g => g.Permissions)
+                .OrderBy(g => g.GroupName)
+                .ToListAsync();
 
             var vm = new EditUserViewModel
             {
@@ -382,12 +641,28 @@ namespace UniStay.Controllers
                 Name = user.Name,
                 Email = user.Email,
                 Phone = user.Phone,
+                NationalID = user.NationalID,
                 IsActive = user.IsActive,
                 IsSuperAdmin = user.IsSuperAdmin,
-                RoleID = userRole?.RoleID ?? 0,
+                SelectedRoleIds = userRoleIds,
                 DormitoryCityID = cityStaff?.DormitoryCityID,
                 RoleInCity = cityStaff?.RoleInCity,
-                ResetPassword = false
+                ResetPassword = false,
+                SelectedPermissionIds = currentPermIds,
+                PermissionGroups = allGroups.Select(g => new PermissionGroupViewModel
+                {
+                    GroupID = g.ID,
+                    GroupName = g.GroupName,
+                    Description = g.Description,
+                    Permissions = g.Permissions.Select(p => new PermissionItemViewModel
+                    {
+                        PermissionID = p.ID,
+                        PermissionKey = p.PermissionKey,
+                        DisplayName = p.DisplayName,
+                        Category = p.Category,
+                        CanView = currentPermIds.Contains(p.ID)
+                    }).ToList()
+                }).ToList()
             };
 
             ViewBag.AvailableRoles = await _db.Set<Role>()
@@ -423,9 +698,22 @@ namespace UniStay.Controllers
 
             var userId = CurrentUserID();
 
+            if (!string.IsNullOrEmpty(model.Email) && await _db.SystemUsers.AnyAsync(u => u.Email == model.Email && u.ID != model.UserID && !u.IsDeleted))
+            {
+                TempData["Error"] = "البريد الإلكتروني مستخدم من قبل";
+                return RedirectToAction(nameof(Edit), new { id = model.UserID });
+            }
+
+            if (!string.IsNullOrEmpty(model.NationalID) && await _db.SystemUsers.AnyAsync(u => u.NationalID == model.NationalID && u.ID != model.UserID && !u.IsDeleted))
+            {
+                TempData["Error"] = "الرقم القومي مستخدم من قبل";
+                return RedirectToAction(nameof(Edit), new { id = model.UserID });
+            }
+
             user.Name = model.Name;
             user.Email = model.Email;
             user.Phone = model.Phone;
+            user.NationalID = model.NationalID;
             user.IsActive = model.IsActive;
             user.IsSuperAdmin = model.IsSuperAdmin;
             user.LastUpdatedAt = DateTime.Now;
@@ -448,29 +736,60 @@ namespace UniStay.Controllers
                 }
             }
 
-            var existingRole = await _db.UserRoles
-                .FirstOrDefaultAsync(ur => ur.SystemUserID == model.UserID);
+            var existingRoles = await _db.UserRoles
+                .Where(ur => ur.SystemUserID == model.UserID)
+                .ToListAsync();
 
-            if (existingRole != null)
+            var newRoleIds = model.SelectedRoleIds ?? new();
+            var oldRoleIds = existingRoles.Select(ur => ur.RoleID).ToHashSet();
+
+            var toRemove = existingRoles.Where(ur => !newRoleIds.Contains(ur.RoleID)).ToList();
+            if (toRemove.Any()) _db.UserRoles.RemoveRange(toRemove);
+
+            foreach (var rid in newRoleIds)
             {
-                if (existingRole.RoleID != model.RoleID)
+                if (!oldRoleIds.Contains(rid))
                 {
-                    existingRole.RoleID = model.RoleID;
-                    existingRole.AssignedAt = DateTime.Now;
-                    existingRole.AssignedBy = userId;
+                    var role = await _db.Set<Role>().FindAsync(rid);
+                    if (role != null && role.IsActive)
+                    {
+                        _db.UserRoles.Add(new UserRole
+                        {
+                            SystemUserID = model.UserID,
+                            RoleID = rid,
+                            AssignedAt = DateTime.Now,
+                            AssignedBy = userId
+                        });
+                    }
                 }
             }
-            else if (model.RoleID > 0)
+
+            var newPermIds = model.SelectedPermissionIds ?? new();
+            var existingPerms = await _db.UserPermissions
+                .Where(up => up.SystemUserID == model.UserID)
+                .ToListAsync();
+
+            var existingPermDict = existingPerms.ToDictionary(up => up.PermissionID);
+            var permsToRemove = existingPerms.Where(up => !newPermIds.Contains(up.PermissionID)).ToList();
+            if (permsToRemove.Any()) _db.UserPermissions.RemoveRange(permsToRemove);
+
+            foreach (var pid in newPermIds)
             {
-                var role = await _db.Set<Role>().FindAsync(model.RoleID);
-                if (role != null && role.IsActive)
+                if (existingPermDict.TryGetValue(pid, out var existing))
                 {
-                    _db.UserRoles.Add(new UserRole
+                    existing.CanView = true;
+                    existing.GrantedBy = userId;
+                    existing.GrantedAt = DateTime.Now;
+                }
+                else
+                {
+                    _db.UserPermissions.Add(new UserPermission
                     {
                         SystemUserID = model.UserID,
-                        RoleID = model.RoleID,
-                        AssignedAt = DateTime.Now,
-                        AssignedBy = userId
+                        PermissionID = pid,
+                        CanView = true,
+                        GrantedBy = userId,
+                        GrantedAt = DateTime.Now
                     });
                 }
             }
@@ -510,7 +829,7 @@ namespace UniStay.Controllers
             await _auditService.LogAsync(
                 userId, "Staff", "User.Edit",
                 "SystemUser", model.UserID,
-                null, new { model.Name, model.Email, RoleID = model.RoleID, model.IsActive });
+                null, new { model.Name, model.Email, RoleIDs = model.SelectedRoleIds, model.IsActive });
 
             TempData["Success"] = $"تم تحديث بيانات {model.Name}";
             return RedirectToAction(nameof(Users));
@@ -615,6 +934,7 @@ namespace UniStay.Controllers
 
         // حفظ الصلاحيات — AJAX/JSON body
         [HttpPost("Assign")]
+        [ValidateAntiForgeryToken]
         [RequirePermission("Permissions.Manage", "CanCreate")]
         public async Task<IActionResult> Assign([FromBody] SavePermissionsRequest request)
         {
@@ -740,6 +1060,7 @@ namespace UniStay.Controllers
 
         // إزالة دور من مدينة — AJAX
         [HttpPost("RemoveCityRole")]
+        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> RemoveCityRole(int cityStaffId, int userId)
         {
@@ -874,6 +1195,7 @@ namespace UniStay.Controllers
 
         // إزالة نطاق — AJAX
         [HttpPost("RemoveDataScope")]
+        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> RemoveDataScope(int dataScopeId, int userId)
         {
