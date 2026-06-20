@@ -55,40 +55,7 @@
                     </td>
                 </tr>
 
-                <div class="modal fade" id="editModal-@b.ID" tabindex="-1">
-                    <div class="modal-dialog">
-                        <form asp-action="EditBuilding" method="post" class="modal-content">
-                            <input type="hidden" name="ID" value="@b.ID">
-                            <div class="modal-header"><h5 class="modal-title">تعديل @b.BuildingName</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label class="form-label">اسم المبنى</label>
-                                    <input name="BuildingName" class="form-control" value="@b.BuildingName" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">النوع</label>
-                                    <select name="BuildingType" class="form-select">
-                                        <option value="Standard" selected="@(b.BuildingType == "Standard")">عادي</option>
-                                        <option value="Premium" selected="@(b.BuildingType == "Premium")">ممتاز</option>
-                                        <option value="VIP" selected="@(b.BuildingType == "VIP")">VIP</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">عدد الأدوار</label>
-                                    <input name="FloorCount" type="number" class="form-control" value="@b.FloorCount">
-                                </div>
-                                <div class="form-check">
-                                    <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@b.IsActive">
-                                    <label class="form-check-label">نشط</label>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                <button type="submit" class="btn btn-primary">حفظ</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+           
             }
             @if (!Model.Any())
             {
@@ -96,6 +63,56 @@
             }
         </tbody>
     </table>
+@foreach (var b in Model)
+{
+    <div class="modal fade" id="editModal-@b.ID" tabindex="-1">
+        <div class="modal-dialog">
+            <form asp-action="EditBuilding" method="post" class="modal-content">
+
+                <input type="hidden" name="ID" value="@b.ID">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">تعديل @b.BuildingName</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">اسم المبنى</label>
+                        <input name="BuildingName" class="form-control" value="@b.BuildingName" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">النوع</label>
+                        <select name="BuildingType" class="form-select">
+                            <option value="Standard">عادي</option>
+                            <option value="Premium">ممتاز</option>
+                            <option value="VIP">VIP</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">عدد الأدوار</label>
+                        <input name="FloorCount" type="number" class="form-control" value="@b.FloorCount">
+                    </div>
+
+                    <div class="form-check">
+                        <input name="IsActive" class="form-check-input" type="checkbox" value="true" @(b.IsActive ? "checked" : "")>
+                        <label class="form-check-label">نشط</label>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary">حفظ</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+}
 </div>
 
 <!-- Add Modal -->

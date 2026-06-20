@@ -106,6 +106,7 @@
                 <th>الهاتف</th>
                 <th>البريد</th>
                 <th>المدينة</th>
+                <th>المركز</th>
                 <th>المحافظة</th>
                 <th><a href="@Url.Action("StudentLists", new { sortBy = "Status", sortDir = dir, search = Model.Filter.Search, cityId = Model.Filter.CityID, buildingId = Model.Filter.BuildingID, gender = Model.Filter.Gender, faculty = Model.Filter.Faculty, status = Model.Filter.Status })" class="text-white text-decoration-none">الحالة @(Model.Filter.SortBy == "Status" ? (Model.Filter.SortDir == "asc" ? "▲" : "▼") : "")</a></th>
                 <th>المدينة المخصصة</th>
@@ -128,6 +129,7 @@
                     <td>@(s.Phone ?? "—")</td>
                     <td>@(s.Email ?? "—")</td>
                     <td>@(s.City ?? "—")</td>
+                    <td>@(s.Markaz ?? "—")</td>
                     <td>@(s.Governorate ?? "—")</td>
                     <td>
                         <span class="badge bg-@(s.Status switch { "Allocated" => "success", "Pending" => "secondary", "Rejected" => "danger", _ => "light" })">

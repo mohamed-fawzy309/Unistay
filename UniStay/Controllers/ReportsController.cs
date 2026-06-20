@@ -9,7 +9,7 @@ using UniStay.ViewModels.Reports;
 
 namespace UniStay.Controllers;
 
-    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
+[Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
 public class ReportsController : Controller
 {
     private readonly AssuitDbContext _db;
@@ -93,6 +93,7 @@ public class ReportsController : Controller
                 Phone = s.Phone,
                 Email = s.Email,
                 City = s.City,
+                Markaz = s.Markaz,
                 Governorate = s.Governorate,
                 Status = activeAlloc != null ? "Allocated" : "Unallocated",
                 AllocatedCity = activeAlloc?.CityRoom?.CityBuilding?.DormitoryCity?.Name,
@@ -128,10 +129,10 @@ public class ReportsController : Controller
         string? gender = null, string? faculty = null, string? status = null)
     {
         var rows = await BuildStudentListData(search, cityId, buildingId, gender, faculty, status);
-        var columns = new[] { "الاسم", "الرقم القومي", "كود الطالب", "النوع", "الكلية", "التقدير", "الهاتف", "البريد", "المحافظة", "المدينة", "الحالة", "المدينة الجامعية", "المبنى", "الغرفة", "صورة" };
+        var columns = new[] { "الاسم", "الرقم القومي", "كود الطالب", "النوع", "الكلية", "التقدير", "الهاتف", "البريد", "المحافظة", "المركز", "المدينة", "الحالة", "المدينة الجامعية", "المبنى", "الغرفة", "صورة" };
         var data = _export.ExportToExcel("قوائم الطلاب", columns, rows, r => new object?[] {
             r.FullName, r.NationalID, r.StudentCode, r.Gender == "Male" ? "ذكر" : "أنثى",
-            r.Faculty, r.GradePercentage, r.Phone, r.Email, r.Governorate, r.City,
+            r.Faculty, r.GradePercentage, r.Phone, r.Email, r.Governorate, r.Markaz, r.City,
             r.Status == "Allocated" ? "مقيم" : "غير مقيم", r.AllocatedCity, r.BuildingName, r.RoomNumber,
             r.HasPhoto == true ? "نعم" : "لا"
         });
@@ -189,7 +190,7 @@ public class ReportsController : Controller
             {
                 FullName = s.FullName, NationalID = s.NationalID, StudentCode = s.StudentCode,
                 Gender = s.Gender, Faculty = s.Faculty, GradePercentage = s.GradePercentage,
-                Phone = s.Phone, Email = s.Email, Governorate = s.Governorate, City = s.City,
+                Phone = s.Phone, Email = s.Email, Governorate = s.Governorate, Markaz = s.Markaz, City = s.City,
                 Status = activeAlloc != null ? "Allocated" : "Unallocated",
                 AllocatedCity = activeAlloc?.CityRoom?.CityBuilding?.DormitoryCity?.Name,
                 BuildingName = activeAlloc?.CityRoom?.CityBuilding?.BuildingName,
@@ -438,7 +439,9 @@ public class ReportsController : Controller
         {
             ID = s.ID, FullName = s.FullName, NationalID = s.NationalID,
             StudentCode = s.StudentCode, Gender = s.Gender, Faculty = s.Faculty,
-            Phone = s.Phone, City = s.City
+            ID = s.ID, FullName = s.FullName, NationalID = s.NationalID,
+            StudentCode = s.StudentCode, Gender = s.Gender, Faculty = s.Faculty,
+            Phone = s.Phone, City = s.City, Markaz = s.Markaz
         }).ToList();
 
         var vm = new StudentsWithoutPhotosViewModel
@@ -458,10 +461,10 @@ public class ReportsController : Controller
     public async Task<IActionResult> StudentsWithoutPhotosExportExcel(int? cityId = null, string? gender = null, string? faculty = null)
     {
         var rows = await BuildStudentsWithoutPhotosData(cityId, gender, faculty);
-        var columns = new[] { "الاسم", "الرقم القومي", "كود الطالب", "النوع", "الكلية", "الهاتف", "المدينة" };
+        var columns = new[] { "الاسم", "الرقم القومي", "كود الطالب", "النوع", "الكلية", "الهاتف", "المركز", "المدينة" };
         var data = _export.ExportToExcel("الطلاب بدون صور", columns, rows, r => new object?[] {
             r.FullName, r.NationalID, r.StudentCode, r.Gender == "Male" ? "ذكر" : "أنثى",
-            r.Faculty, r.Phone, r.City
+            r.Faculty, r.Phone, r.Markaz, r.City
         });
         return File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentsWithoutPhotos.xlsx");
     }
@@ -475,7 +478,7 @@ public class ReportsController : Controller
         return (await query.OrderBy(s => s.FullName).ToListAsync()).Select(s => new StudentNoPhotoRowViewModel
         {
             FullName = s.FullName, NationalID = s.NationalID, StudentCode = s.StudentCode,
-            Gender = s.Gender, Faculty = s.Faculty, Phone = s.Phone, City = s.City
+            Gender = s.Gender, Faculty = s.Faculty, Phone = s.Phone, City = s.City, Markaz = s.Markaz
         }).ToList();
     }
 
@@ -492,8 +495,10 @@ public class ReportsController : Controller
 
         var allRestrictions = BuildMealRestrictionList(allBlocks, allCancellations, cityId, type);
 
+        if (!string.IsNullOrEmpty(type))
+            allRestrictions = allRestrictions.Where(r => r.Type == type).ToList();
         if (!string.IsNullOrEmpty(search))
-            allRestrictions = allRestrictions.Where(r => (r.StudentName ?? "").Contains(search, StringComparison.OrdinalIgnoreCase) || (r.NationalID ?? "").Contains(search)).ToList();
+            allRestrictions = allRestrictions.Where(r => r.StudentName.Contains(search) || r.NationalID.Contains(search)).ToList();
         if (fromDate.HasValue)
             allRestrictions = allRestrictions.Where(r => r.FromDate >= fromDate.Value).ToList();
         if (toDate.HasValue)

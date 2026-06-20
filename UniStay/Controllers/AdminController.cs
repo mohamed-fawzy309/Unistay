@@ -88,7 +88,7 @@ namespace UniStay.Controllers
                 .OrderByDescending(l => l.CreatedAt)
                 .Take(5)
                 .ToListAsync();
-            var userIds = recentLogs.Where(l => l.UserType == "Staff").Select(l => l.UserID).Distinct().ToList();
+            var userIds = recentLogs.Where(l => l.UserType == "System").Select(l => l.UserID).Distinct().ToList();
             var userNames = await _db.SystemUsers.Where(u => userIds.Contains(u.ID)).ToDictionaryAsync(u => u.ID, u => u.Name);
             vm.RecentAuditLogs = recentLogs.Select(l => new AuditLogRowViewModel
             {
@@ -113,13 +113,14 @@ namespace UniStay.Controllers
         [HttpGet]
         [RequirePermission("PendingRegistrations.Manage", "CanView")]
         public async Task<IActionResult> PendingApplications(
-            string? status = null,
-            string? studentType = null,
-            int? cityId = null,
-            string? faculty = null,
-            DateOnly? from = null,
-            DateOnly? to = null,
-            int page = 1)
+    string? status = null,
+    string? studentType = null,
+    int? cityId = null,
+    string? faculty = null,
+    string? search = null,
+    DateOnly? from = null,
+    DateOnly? to = null,
+    int page = 1)
         {
             var query = _db.Applications
                 .Include(a => a.Student)
@@ -177,6 +178,7 @@ namespace UniStay.Controllers
             ViewBag.FilterFaculty = faculty;
             ViewBag.FilterFrom = from;
             ViewBag.FilterTo = to;
+            ViewBag.Search = search;
 
             return View(apps);
         }
@@ -355,13 +357,14 @@ namespace UniStay.Controllers
         [HttpGet]
         [RequirePermission("Coordination.Manage", "CanView")]
         public async Task<IActionResult> AllApplications(
-            string? status = null,
-            string? studentType = null,
-            int? cityId = null,
-            string? faculty = null,
-            DateOnly? from = null,
-            DateOnly? to = null,
-            int page = 1)
+    string? status = null,
+    string? studentType = null,
+    int? cityId = null,
+    string? faculty = null,
+    string? search = null,
+    DateOnly? from = null,
+    DateOnly? to = null,
+    int page = 1)
         {
             var query = _db.Applications
                 .Include(a => a.Student)
@@ -379,6 +382,13 @@ namespace UniStay.Controllers
 
             if (!string.IsNullOrEmpty(faculty))
                 query = query.Where(a => a.Student!.Faculty == faculty);
+            if (!string.IsNullOrEmpty(search))
+            {
+                query = query.Where(a =>
+                    a.Student!.FullName.Contains(search) ||
+                    a.Student.NationalID.Contains(search));
+            }
+
 
             if (from.HasValue)
                 query = query.Where(a => a.CreatedAt >= from.Value.ToDateTime(TimeOnly.MinValue));
@@ -430,6 +440,11 @@ namespace UniStay.Controllers
             string? search = null,
             string? faculty = null,
             string? gender = null,
+            int? cityId = null,
+            int? buildingId = null,
+            string? housingStatus = null,
+            byte? academicYear = null,
+            bool? isActive = null,
             int page = 1)
         {
             var query = _db.Students
@@ -447,6 +462,21 @@ namespace UniStay.Controllers
 
             if (!string.IsNullOrEmpty(gender))
                 query = query.Where(s => s.Gender == gender);
+
+            if (academicYear.HasValue)
+                query = query.Where(s => s.AcademicYear == academicYear.Value);
+
+            if (isActive.HasValue)
+                query = query.Where(s => s.IsActive == isActive.Value);
+
+            if (cityId.HasValue)
+                query = query.Where(s => s.Allocations.Any(a => a.CityRoom.CityBuilding.DormitoryCityID == cityId.Value));
+
+            if (buildingId.HasValue)
+                query = query.Where(s => s.Allocations.Any(a => a.CityRoom.CityBuildingID == buildingId.Value));
+
+            if (!string.IsNullOrEmpty(housingStatus))
+                query = query.Where(s => s.Allocations.Any(a => a.Status == housingStatus));
 
             var total = await query.CountAsync();
 
@@ -470,7 +500,27 @@ namespace UniStay.Controllers
                         .Where(a => a.StudentID == s.ID)
                         .OrderByDescending(a => a.CreatedAt)
                         .Select(a => a.Status)
-                        .FirstOrDefault()!
+                        .FirstOrDefault()!,
+                    CityName = s.Allocations
+                        .Where(a => a.Status == "Active")
+                        .Select(a => a.CityRoom.CityBuilding.DormitoryCity.Name)
+                        .FirstOrDefault(),
+                    BuildingName = s.Allocations
+                        .Where(a => a.Status == "Active")
+                        .Select(a => a.CityRoom.CityBuilding.BuildingName)
+                        .FirstOrDefault(),
+                    RoomNumber = s.Allocations
+                        .Where(a => a.Status == "Active")
+                        .Select(a => a.CityRoom.RoomNumber)
+                        .FirstOrDefault(),
+                    BedNumber = s.Allocations
+                        .Where(a => a.Status == "Active")
+                        .Select(a => (byte?)a.BedNumber)
+                        .FirstOrDefault(),
+                    HousingStatus = s.Allocations
+                        .OrderByDescending(a => a.AllocatedAt)
+                        .Select(a => a.Status)
+                        .FirstOrDefault()
                 })
                 .ToListAsync();
 
@@ -483,6 +533,9 @@ namespace UniStay.Controllers
 
             ViewBag.Page = page;
             ViewBag.TotalPages = (int)Math.Ceiling(total / 20.0);
+
+            ViewBag.Cities = await _db.DormitoryCities.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
+            ViewBag.Buildings = await _db.CityBuildings.Where(b => b.IsActive).OrderBy(b => b.BuildingName).ToListAsync();
 
             return View(students);
         }
@@ -540,6 +593,7 @@ namespace UniStay.Controllers
             student.GradePercentage = model.GradePercentage;
             student.Governorate = model.Governorate;
             student.City = model.City;
+            student.Markaz = model.Markaz;
             student.DistanceFromUniv = model.DistanceFromUniv;
             student.HasMedicalCondition = model.HasMedicalCondition;
             student.MedicalDescription = model.MedicalDescription;
@@ -557,6 +611,216 @@ namespace UniStay.Controllers
 
             TempData["Success"] = "تم تحديث بيانات الطالب بنجاح";
             return RedirectToAction("StudentDetails", new { id });
+        }
+
+        [HttpGet]
+        [RequirePermission("Students.Manage", "CanView")]
+        public async Task<IActionResult> StudentStatement(string? search = null, string? nationalId = null, int? id = null)
+        {
+            if (!id.HasValue && !string.IsNullOrEmpty(nationalId))
+            {
+                var found = await _db.Students.Where(s => s.NationalID == nationalId && s.IsDeleted != true).FirstOrDefaultAsync();
+                if (found != null) id = found.ID;
+            }
+
+            if (!id.HasValue && !string.IsNullOrEmpty(search))
+            {
+                var found = await _db.Students.Where(s => s.FullName.Contains(search) && s.IsDeleted != true).FirstOrDefaultAsync();
+                if (found != null) id = found.ID;
+            }
+
+            if (id.HasValue)
+            {
+                var student = await _db.Students
+                    .Include(s => s.Allocations).ThenInclude(a => a.CityRoom).ThenInclude(r => r.CityBuilding).ThenInclude(b => b.DormitoryCity)
+                    .Include(s => s.Payments)
+                    .Include(s => s.Absences)
+                    .Include(s => s.Violations)
+                    .Include(s => s.Applications)
+                    .FirstOrDefaultAsync(s => s.ID == id);
+
+                if (student == null) return NotFound();
+
+                var vm = new StudentStatementViewModel
+                {
+                    BasicInfo = new StudentBasicInfo
+                    {
+                        ID = student.ID,
+                        FullName = student.FullName,
+                        NationalID = student.NationalID,
+                        Gender = student.Gender,
+                        Faculty = student.Faculty,
+                        AcademicYear = student.AcademicYear,
+                        Phone = student.Phone,
+                        Email = student.Email,
+                        Governorate = student.Governorate,
+                        Markaz = student.Markaz,
+                        City = student.City,
+                        GradePercentage = student.GradePercentage,
+                        IsActive = student.IsActive == true
+                    },
+                    CurrentHousing = student.Allocations
+                        .Where(a => a.Status == "Active")
+                        .Select(a => new StudentHousingInfo
+                        {
+                            CityName = a.CityRoom.CityBuilding.DormitoryCity.Name,
+                            BuildingName = a.CityRoom.CityBuilding.BuildingName,
+                            RoomNumber = a.CityRoom.RoomNumber,
+                            BedNumber = a.BedNumber,
+                            StartDate = a.StartDate,
+                            EndDate = a.EndDate,
+                            Status = a.Status
+                        })
+                        .FirstOrDefault(),
+                    Payments = student.Payments
+                        .OrderByDescending(p => p.RecordedAt)
+                        .Select(p => new PaymentRow
+                        {
+                            ID = p.ID,
+                            PaymentType = p.PaymentType,
+                            Amount = p.Amount,
+                            PaidAmount = p.PaidAmount,
+                            Status = p.Status,
+                            RecordedAt = p.RecordedAt
+                        })
+                        .ToList(),
+                    Absences = student.Absences
+                        .OrderByDescending(a => a.AbsenceDate)
+                        .Select(a => new AbsenceRow
+                        {
+                            ID = a.ID,
+                            AbsenceDate = a.AbsenceDate,
+                            AbsenceType = a.AbsenceType,
+                            Status = a.Status,
+                            Reason = a.Reason
+                        })
+                        .ToList(),
+                    Violations = student.Violations
+                        .OrderByDescending(v => v.RecordedAt)
+                        .Select(v => new ViolationRow
+                        {
+                            ID = v.ID,
+                            ViolationType = v.ViolationType,
+                            Description = v.Description,
+                            Severity = v.Severity,
+                            FineAmount = v.FineAmount,
+                            Status = v.Status
+                        })
+                        .ToList(),
+                    Applications = student.Applications
+                        .OrderByDescending(a => a.CreatedAt)
+                        .Select(a => new ApplicationRow
+                        {
+                            ID = a.ID,
+                            AcademicYear = a.AcademicYear ?? "",
+                            Status = a.Status,
+                            CreatedAt = a.CreatedAt
+                        })
+                        .ToList()
+                };
+
+                return View(vm);
+            }
+
+            ViewBag.StudentsList = await _db.Students
+                .Where(s => s.IsDeleted != true)
+                .OrderBy(s => s.FullName)
+                .Select(s => new { s.ID, s.FullName, s.NationalID })
+                .ToListAsync();
+
+            return View();
+        }
+
+        [HttpGet]
+        [RequirePermission("Students.Manage", "CanView")]
+        public async Task<IActionResult> SocialCases(
+            string? caseType = null,
+            string? status = null,
+            string? priority = null,
+            string? search = null,
+            int page = 1)
+        {
+            var query = _db.SocialCases
+                .Include(sc => sc.Student)
+                .Include(sc => sc.AssignedToNavigation)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(caseType))
+                query = query.Where(sc => sc.CaseType == caseType);
+
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(sc => sc.Status == status);
+
+            if (!string.IsNullOrEmpty(priority))
+                query = query.Where(sc => sc.Priority == priority);
+
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(sc =>
+                    sc.Student.FullName.Contains(search) ||
+                    sc.Student.NationalID.Contains(search));
+
+            var total = await query.CountAsync();
+            var openCount = await query.CountAsync(sc => sc.Status == "Open");
+            var resolvedCount = await query.CountAsync(sc => sc.Status == "Resolved");
+            var highCount = await query.CountAsync(sc => sc.Priority == "High");
+
+            var cases = await query
+                .OrderByDescending(sc => sc.CreatedAt)
+                .Skip((page - 1) * 30)
+                .Take(30)
+                .Select(sc => new AdminSocialCaseRow
+                {
+                    ID = sc.ID,
+                    StudentID = sc.StudentID,
+                    StudentName = sc.Student.FullName,
+                    NationalID = sc.Student.NationalID,
+                    Faculty = sc.Student.Faculty,
+                    CaseType = sc.CaseType,
+                    Description = sc.Description,
+                    Status = sc.Status,
+                    Priority = sc.Priority,
+                    AssignedTo = sc.AssignedToNavigation != null ? sc.AssignedToNavigation.Name : "",
+                    CreatedAt = sc.CreatedAt,
+                })
+                .ToListAsync();
+
+            var vm = new AdminSocialCaseViewModel
+            {
+                Cases = cases,
+                TotalCases = total,
+                OpenCases = openCount,
+                ResolvedCases = resolvedCount,
+                HighPriority = highCount,
+                Page = page,
+                TotalPages = (int)Math.Ceiling(total / 30.0),
+                Search = search,
+                CaseType = caseType,
+                Status = status,
+                Priority = priority
+            };
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Students.Manage", "CanEdit")]
+        public async Task<IActionResult> UpdateSocialCaseStatus(int id, string status, string? notes = null)
+        {
+            var socialCase = await _db.SocialCases.FindAsync(id);
+            if (socialCase == null) return Json(new { success = false, message = "الحالة غير موجودة" });
+
+            var oldStatus = socialCase.Status;
+            socialCase.Status = status;
+            if (status == "Resolved" || status == "Closed")
+                socialCase.ClosedAt = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "SocialCase.StatusUpdate",
+                "SocialCase", id, new { Status = oldStatus }, new { Status = status });
+
+            return Json(new { success = true, message = "تم تحديث الحالة بنجاح" });
         }
 
         // ──────────────────────────────────────────────────────────────────────────────
@@ -1345,7 +1609,8 @@ namespace UniStay.Controllers
                 .Include(b => b.CityRooms)
                 .FirstOrDefaultAsync(b => b.ID == id && !b.IsDeleted);
 
-            if (building == null) return NotFound();
+            if (building == null)
+                return Content("Building Not Found");
 
             var layout = new BuildingLayoutViewModel
             {

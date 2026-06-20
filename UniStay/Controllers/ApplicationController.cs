@@ -84,6 +84,7 @@ namespace UniStay.Controllers
                     AcademicYear = (byte?)model.AcademicYear,
                     GradePercentage = model.GradePercentage,
                     Governorate = model.Governorate,
+                    Markaz = model.Markaz,
                     City = model.City,
                     Address = model.Address,
                     DistanceFromUniv = model.DistanceFromUniv,
@@ -256,15 +257,15 @@ namespace UniStay.Controllers
         {
             var distances = new Dictionary<string, decimal>
             {
-                { "Assuit", 0m },        { "Cairo", 375m },       { "Giza", 350m },
-                { "Alexandria", 580m },   { "Qena", 190m },       { "Luxor", 230m },
-                { "Aswan", 320m },        { "Sohag", 100m },      { "RedSea", 450m },
-                { "NewValley", 700m },    { "Matrouh", 800m },    { "Fayoum", 250m },
-                { "Minya", 150m },        { "BeniSuef", 200m },   { "Sharqia", 500m },
-                { "Dakahlia", 550m },     { "Damietta", 600m },   { "KafrElSheikh", 520m },
-                { "Gharbia", 480m },      { "Monufia", 460m },    { "Beheira", 500m },
-                { "Ismailia", 420m },     { "PortSaid", 560m },   { "Suez", 400m },
-                { "NorthSinai", 550m },   { "SouthSinai", 600m }
+                { "أسيوط", 0m },          { "القاهرة", 375m },      { "الجيزة", 350m },
+                { "الإسكندرية", 580m },    { "قنا", 190m },          { "الأقصر", 230m },
+                { "أسوان", 320m },         { "سوهاج", 100m },        { "البحر الأحمر", 450m },
+                { "الوادي الجديد", 700m }, { "مطروح", 800m },        { "الفيوم", 250m },
+                { "المنيا", 150m },        { "بني سويف", 200m },     { "الشرقية", 500m },
+                { "الدقهلية", 550m },      { "دمياط", 600m },        { "كفر الشيخ", 520m },
+                { "الغربية", 480m },       { "المنوفية", 460m },     { "البحيرة", 500m },
+                { "الإسماعيلية", 420m },   { "بورسعيد", 560m },      { "السويس", 400m },
+                { "شمال سيناء", 550m },    { "جنوب سيناء", 600m }
             };
             return distances.TryGetValue(governorate, out var dist) ? dist : null;
         }

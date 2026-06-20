@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UniStay.Data;
 
@@ -11,9 +12,11 @@ using UniStay.Data;
 namespace UniStay.Migrations
 {
     [DbContext(typeof(AssuitDbContext))]
-    partial class AssuitDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619163155_AddApplicationIsActive")]
+    partial class AddApplicationIsActive
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -313,6 +316,11 @@ namespace UniStay.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<DateTime?>("LastUpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -528,7 +536,7 @@ namespace UniStay.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int?>("UserID")
+                    b.Property<int>("UserID")
                         .HasColumnType("int");
 
                     b.Property<string>("UserType")
@@ -1022,13 +1030,13 @@ namespace UniStay.Migrations
                     b.HasKey("ID")
                         .HasName("PK__Coordina__3214EC2716F99F24");
 
+                    b.HasIndex("ApplicationID");
+
                     b.HasIndex("DormitoryCityID");
 
                     b.HasIndex("ProcessedBy");
 
                     b.HasIndex("StudentID");
-
-                    b.HasIndex(new[] { "ApplicationID" }, "IX_CoordinationResult_ApplicationID");
 
                     b.ToTable("CoordinationResult", (string)null);
                 });
@@ -1188,11 +1196,11 @@ namespace UniStay.Migrations
                     b.HasKey("ID")
                         .HasName("PK__Document__3214EC273EA5E377");
 
+                    b.HasIndex("ApplicationID");
+
+                    b.HasIndex("StudentID");
+
                     b.HasIndex("VerifiedBy");
-
-                    b.HasIndex(new[] { "ApplicationID" }, "IX_Document_ApplicationID");
-
-                    b.HasIndex(new[] { "StudentID" }, "IX_Document_StudentID");
 
                     b.ToTable("Document", (string)null);
                 });
@@ -1406,6 +1414,192 @@ namespace UniStay.Migrations
                     b.ToTable("EvictionNotice", (string)null);
                 });
 
+            modelBuilder.Entity("UniStay.Models.Faculty", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("ID")
+                        .HasName("PK__Faculty__3214EC27");
+
+                    b.ToTable("Faculty", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            ID = 1,
+                            IsActive = true,
+                            Name = "كلية الطب"
+                        },
+                        new
+                        {
+                            ID = 2,
+                            IsActive = true,
+                            Name = "كلية طب الأسنان"
+                        },
+                        new
+                        {
+                            ID = 3,
+                            IsActive = true,
+                            Name = "كلية الصيدلة"
+                        },
+                        new
+                        {
+                            ID = 4,
+                            IsActive = true,
+                            Name = "كلية التمريض"
+                        },
+                        new
+                        {
+                            ID = 5,
+                            IsActive = true,
+                            Name = "كلية العلوم"
+                        },
+                        new
+                        {
+                            ID = 6,
+                            IsActive = true,
+                            Name = "كلية الهندسة"
+                        },
+                        new
+                        {
+                            ID = 7,
+                            IsActive = true,
+                            Name = "كلية الزراعة"
+                        },
+                        new
+                        {
+                            ID = 8,
+                            IsActive = true,
+                            Name = "كلية الطب البيطري"
+                        },
+                        new
+                        {
+                            ID = 9,
+                            IsActive = true,
+                            Name = "كلية التجارة"
+                        },
+                        new
+                        {
+                            ID = 10,
+                            IsActive = true,
+                            Name = "كلية التربية"
+                        },
+                        new
+                        {
+                            ID = 11,
+                            IsActive = true,
+                            Name = "كلية الحقوق"
+                        },
+                        new
+                        {
+                            ID = 12,
+                            IsActive = true,
+                            Name = "كلية التربية الرياضية"
+                        },
+                        new
+                        {
+                            ID = 13,
+                            IsActive = true,
+                            Name = "كلية الخدمة الاجتماعية"
+                        },
+                        new
+                        {
+                            ID = 14,
+                            IsActive = true,
+                            Name = "كلية الآداب"
+                        },
+                        new
+                        {
+                            ID = 15,
+                            IsActive = true,
+                            Name = "كلية التربية النوعية"
+                        },
+                        new
+                        {
+                            ID = 16,
+                            IsActive = true,
+                            Name = "كلية الحاسبات والمعلومات"
+                        },
+                        new
+                        {
+                            ID = 17,
+                            IsActive = true,
+                            Name = "كلية تكنولوجيا صناعة السكر والصناعات التكاملية"
+                        },
+                        new
+                        {
+                            ID = 18,
+                            IsActive = true,
+                            Name = "كلية الفنون الجميلة"
+                        },
+                        new
+                        {
+                            ID = 19,
+                            IsActive = true,
+                            Name = "كلية التربية للطفولة المبكرة"
+                        },
+                        new
+                        {
+                            ID = 20,
+                            IsActive = true,
+                            Name = "كلية التربية (الوادي الجديد)"
+                        },
+                        new
+                        {
+                            ID = 21,
+                            IsActive = true,
+                            Name = "معهد جنوب مصر للأورام"
+                        },
+                        new
+                        {
+                            ID = 22,
+                            IsActive = true,
+                            Name = "المعهد الفني للتمريض"
+                        },
+                        new
+                        {
+                            ID = 23,
+                            IsActive = true,
+                            Name = "معهد بحوث ودراسات البيولوجيا الجزيئية"
+                        },
+                        new
+                        {
+                            ID = 24,
+                            IsActive = true,
+                            Name = "معهد بحوث تطوير وابتكار الدواء"
+                        },
+                        new
+                        {
+                            ID = 25,
+                            IsActive = true,
+                            Name = "معهد علوم المواد والنانوتكنولوجي"
+                        },
+                        new
+                        {
+                            ID = 26,
+                            IsActive = true,
+                            Name = "معهد بحوث تكنولوجيا صناعة السكر"
+                        });
+                });
+
             modelBuilder.Entity("UniStay.Models.FacultyQuotum", b =>
                 {
                     b.Property<int>("ID")
@@ -1593,7 +1787,7 @@ namespace UniStay.Migrations
                     b.HasKey("ID")
                         .HasName("PK__Guardian__3214EC27D8FB476A");
 
-                    b.HasIndex(new[] { "StudentID" }, "IX_Guardian_StudentID");
+                    b.HasIndex("StudentID");
 
                     b.ToTable("Guardian", (string)null);
                 });
@@ -1775,7 +1969,7 @@ namespace UniStay.Migrations
 
                     b.HasIndex("PrintedBy");
 
-                    b.HasIndex(new[] { "StudentID" }, "IX_IDCard_StudentID");
+                    b.HasIndex("StudentID");
 
                     b.HasIndex(new[] { "CardNumber" }, "UQ_IDCard_CardNumber")
                         .IsUnique();
@@ -1977,11 +2171,6 @@ namespace UniStay.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
-
-                    b.Property<string>("MealType")
-                        .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("Reason")
                         .HasMaxLength(500)
@@ -2489,7 +2678,7 @@ namespace UniStay.Migrations
 
                     b.HasIndex("AssignedTo");
 
-                    b.HasIndex(new[] { "StudentID" }, "IX_SocialCase_StudentID");
+                    b.HasIndex("StudentID");
 
                     b.ToTable("SocialCase", (string)null);
                 });
@@ -2546,11 +2735,11 @@ namespace UniStay.Migrations
                     b.HasKey("ID")
                         .HasName("PK__SpecialC__3214EC2755A318C5");
 
+                    b.HasIndex("ApplicationID");
+
                     b.HasIndex("ReviewedBy");
 
-                    b.HasIndex(new[] { "ApplicationID" }, "IX_SpecialCase_ApplicationID");
-
-                    b.HasIndex(new[] { "StudentID" }, "IX_SpecialCase_StudentID");
+                    b.HasIndex("StudentID");
 
                     b.ToTable("SpecialCase", (string)null);
                 });
@@ -2719,8 +2908,6 @@ namespace UniStay.Migrations
                         .HasName("PK__Student__3214EC2710B21BF6");
 
                     b.HasIndex("LastUpdatedBy");
-
-                    b.HasIndex(new[] { "Email" }, "IX_Student_Email");
 
                     b.HasIndex(new[] { "Faculty" }, "IX_Student_Faculty");
 
@@ -2977,7 +3164,7 @@ namespace UniStay.Migrations
 
                     b.HasIndex("ResolvedBy");
 
-                    b.HasIndex(new[] { "StudentID" }, "IX_StudentValidationLog_StudentID");
+                    b.HasIndex("StudentID");
 
                     b.ToTable("StudentValidationLog", (string)null);
                 });
@@ -3214,27 +3401,6 @@ namespace UniStay.Migrations
                     b.ToTable("UniversityPhoto", (string)null);
                 });
 
-            modelBuilder.Entity("UniStay.Models.UserDataScope", b =>
-                {
-                    b.Property<int>("SystemUserID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("DataScopeID")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DataScopeID1")
-                        .HasColumnType("int");
-
-                    b.HasKey("SystemUserID", "DataScopeID")
-                        .HasName("PK__UserData__FDB49D8B7483810F");
-
-                    b.HasIndex("DataScopeID");
-
-                    b.HasIndex("DataScopeID1");
-
-                    b.ToTable("UserDataScope", (string)null);
-                });
-
             modelBuilder.Entity("UniStay.Models.UserPermission", b =>
                 {
                     b.Property<int>("ID")
@@ -3447,9 +3613,30 @@ namespace UniStay.Migrations
 
                     b.HasIndex("ResolvedBy");
 
-                    b.HasIndex(new[] { "StudentID" }, "IX_Violation_StudentID");
+                    b.HasIndex("StudentID");
 
                     b.ToTable("Violation", (string)null);
+                });
+
+            modelBuilder.Entity("UserDataScope", b =>
+                {
+                    b.Property<int>("SystemUserID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DataScopeID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DataScopeID1")
+                        .HasColumnType("int");
+
+                    b.HasKey("SystemUserID", "DataScopeID")
+                        .HasName("PK__UserData__FDB49D8B7483810F");
+
+                    b.HasIndex("DataScopeID");
+
+                    b.HasIndex("DataScopeID1");
+
+                    b.ToTable("UserDataScope", (string)null);
                 });
 
             modelBuilder.Entity("UniStay.Models.Absence", b =>
@@ -4377,29 +4564,6 @@ namespace UniStay.Migrations
                     b.Navigation("DormitoryCity");
                 });
 
-            modelBuilder.Entity("UniStay.Models.UserDataScope", b =>
-                {
-                    b.HasOne("UniStay.Models.DataScope", "DataScope")
-                        .WithMany()
-                        .HasForeignKey("DataScopeID")
-                        .IsRequired()
-                        .HasConstraintName("FK_UserDataScope_DataScope");
-
-                    b.HasOne("UniStay.Models.DataScope", null)
-                        .WithMany("UserDataScopes")
-                        .HasForeignKey("DataScopeID1");
-
-                    b.HasOne("UniStay.Models.SystemUser", "SystemUser")
-                        .WithMany()
-                        .HasForeignKey("SystemUserID")
-                        .IsRequired()
-                        .HasConstraintName("FK_UserDataScope_SystemUser");
-
-                    b.Navigation("DataScope");
-
-                    b.Navigation("SystemUser");
-                });
-
             modelBuilder.Entity("UniStay.Models.UserPermission", b =>
                 {
                     b.HasOne("UniStay.Models.SystemUser", "GrantedByNavigation")
@@ -4508,6 +4672,29 @@ namespace UniStay.Migrations
                     b.Navigation("ResolvedByNavigation");
 
                     b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("UserDataScope", b =>
+                {
+                    b.HasOne("UniStay.Models.DataScope", "DataScope")
+                        .WithMany()
+                        .HasForeignKey("DataScopeID")
+                        .IsRequired()
+                        .HasConstraintName("FK_UserDataScope_DataScope");
+
+                    b.HasOne("UniStay.Models.DataScope", null)
+                        .WithMany("UserDataScopes")
+                        .HasForeignKey("DataScopeID1");
+
+                    b.HasOne("UniStay.Models.SystemUser", "SystemUser")
+                        .WithMany()
+                        .HasForeignKey("SystemUserID")
+                        .IsRequired()
+                        .HasConstraintName("FK_UserDataScope_SystemUser");
+
+                    b.Navigation("DataScope");
+
+                    b.Navigation("SystemUser");
                 });
 
             modelBuilder.Entity("UniStay.Models.Allocation", b =>

@@ -55,7 +55,7 @@
             </div>
             <div class="col-md-6">
                 <small style="color:var(--muted);font-size:.78rem">العنوان</small>
-                <div style="font-weight:700;font-size:.95rem">@Model.Governorate - @Model.City - @Model.Address</div>
+                <div style="font-weight:700;font-size:.95rem">@Model.Governorate - @(Model.Markaz ?? "") - @Model.City - @Model.Address</div>
             </div>
         </div>
     </div>

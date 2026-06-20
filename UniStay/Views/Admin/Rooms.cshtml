@@ -43,81 +43,184 @@
                 <th></th>
             </tr>
         </thead>
-        <tbody>
-            @foreach (var r in Model)
-            {
-                <tr>
-                    <td>@r.ID</td>
-                    <td>@r.RoomNumber</td>
-                    <td>@r.BuildingName</td>
-                    <td>@r.CityName</td>
-                    <td>@r.FloorNumber</td>
-                    <td>@r.RoomType</td>
-                    <td>@r.BedsCount</td>
-                    <td>@r.CurrentOccupancy</td>
-                    <td>@(r.BedsCount - r.CurrentOccupancy)</td>
-                    <td>@(r.HasAC ? "نعم" : "لا")</td>
-                    <td><span class="badge bg-@(r.IsActive ? "success" : "danger")">@(r.IsActive ? "نشطة" : "غير نشطة")</span></td>
-                    <td>
-                        <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-@r.ID">تعديل</button>
-                    </td>
-                </tr>
+      <tbody>
+@foreach (var r in Model)
+{
+    <tr>
+        <td>@r.ID</td>
+        <td>@r.RoomNumber</td>
+        <td>@r.BuildingName</td>
+        <td>@r.CityName</td>
+        <td>@r.FloorNumber</td>
+        <td>@r.RoomType</td>
+        <td>@r.BedsCount</td>
+        <td>@r.CurrentOccupancy</td>
+        <td>@(r.BedsCount - r.CurrentOccupancy)</td>
+        <td>@(r.HasAC ? "نعم" : "لا")</td>
+        <td>
+            <span class="badge bg-@(r.IsActive ? "success" : "danger")">
+                @(r.IsActive ? "نشطة" : "غير نشطة")
+            </span>
+        </td>
+        <td>
+            <button class="btn btn-outline-warning btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#editModal-@r.ID">
+                تعديل
+            </button>
+        </td>
+    </tr>
+}
 
-                <div class="modal fade" id="editModal-@r.ID" tabindex="-1">
-                    <div class="modal-dialog">
-                        <form asp-action="EditRoom" method="post" class="modal-content">
-                            <input type="hidden" name="ID" value="@r.ID">
-                            <div class="modal-header"><h5 class="modal-title">تعديل الغرفة @r.RoomNumber</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                            <div class="modal-body">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">رقم الغرفة</label>
-                                        <input name="RoomNumber" class="form-control" value="@r.RoomNumber" required>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">الدور</label>
-                                        <input name="FloorNumber" type="number" class="form-control" value="@r.FloorNumber">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">عدد الأسرة</label>
-                                        <input name="BedsCount" type="number" class="form-control" value="@r.BedsCount">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">النوع</label>
-                                        <select name="RoomType" class="form-select">
-                                            <option value="Quad" selected="@(r.RoomType == "Quad")">رباعي</option>
-                                            <option value="Triple" selected="@(r.RoomType == "Triple")">ثلاثي</option>
-                                            <option value="Double" selected="@(r.RoomType == "Double")">ثنائي</option>
-                                            <option value="Single" selected="@(r.RoomType == "Single")">فردي</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="form-check form-check-inline">
-                                            <input name="HasAC" class="form-check-input" type="checkbox" value="true" checked="@r.HasAC">
-                                            <label class="form-check-label">تكييف</label>
-                                        </div>
-                                        <div class="form-check form-check-inline">
-                                            <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@r.IsActive">
-                                            <label class="form-check-label">نشطة</label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                <button type="submit" class="btn btn-primary">حفظ</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            }
-            @if (!Model.Any())
-            {
-                <tr><td colspan="12" class="text-center text-muted py-4">لا توجد غرف</td></tr>
-            }
-        </tbody>
-    </table>
+@if (!Model.Any())
+{
+    <tr>
+        <td colspan="12" class="text-center text-muted py-4">
+            لا توجد غرف
+        </td>
+    </tr>
+}
+ </tbody>
+</table>
 </div>
+
+@foreach (var r in Model)
+{
+    <div class="modal fade" id="editModal-@r.ID" tabindex="-1">
+        <div class="modal-dialog">
+            <form asp-action="EditRoom" method="post" class="modal-content">
+
+                @Html.AntiForgeryToken()
+
+                <input type="hidden" name="ID" value="@r.ID" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        تعديل الغرفة @r.RoomNumber
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal">
+                    </button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="mb-3">
+                        <label class="form-label">رقم الغرفة</label>
+                        <input name="RoomNumber"
+                               class="form-control"
+                               value="@r.RoomNumber"
+                               required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">الدور</label>
+                        <input name="FloorNumber"
+                               type="number"
+                               class="form-control"
+                               value="@r.FloorNumber" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">عدد الأسرة</label>
+                        <input name="BedsCount"
+                               type="number"
+                               class="form-control"
+                               value="@r.BedsCount" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">النوع</label>
+
+                        <select name="RoomType" class="form-select">
+                            @if (r.RoomType == "Quad")
+{
+    <option value="Quad" selected>رباعي</option>
+}
+else
+{
+    <option value="Quad">رباعي</option>
+}
+
+@if (r.RoomType == "Triple")
+{
+    <option value="Triple" selected>ثلاثي</option>
+}
+else
+{
+    <option value="Triple">ثلاثي</option>
+}
+
+@if (r.RoomType == "Double")
+{
+    <option value="Double" selected>ثنائي</option>
+}
+else
+{
+    <option value="Double">ثنائي</option>
+}
+
+@if (r.RoomType == "Single")
+{
+    <option value="Single" selected>فردي</option>
+}
+else
+{
+    <option value="Single">فردي</option>
+}
+                        </select>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               name="HasAC"
+                               value="true"
+                               @(r.HasAC ? "checked" : "") />
+
+                        <input type="hidden" name="HasAC" value="false" />
+
+                        <label class="form-check-label">
+                            تكييف
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               name="IsActive"
+                               value="true"
+                               @(r.IsActive ? "checked" : "") />
+
+                        <input type="hidden" name="IsActive" value="false" />
+
+                        <label class="form-check-label">
+                            نشطة
+                        </label>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        إلغاء
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        حفظ
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+}
+
 
 <!-- Add Modal -->
 <div class="modal fade" id="addModal" tabindex="-1">

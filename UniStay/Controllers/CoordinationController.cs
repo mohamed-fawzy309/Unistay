@@ -313,11 +313,18 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
-        [RequirePermission("Coordination.View", "CanView")]
+        [RequirePermission("Students.Manage", "CanView")]
         public async Task<IActionResult> SpecialCases(int? cityId, int page = 1)
         {
             ViewBag.Cities = await _db.DormitoryCities
                 .Where(c => c.IsActive == true && c.IsDeleted != true)
+                .ToListAsync();
+
+            ViewBag.Students = await _db.Students
+                .Where(s => s.IsDeleted != true)
+                .Where(s => s.HasDisability == true || s.IsOrphan == true || s.IsLowIncome == true || s.HasMedicalCondition == true || s.IsForeign == true)
+                .OrderBy(s => s.FullName)
+                .Select(s => new { s.ID, s.FullName, s.NationalID, s.HasDisability, s.IsOrphan, s.IsLowIncome, s.HasMedicalCondition, s.IsForeign })
                 .ToListAsync();
 
             if (cityId == null)
@@ -368,7 +375,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [RequirePermission("Coordination.Manage", "CanEdit")]
+        [RequirePermission("Students.Manage", "CanEdit")]
         public async Task<IActionResult> AddSpecialCase(AddSpecialCaseViewModel model)
         {
             if (!ModelState.IsValid) return Json(new { success = false, message = "بيانات غير صالحة" });
@@ -394,7 +401,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [RequirePermission("Coordination.Manage", "CanEdit")]
+        [RequirePermission("Students.Manage", "CanEdit")]
         public async Task<IActionResult> ReviewSpecialCase(ReviewSpecialCaseViewModel model)
         {
             var sc = await _db.SpecialCases.FindAsync(model.ID);

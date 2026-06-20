@@ -65,9 +65,12 @@ namespace UniStay.Tests.Controllers
                 ID = _studentId,
                 FullName = "Test Student",
                 NationalID = "12345678901234",
-                PasswordHash = "hashed",
                 Phone = "123456789",
-                Email = "test@student.com"
+                Email = "test@student.com",
+                Gender = "Male",
+                Nationality = "مصري",
+                Religion = "مسلم",
+                BirthDate = new DateOnly(2000, 1, 1)
             };
             var application = new Application
             {
@@ -75,6 +78,9 @@ namespace UniStay.Tests.Controllers
                 StudentID = _studentId,
                 Status = "Accepted",
                 AcademicYear = "2025/2026",
+                StudentType = "New",
+                HousingType = "Regular",
+                ServerVerificationStatus = "Verified",
                 CreatedAt = DateTime.UtcNow
             };
             _context.Students.Add(student);
@@ -113,9 +119,9 @@ namespace UniStay.Tests.Controllers
             {
                 ID = 1,
                 AcademicYear = DateTime.Now.Year.ToString(),
-                NewStudentsOpenDate = DateTime.Now.AddDays(-1),
-                NewStudentsCloseDate = DateTime.Now.AddDays(10),
-                DormitoryCity = new DormitoryCity { ID = 1, Name = "City 1", IsActive = true, Location = "Loc" }
+                NewStudentsOpenDate = DateOnly.FromDateTime(DateTime.Now.AddDays(-1)),
+                NewStudentsCloseDate = DateOnly.FromDateTime(DateTime.Now.AddDays(10)),
+                DormitoryCity = new DormitoryCity { ID = 1, Name = "City 1", IsActive = true, Location = "Loc", CityType = "University" }
             };
             _context.ApplicationSchedules.Add(schedule);
             await _context.SaveChangesAsync();
@@ -133,10 +139,10 @@ namespace UniStay.Tests.Controllers
         public async Task ReserveRoom_Post_ValidData_ReservesRoomAndCreatesPayment()
         {
             // Arrange
-            var city = new DormitoryCity { ID = 1, Name = "City", IsActive = true, Location = "Loc" };
-            var building = new CityBuilding { ID = 1, DormitoryCityID = 1, BuildingName = "B1", IsActive = true };
+            var city = new DormitoryCity { ID = 1, Name = "City", IsActive = true, Location = "Loc", CityType = "University" };
+            var building = new CityBuilding { ID = 1, DormitoryCityID = 1, BuildingName = "B1", BuildingType = "Dormitory", IsActive = true };
             var room = new CityRoom { ID = 1, CityBuildingID = 1, RoomNumber = "101", BedsCount = 2, CurrentOccupancy = 0, IsActive = true };
-            var application = new Application { ID = 1, StudentID = _studentId, Status = "Accepted", AcademicYear = "2025", DormitoryCityID = 1 };
+            var application = new Application { ID = 1, StudentID = _studentId, Status = "Accepted", AcademicYear = "2025", DormitoryCityID = 1, StudentType = "New", HousingType = "Regular", ServerVerificationStatus = "Verified" };
             
             _context.DormitoryCities.Add(city);
             _context.CityBuildings.Add(building);
@@ -149,10 +155,11 @@ namespace UniStay.Tests.Controllers
 
             // Assert
             var jsonResult = Assert.IsType<JsonResult>(result);
-            var jsonResponse = jsonResult.Value as dynamic;
-            
-            Assert.True((bool)jsonResponse.success);
-            Assert.Equal("تم حجز الغرفة. لديك 24 ساعة للدفع.", (string)jsonResponse.message);
+            Assert.NotNull(jsonResult.Value);
+            var jsonResponse = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
+                System.Text.Json.JsonSerializer.Serialize(jsonResult.Value));
+            Assert.True(jsonResponse.GetProperty("success").GetBoolean());
+            Assert.Equal("تم حجز الغرفة. لديك 24 ساعة للدفع.", jsonResponse.GetProperty("message").GetString());
             
             var allocation = await _context.Allocations.FirstOrDefaultAsync(a => a.StudentID == _studentId);
             Assert.NotNull(allocation);

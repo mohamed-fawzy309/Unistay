@@ -17,24 +17,34 @@
             <form asp-action="ManualAllocation" method="post">
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label">الطالب</label>
-                        <select asp-for="StudentID" class="form-select" required>
-                            <option value="">-- اختر الطالب --</option>
-                            @foreach (var s in (IEnumerable<UniStay.ViewModels.Allocation.StudentLookupViewModel>)ViewBag.Students)
-                            {
-                                <option value="@s.ID">@s.FullName - @s.NationalID</option>
-                            }
-                        </select>
-                        <span asp-validation-for="StudentID" class="text-danger"></span>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">العام الدراسي</label>
-                        <input asp-for="AcademicYear" class="form-control" required />
-                        <span asp-validation-for="AcademicYear" class="text-danger"></span>
-                    </div>
-                </div>
+               <div class="col-md-6">
+
+    <label class="form-label">بحث الطالب</label>
+
+    <input type="text"
+           id="studentSearch"
+           class="form-control mb-2"
+           placeholder="بحث بالاسم أو الرقم القومي..." />
+
+    <select asp-for="StudentID"
+            id="studentSelect"
+            class="form-select"
+            required>
+
+        <option value="">-- اختر الطالب --</option>
+
+        @foreach (var s in (IEnumerable<UniStay.ViewModels.Allocation.StudentLookupViewModel>)ViewBag.Students)
+        {
+            <option value="@s.ID">
+                @s.FullName - @s.NationalID
+            </option>
+        }
+
+    </select>
+
+    <span asp-validation-for="StudentID" class="text-danger"></span>
+
+</div>
 
                 <div class="row mb-3">
                     <div class="col-md-4">
@@ -88,4 +98,29 @@
             });
         }
     </script>
+<script>
+
+document.getElementById('studentSearch')
+.addEventListener('keyup', function () {
+
+    let filter = this.value.toLowerCase();
+
+    let select = document.getElementById('studentSelect');
+
+    let options = select.options;
+
+    for (let i = 0; i < options.length; i++) {
+
+        let txt = options[i].text.toLowerCase();
+
+        if (txt.includes(filter)) {
+            options[i].style.display = '';
+        }
+        else {
+            options[i].style.display = 'none';
+        }
+    }
+});
+
+</script>
 }

@@ -3,24 +3,6 @@
     ViewData["Title"] = "الأدوار";
 }
 
-@section Scripts {
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script>
-$(function(){
-    $(document).on('click','.btn-delete-role',function(){
-        if(!confirm('حذف هذا الدور؟ لا يمكن التراجع.')) return;
-        const id=$(this).data('id');
-        $.post('/Admin/DeleteRole',{id,__RequestVerificationToken:$('[name=__RequestVerificationToken]').val()})
-         .done(function(r){
-            if(r.success) location.reload();
-            else alert(r.message);
-         });
-    });
-});
-</script>
-}
-
-@Html.AntiForgeryToken()
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="page-title">الأدوار</h2>
@@ -72,6 +54,7 @@ $(function(){
                             <button class="btn btn-outline-danger btn-sm btn-delete-role" data-id="@item.ID" title="حذف">
                                 <i class="bi bi-trash"></i>
                             </button>
+                        </td>
                         </td>
                     </tr>
 

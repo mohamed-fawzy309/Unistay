@@ -91,6 +91,16 @@
                             <label class="form-label">الطالب</label>
                             <select asp-for="NewSpecialCase.StudentID" class="form-select" required>
                                 <option value="">-- اختر الطالب --</option>
+                                @foreach (var st in (IEnumerable<dynamic>)ViewBag.Students)
+                                {
+                                    var tags = new List<string>();
+                                    if (st.HasDisability == true) { tags.Add("إعاقة"); }
+                                    if (st.IsOrphan == true) { tags.Add("يتيم"); }
+                                    if (st.IsLowIncome == true) { tags.Add("دخل محدود"); }
+                                    if (st.HasMedicalCondition == true) { tags.Add("حالة مرضية"); }
+                                    if (st.IsForeign == true) { tags.Add("وافد"); }
+                                    <option value="@st.ID">@st.FullName — @st.NationalID (@string.Join("، ", tags))</option>
+                                }
                             </select>
                         </div>
                         <div class="mb-3">

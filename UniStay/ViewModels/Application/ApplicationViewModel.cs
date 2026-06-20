@@ -43,9 +43,14 @@ namespace UniStay.ViewModels.Application
         [Display(Name = "المحافظة")]
         public string Governorate { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "المدينة مطلوبة")]
+        [Required(ErrorMessage = "المركز مطلوب")]
         [StringLength(100)]
-        [Display(Name = "المدينة / المركز")]
+        [Display(Name = "المركز")]
+        public string Markaz { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "القرية / المدينة مطلوبة")]
+        [StringLength(100)]
+        [Display(Name = "القرية / المدينة")]
         public string City { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "العنوان مطلوب")]

@@ -41,6 +41,11 @@ namespace UniStay.ViewModels.Admin
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? LatestApplicationStatus { get; set; }
+        public string? CityName { get; set; }
+        public string? BuildingName { get; set; }
+        public string? RoomNumber { get; set; }
+        public byte? BedNumber { get; set; }
+        public string? HousingStatus { get; set; }
     }
 
     public class EditStudentViewModel
@@ -74,6 +79,9 @@ namespace UniStay.ViewModels.Admin
         [StringLength(100)]
         public string? City { get; set; }
 
+        [StringLength(100)]
+        public string? Markaz { get; set; }
+
         [Range(0, 9999)]
         public decimal? DistanceFromUniv { get; set; }
 
@@ -84,6 +92,119 @@ namespace UniStay.ViewModels.Admin
 
         [StringLength(500)]
         public string? MedicalDescription { get; set; }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 2b. Student Statement (بيان حالة)
+    // ══════════════════════════════════════════════════════════════
+
+    public class StudentStatementViewModel
+    {
+        public StudentBasicInfo BasicInfo { get; set; } = null!;
+        public StudentHousingInfo? CurrentHousing { get; set; }
+        public List<PaymentRow> Payments { get; set; } = new();
+        public List<AbsenceRow> Absences { get; set; } = new();
+        public List<ViolationRow> Violations { get; set; } = new();
+        public List<ApplicationRow> Applications { get; set; } = new();
+    }
+
+    public class StudentBasicInfo
+    {
+        public int ID { get; set; }
+        public string FullName { get; set; } = null!;
+        public string NationalID { get; set; } = null!;
+        public string Gender { get; set; } = null!;
+        public string? Faculty { get; set; }
+        public byte? AcademicYear { get; set; }
+        public string? Phone { get; set; }
+        public string? Email { get; set; }
+        public string? Governorate { get; set; }
+        public string? Markaz { get; set; }
+        public string? City { get; set; }
+        public decimal? GradePercentage { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    public class StudentHousingInfo
+    {
+        public string CityName { get; set; } = null!;
+        public string BuildingName { get; set; } = null!;
+        public string RoomNumber { get; set; } = null!;
+        public byte BedNumber { get; set; }
+        public DateOnly? StartDate { get; set; }
+        public DateOnly? EndDate { get; set; }
+        public string Status { get; set; } = null!;
+    }
+
+    public class PaymentRow
+    {
+        public int ID { get; set; }
+        public string PaymentType { get; set; } = null!;
+        public decimal Amount { get; set; }
+        public decimal PaidAmount { get; set; }
+        public string Status { get; set; } = null!;
+        public DateTime? RecordedAt { get; set; }
+    }
+
+    public class AbsenceRow
+    {
+        public int ID { get; set; }
+        public DateOnly AbsenceDate { get; set; }
+        public string AbsenceType { get; set; } = null!;
+        public string Status { get; set; } = null!;
+        public string? Reason { get; set; }
+    }
+
+    public class ViolationRow
+    {
+        public int ID { get; set; }
+        public string ViolationType { get; set; } = null!;
+        public string? Description { get; set; }
+        public string Severity { get; set; } = null!;
+        public decimal? FineAmount { get; set; }
+        public string Status { get; set; } = null!;
+    }
+
+    public class ApplicationRow
+    {
+        public int ID { get; set; }
+        public string AcademicYear { get; set; } = null!;
+        public string Status { get; set; } = null!;
+        public DateTime? CreatedAt { get; set; }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 2c. Social Cases ViewModels
+    // ══════════════════════════════════════════════════════════════
+
+    public class AdminSocialCaseViewModel
+    {
+        public List<AdminSocialCaseRow> Cases { get; set; } = new();
+        public int TotalCases { get; set; }
+        public int OpenCases { get; set; }
+        public int ResolvedCases { get; set; }
+        public int HighPriority { get; set; }
+        public int Page { get; set; }
+        public int TotalPages { get; set; }
+        public string? Search { get; set; }
+        public string? CaseType { get; set; }
+        public string? Status { get; set; }
+        public string? Priority { get; set; }
+    }
+
+    public class AdminSocialCaseRow
+    {
+        public int ID { get; set; }
+        public int StudentID { get; set; }
+        public string StudentName { get; set; } = null!;
+        public string NationalID { get; set; } = null!;
+        public string? Faculty { get; set; }
+        public string CaseType { get; set; } = null!;
+        public string? Description { get; set; }
+        public string Status { get; set; } = null!;
+        public string Priority { get; set; } = null!;
+        public string? AssignedTo { get; set; }
+        public DateTime? CreatedAt { get; set; }
     }
 
     // ══════════════════════════════════════════════════════════════
