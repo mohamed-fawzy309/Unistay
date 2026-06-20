@@ -7,7 +7,7 @@ public partial class AuditLog
 {
     public int ID { get; set; }
 
-    public int UserID { get; set; }
+    public int? UserID { get; set; }
 
     public string UserType { get; set; } = null!;
 

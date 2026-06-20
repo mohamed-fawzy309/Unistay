@@ -98,6 +98,7 @@
 <div class="modal fade" id="uploadModal" tabindex="-1">
     <div class="modal-dialog">
         <form asp-action="Upload" method="post" enctype="multipart/form-data" class="modal-content">
+            @Html.AntiForgeryToken()
             <div class="modal-header"><h5 class="modal-title">رفع مستند</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
@@ -149,7 +150,8 @@
             $('.btn-verify').click(function () {
                 var id = $(this).data('id');
                 var btn = $(this);
-                $.post('@Url.Action("Verify", "Document")/' + id, function (res) {
+                var token = $('input[name="__RequestVerificationToken"]').val();
+                $.post('@Url.Action("Verify", "Document")/' + id, { __RequestVerificationToken: token }, function (res) {
                     if (res.success) {
                         location.reload();
                     } else {

@@ -1,0 +1,161 @@
+@model UniStay.ViewModels.Permissions.EditUserViewModel
+@using UniStay.ViewModels.Permissions
+@{
+    ViewData["Title"] = "تعديل المستخدم";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var availRoles = ViewBag.AvailableRoles as List<SelectItem> ?? new();
+    var availCities = ViewBag.AvailableCities as List<SelectItem> ?? new();
+}
+
+@section Scripts {
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+$(function(){
+    $(document).on('change','.chk-all-edit',function(){
+        const checked=$(this).prop('checked');
+        const gid=$(this).data('group');
+        $(`.perm-check-edit[data-group="${gid}"]`).prop('checked',checked);
+    });
+});
+</script>
+}
+
+<div class="container-fluid py-3">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Users">المستخدمين</a></li>
+            <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.UserID">@Model.Name</a></li>
+            <li class="breadcrumb-item active">تعديل</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-pencil me-2"></i>تعديل بيانات المستخدم</h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="Edit" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="UserID" value="@Model.UserID" />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">الاسم <span class="text-danger">*</span></label>
+                        <input name="Name" class="form-control" value="@Model.Name" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">البريد الإلكتروني</label>
+                        <input name="Email" type="email" class="form-control" value="@Model.Email" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">رقم الهاتف</label>
+                        <input name="Phone" class="form-control" value="@Model.Phone" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">الرقم القومي</label>
+                        <input name="NationalID" class="form-control" maxlength="14" value="@Model.NationalID" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">الأدوار <small class="text-muted">(اختياري، متعدد)</small></label>
+                        <select name="SelectedRoleIds" class="form-select" multiple size="4">
+                            @foreach (var r in availRoles)
+                            {
+                                var isSelected = Model.SelectedRoleIds.Any(id => id.ToString() == r.Value);
+                                <option value="@r.Value" selected="@isSelected">@r.Text</option>
+                            }
+                        </select>
+                        <small class="text-muted">اضغط Ctrl للتحديد المتعدد</small>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">المدينة (اختياري)</label>
+                        <select name="DormitoryCityID" class="form-select">
+                            <option value="">-- بدون مدينة --</option>
+                            @foreach (var c in availCities)
+                            {
+                                <option value="@c.Value" selected="@(Model.DormitoryCityID?.ToString() == c.Value)">@c.Text</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">الدور في المدينة</label>
+                        <select name="RoleInCity" class="form-select">
+                            <option value="">-- بدون --</option>
+                            @foreach (var ro in UniStay.ViewModels.Permissions.UserListViewModel.RoleInCityOptions)
+                            {
+                                <option value="@ro" selected="@(Model.RoleInCity == ro)">@ro</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end gap-3 pb-2">
+                        <div class="form-check form-switch">
+                            <input name="IsActive" type="checkbox" class="form-check-input" id="editIsActive" value="true" checked="@Model.IsActive" />
+                            <input name="IsActive" type="hidden" value="false" />
+                            <label class="form-check-label fw-semibold" for="editIsActive">الحساب نشط</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input name="IsSuperAdmin" type="checkbox" class="form-check-input" id="editIsSuperAdmin" value="true" checked="@Model.IsSuperAdmin" />
+                            <input name="IsSuperAdmin" type="hidden" value="false" />
+                            <label class="form-check-label text-danger fw-semibold" for="editIsSuperAdmin">SuperAdmin</label>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input name="ResetPassword" type="checkbox" class="form-check-input" id="editResetPw" value="true" />
+                            <input name="ResetPassword" type="hidden" value="false" />
+                            <label class="form-check-label fw-semibold" for="editResetPw">إعادة تعيين كلمة المرور</label>
+                        </div>
+                    </div>
+                </div>
+
+                @* ─── الصلاحيات المباشرة ─── *@
+                <hr />
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold"><i class="bi bi-shield-check me-1 text-primary"></i>الصلاحيات المباشرة</span>
+                        @if (Model.IsSuperAdmin)
+                        {
+                            <span class="badge text-white" style="background:linear-gradient(90deg,#7c3aed,#db2777)">SuperAdmin — كل الصلاحيات ممنوحة تلقائياً</span>
+                        }
+                    </div>
+                    @if (!Model.IsSuperAdmin)
+                    {
+                        <a class="small text-decoration-none" data-bs-toggle="collapse" href="#editPermsCollapse">عرض/إخفاء الصلاحيات</a>
+                        <div class="collapse mt-2" id="editPermsCollapse">
+                            @if (!Model.PermissionGroups.Any())
+                            {
+                                <div class="text-muted small p-2 border rounded">لا توجد صلاحيات</div>
+                            }
+                            else
+                            {
+                                foreach (var group in Model.PermissionGroups)
+                                {
+                                    <div class="mb-2 border rounded p-2">
+                                        <div class="d-flex align-items-center gap-1">
+                                            <input type="checkbox" class="form-check-input chk-all-edit" data-group="@group.GroupID" style="cursor:pointer">
+                                            <span class="fw-semibold small">@group.GroupName</span>
+                                        </div>
+                                        <div class="row g-1 ps-3">
+                                            @foreach (var perm in group.Permissions)
+                                            {
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input perm-check-edit" name="SelectedPermissionIds" value="@perm.PermissionID" data-group="@group.GroupID" id="ep_@perm.PermissionID" @(perm.CanView ? "checked" : "")>
+                                                        <label class="form-check-label small" for="ep_@perm.PermissionID">@perm.DisplayName</label>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+
+                <hr />
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success"><i class="bi bi-check-lg me-1"></i>حفظ التغييرات</button>
+                    <a asp-action="Details" asp-route-id="@Model.UserID" class="btn btn-secondary">إلغاء</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

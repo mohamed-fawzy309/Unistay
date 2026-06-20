@@ -1,0 +1,143 @@
+@model PhotoIndexViewModel
+@{
+    ViewData["Title"] = "إدارة صور الطلاب";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="page-title mb-0"><i class="bi bi-images"></i> @ViewData["Title"]</h5>
+    <div>
+        <a class="btn btn-outline-primary btn-sm" asp-action="BulkImport"><i class="bi bi-upload"></i> استيراد صور</a>
+        <a class="btn btn-outline-success btn-sm" asp-action="ExportExcel"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+    </div>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-3">
+        <div class="card bg-info text-white p-2 text-center">
+            <h6>إجمالي الطلاب</h6>
+            <h4>@Model.TotalCount</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white p-2 text-center">
+            <h6>بصور</h6>
+            <h4>@Model.WithPhotoCount</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark p-2 text-center">
+            <h6>بدون صور</h6>
+            <h4>@Model.WithoutPhotoCount</h4>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-secondary text-white p-2 text-center">
+            <h6>نسبة التغطية</h6>
+            <h4>@(Model.TotalCount > 0 ? (Model.WithPhotoCount * 100 / Model.TotalCount) : 0)%</h4>
+        </div>
+    </div>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input name="search" class="form-control form-control-sm" placeholder="بحث بالاسم أو الرقم القومي" value="@Model.Filter.Search" />
+    </div>
+    <div class="col-md-3">
+        <select name="cityId" class="form-select form-select-sm">
+            <option value="">كل المدن</option>
+            @foreach (var c in Model.Cities)
+            {
+                <option value="@c.ID" selected="@(Model.Filter.CityID == c.ID)">@c.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="photoStatus" class="form-select form-select-sm">
+            <option value="">الكل</option>
+            <option value="with" selected="@(Model.Filter.PhotoStatus == "with")">بصور</option>
+            <option value="without" selected="@(Model.Filter.PhotoStatus == "without")">بدون صور</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> بحث</button>
+    </div>
+    <div class="col-md-1">
+        <a class="btn btn-outline-secondary btn-sm w-100" asp-action="Index"><i class="bi bi-x-lg"></i></a>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-hover table-bordered align-middle small">
+        <thead class="table-dark">
+            <tr>
+                <th>الصورة</th>
+                <th>الاسم</th>
+                <th>الرقم القومي</th>
+                <th>الكلية</th>
+                <th>المدينة</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!Model.Students.Any())
+            {
+                <tr><td colspan="7" class="text-center text-muted">لا يوجد طلاب</td></tr>
+            }
+            @foreach (var s in Model.Students)
+            {
+                <tr>
+                    <td class="text-center">
+                        @if (s.HasPhoto)
+                        {
+                            <img src="@s.PhotoPath" class="rounded" style="width:50px;height:50px;object-fit:cover" />
+                        }
+                        else
+                        {
+                            <i class="bi bi-person-circle fs-2 text-muted"></i>
+                        }
+                    </td>
+                    <td>@s.FullName</td>
+                    <td>@s.NationalID</td>
+                    <td>@s.Faculty</td>
+                    <td>@s.CityName</td>
+                    <td>
+                        @if (s.HasPhoto)
+                        {
+                            <span class="badge bg-success">يوجد صورة</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark">بدون صورة</span>
+                        }
+                    </td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary" asp-action="Upload" asp-route-id="@s.StudentID">
+                            <i class="bi bi-camera"></i>
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav><ul class="pagination justify-content-center">
+        @{
+            var qs = new Dictionary<string, string?>
+            {
+                {"search", Model.Filter.Search},
+                {"cityId", Model.Filter.CityID?.ToString()},
+                {"photoStatus", Model.Filter.PhotoStatus}
+            };
+        }
+        @for (int p = 1; p <= Model.TotalPages; p++)
+        {
+            <li class="page-item @(p == Model.Page ? "active" : "")">
+                <a class="page-link" asp-all-route-data="@(new Dictionary<string, string>(qs.Where(kv => kv.Value != null).ToDictionary(kv => kv.Key, kv => kv.Value!)) { ["page"] = p.ToString() })">@p</a>
+            </li>
+        }
+    </ul></nav>
+}

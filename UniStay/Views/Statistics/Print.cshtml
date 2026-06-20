@@ -1,0 +1,73 @@
+@model StatisticsDashboardViewModel
+@{ ViewData["Title"] = "طباعة الإحصائيات"; Layout = null; }
+
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <title>تقرير إحصائيات UniStay</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
+    <style>
+        body { padding: 20px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .header { text-align: center; border-bottom: 2px solid #0d6efd; padding-bottom: 10px; margin-bottom: 20px; }
+        .header h2 { color: #0d6efd; margin: 0; }
+        .kpi-box { text-align: center; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 10px; }
+        .kpi-box h3 { margin: 0; }
+        .section-title { background: #f0f4ff; padding: 5px 10px; border-right: 3px solid #0d6efd; margin: 15px 0 10px; font-size: 1rem; }
+        table { width: 100%; margin-bottom: 10px; font-size: 13px; }
+        th, td { padding: 4px 8px; text-align: right; }
+        th { background: #f8f9fa; }
+        .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #999; border-top: 1px solid #ddd; padding-top: 10px; }
+        @@media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="no-print mb-3">
+        <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> طباعة</button>
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">عودة</a>
+    </div>
+
+    <div class="header">
+        <h2>جامعة أسيوط - UniStay</h2>
+        <p class="mb-0">تقرير إحصائيات شامل</p>
+    </div>
+
+    <p class="text-muted">تاريخ التقرير: @DateTime.Now.ToString("yyyy/MM/dd HH:mm")</p>
+
+    <div class="row">
+        <div class="col-3"><div class="kpi-box"><small>إجمالي المتقدمين</small><h3>@Model.TotalApplicants.ToString("N0")</h3></div></div>
+        <div class="col-3"><div class="kpi-box"><small>المقبولون</small><h3>@Model.AcceptedApplicants.ToString("N0")</h3></div></div>
+        <div class="col-3"><div class="kpi-box"><small>المقيمون</small><h3>@Model.TotalAllocated.ToString("N0")</h3></div></div>
+        <div class="col-3"><div class="kpi-box"><small>إجمالي الطلاب</small><h3>@Model.TotalStudents.ToString("N0")</h3></div></div>
+    </div>
+
+    <div class="section-title">حالة الطلبات</div>
+    <table>
+        <thead><tr><th>الحالة</th><th>العدد</th></tr></thead>
+        <tbody>
+            @foreach (var s in Model.ApplicationsByStatus) { <tr><td>@s.Label</td><td>@s.Value</td></tr> }
+            <tr class="fw-bold"><td>الإجمالي</td><td>@Model.TotalApplicants</td></tr>
+        </tbody>
+    </table>
+
+    <div class="section-title">نسبة الإشغال حسب المدينة</div>
+    <table>
+        <thead><tr><th>المدينة</th><th>نسبة الإشغال</th></tr></thead>
+        <tbody>
+            @foreach (var o in Model.OccupancyByCity) { <tr><td>@o.Label</td><td>@o.Value%</td></tr> }
+        </tbody>
+    </table>
+
+    <div class="section-title">استهلاك الوجبات حسب النوع</div>
+    <table>
+        <thead><tr><th>نوع الوجبة</th><th>العدد</th></tr></thead>
+        <tbody>
+            @foreach (var m in Model.MealConsumptionByType) { <tr><td>@m.Label</td><td>@m.Value</td></tr> }
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>تم إنشاؤه بواسطة نظام UniStay</p>
+    </div>
+</body>
+</html>

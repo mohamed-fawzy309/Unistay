@@ -9,24 +9,27 @@ using UniStay.ViewModels.Coordination;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class CoordinationController : Controller
     {
         private readonly AssuitDbContext _db;
         private readonly ICoordinationService _coordination;
         private readonly IAuditService _audit;
         private readonly IEmailService _email;
+        private readonly IReportExportService _export;
 
         public CoordinationController(
             AssuitDbContext db,
             ICoordinationService coordination,
             IAuditService audit,
-            IEmailService email)
+            IEmailService email,
+            IReportExportService export)
         {
             _db = db;
             _coordination = coordination;
             _audit = audit;
             _email = email;
+            _export = export;
         }
 
         private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
@@ -38,6 +41,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Coordination.Manage", "CanView")]
         public async Task<IActionResult> ConfigureRules(int? cityId)
         {
             ViewBag.Cities = await _db.DormitoryCities
@@ -80,6 +84,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Coordination.Manage", "CanEdit")]
         public async Task<IActionResult> ConfigureRules(CoordinationRulesViewModel model)
         {
             if (!ModelState.IsValid) return RedirectToAction("ConfigureRules", new { cityId = model.DormitoryCityID });
@@ -107,6 +112,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Coordination.View", "CanView")]
         public async Task<IActionResult> Preview(int? cityId)
         {
             ViewBag.Cities = await _db.DormitoryCities
@@ -164,6 +170,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Coordination.Manage", "CanEdit")]
         public async Task<IActionResult> Run(int cityId, string? academicYear)
         {
             var year = academicYear ?? GetCurrentAcademicYear();
@@ -186,6 +193,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Coordination.View", "CanView")]
         public async Task<IActionResult> Results(int? cityId, int page = 1)
         {
             ViewBag.Cities = await _db.DormitoryCities
@@ -245,6 +253,63 @@ namespace UniStay.Controllers
                 Page = page,
                 TotalPages = totalPages
             });
+        }
+
+        [HttpGet]
+        [RequirePermission("Coordination.Manage", "CanEdit")]
+        public async Task<IActionResult> ManualOverride(int id)
+        {
+            var result = await _db.CoordinationResults
+                .Include(r => r.Student)
+                .FirstOrDefaultAsync(r => r.ID == id);
+
+            if (result == null) return Json(new { success = false, message = "النتيجة غير موجودة" });
+
+            return Json(new
+            {
+                success = true,
+                data = new ManualOverrideViewModel
+                {
+                    ID = result.ID,
+                    StudentName = result.Student?.FullName ?? "",
+                    NationalID = result.Student?.NationalID,
+                    Faculty = result.Student?.Faculty,
+                    DistanceScore = result.DistanceScore,
+                    GradeScore = result.GradeScore,
+                    AgeScore = result.AgeScore,
+                    SpecialBonus = result.SpecialBonus,
+                    TotalScore = result.TotalScore,
+                    Rank = result.Rank
+                }
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Coordination.Manage", "CanEdit")]
+        public async Task<IActionResult> ManualOverrideSave([FromBody] ManualOverrideSaveViewModel model)
+        {
+            if (!ModelState.IsValid)
+                return Json(new { success = false, message = "بيانات غير صالحة" });
+
+            var result = await _db.CoordinationResults.FindAsync(model.ID);
+            if (result == null)
+                return Json(new { success = false, message = "النتيجة غير موجودة" });
+
+            var oldScore = result.TotalScore;
+
+            result.DistanceScore = model.DistanceScore;
+            result.GradeScore = model.GradeScore;
+            result.AgeScore = model.AgeScore;
+            result.SpecialBonus = model.SpecialBonus;
+            result.TotalScore = (model.DistanceScore ?? 0) + (model.GradeScore ?? 0) + (model.AgeScore ?? 0) + (model.SpecialBonus ?? 0);
+
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Coordination.ManualOverride", "CoordinationResult",
+                result.ID, new { TotalScore = oldScore }, new { TotalScore = result.TotalScore, model.DistanceScore, model.GradeScore, model.AgeScore, model.SpecialBonus });
+
+            return Json(new { success = true, totalScore = result.TotalScore, message = "تم تعديل الدرجات بنجاح" });
         }
 
         [HttpGet]
@@ -357,6 +422,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Coordination.View", "CanView")]
         public async Task<IActionResult> Waitlist(int? cityId, int page = 1)
         {
             ViewBag.Cities = await _db.DormitoryCities
@@ -409,6 +475,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Coordination.View", "CanView")]
         public async Task<IActionResult> FacultyQuotas(int? cityId)
         {
             ViewBag.Cities = await _db.DormitoryCities
@@ -450,6 +517,7 @@ namespace UniStay.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequirePermission("Coordination.Manage", "CanEdit")]
         public async Task<IActionResult> AddFacultyQuota(AddFacultyQuotaViewModel model, int cityId)
         {
             if (!ModelState.IsValid) return Json(new { success = false, message = "بيانات غير صالحة" });
@@ -478,6 +546,72 @@ namespace UniStay.Controllers
                 quota.ID, null, new { quota.Faculty, quota.MaxQuota });
 
             return Json(new { success = true, message = "تم إضافة الحصة" });
+        }
+
+        [HttpGet]
+        [RequirePermission("Coordination.Manage", "CanView")]
+        public async Task<IActionResult> ExportResultsExcel(int? cityId)
+        {
+            var query = _db.CoordinationResults
+                .Include(r => r.Student).Include(r => r.DormitoryCity)
+                .AsQueryable();
+
+            if (cityId.HasValue)
+                query = query.Where(r => r.DormitoryCityID == cityId.Value);
+
+            var results = await query.OrderBy(r => r.Rank).ToListAsync();
+
+            var columns = new[] { "الترتيب", "الاسم", "الرقم القومي", "الكلية", "المدينة", "درجة المسافة", "الدرجة الأكاديمية", "مكافأة خاصة", "المجموع", "الحالة" };
+            var data = _export.ExportToExcel("نتائج التنسيق", columns, results, r => new object?[] {
+                r.Rank, r.Student?.FullName, r.Student?.NationalID, r.Student?.Faculty,
+                r.DormitoryCity?.Name, r.DistanceScore, r.GradeScore, r.SpecialBonus,
+                r.TotalScore, r.Status
+            });
+            return File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "CoordinationResults.xlsx");
+        }
+
+        [HttpGet]
+        [RequirePermission("Coordination.Manage", "CanView")]
+        public async Task<IActionResult> ExportResultsPdf(int? cityId)
+        {
+            var query = _db.CoordinationResults
+                .Include(r => r.Student).Include(r => r.DormitoryCity)
+                .AsQueryable();
+
+            if (cityId.HasValue)
+                query = query.Where(r => r.DormitoryCityID == cityId.Value);
+
+            var results = await query.OrderBy(r => r.Rank).ToListAsync();
+
+            var columns = new[] { "الترتيب", "الاسم", "الكلية", "المجموع", "الحالة" };
+            var rows = results.Select(r => new[] {
+                r.Rank?.ToString() ?? "", r.Student?.FullName ?? "",
+                r.Student?.Faculty ?? "", r.TotalScore?.ToString("F2") ?? "",
+                r.Status ?? ""
+            }).ToArray();
+
+            var pdf = _export.ExportToPdf("نتائج التنسيق", columns, rows);
+            return File(pdf, "application/pdf", "CoordinationResults.pdf");
+        }
+
+        [HttpGet]
+        [RequirePermission("Coordination.Manage", "CanView")]
+        public async Task<IActionResult> ReportCoordinationResults(int? cityId)
+        {
+            var query = _db.CoordinationResults
+                .Include(r => r.Student).Include(r => r.DormitoryCity)
+                .AsQueryable();
+
+            if (cityId.HasValue)
+                query = query.Where(r => r.DormitoryCityID == cityId.Value);
+
+            var results = await query.OrderBy(r => r.Rank).ToListAsync();
+
+            ViewBag.Cities = await _db.DormitoryCities.Where(c => c.IsActive && !c.IsDeleted).ToListAsync();
+            ViewBag.TotalAccepted = results.Count(r => r.Status == "Accepted");
+            ViewBag.TotalWaitlist = results.Count(r => r.Status == "Waitlist");
+
+            return View("~/Views/Coordination/CoordinationReport.cshtml", results);
         }
     }
 }

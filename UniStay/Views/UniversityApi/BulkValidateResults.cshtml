@@ -1,7 +1,6 @@
 ﻿@using UniStay.Services.Interfaces
 @model BulkValidateViewModel
 @{
-    Layout = "_AdminLayout";
     ViewData["Title"] = "نتائج التحقق الجماعي";
     var results = ViewBag.Results as    BulkValidationResult;
     var details = ViewBag.Details as List<ValidationDetailViewModel> ?? new List<ValidationDetailViewModel>();

@@ -1,0 +1,103 @@
+@model CreateRestrictionViewModel
+@{
+    ViewData["Title"] = "حجب وجبات طالب";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title"><i class="bi bi-ban"></i> حجب وجبات طالب</h2>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="card">
+    <div class="card-header bg-primary text-white"><h5 class="mb-0">بيانات الحجب</h5></div>
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">بحث عن طالب</label>
+                    <div class="input-group">
+                        <input type="text" id="studentSearch" class="form-control" placeholder="الرقم القومي أو كود الطالب">
+                        <button type="button" class="btn btn-outline-primary" onclick="searchStudent()"><i class="bi bi-search"></i></button>
+                    </div>
+                    <div id="studentInfo" class="mt-2 small text-muted"></div>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="StudentID" class="form-label"></label>
+                    <input asp-for="StudentID" class="form-control" readonly id="StudentID">
+                    <span asp-validation-for="StudentID" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="DormitoryCityID" class="form-label"></label>
+                    <select asp-for="DormitoryCityID" class="form-select" asp-items="@(new SelectList(ViewBag.Cities ?? new List<UniStay.ViewModels.Meal.CityLookup>(), "ID", "Name"))">
+                        <option value="">-- اختر المدينة --</option>
+                    </select>
+                    <span asp-validation-for="DormitoryCityID" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="FromDate" class="form-label"></label>
+                    <input asp-for="FromDate" type="date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")">
+                    <span asp-validation-for="FromDate" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="ToDate" class="form-label"></label>
+                    <input asp-for="ToDate" type="date" class="form-control">
+                    <small class="text-muted">اترك فارغاً للحجب الدائم</small>
+                    <span asp-validation-for="ToDate" class="text-danger"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="MealType" class="form-label"></label>
+                    <select asp-for="MealType" class="form-select">
+                        <option value="">-- جميع الوجبات --</option>
+                        @if (ViewBag.MealTypes != null)
+                        {
+                            foreach (var mt in ViewBag.MealTypes as List<string> ?? new())
+                            {
+                                <option value="@mt">@mt</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <label asp-for="Reason" class="form-label"></label>
+                    <textarea asp-for="Reason" class="form-control" rows="3" placeholder="سبب الحجب"></textarea>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> حفظ</button>
+                <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function searchStudent() {
+            var term = document.getElementById('studentSearch').value;
+            if (!term) { alert('الرجاء إدخال بيانات الطالب'); return; }
+            fetch('@Url.Action("GetStudentInfo")?search=' + encodeURIComponent(term))
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('StudentID').value = data.studentID;
+                        document.getElementById('studentInfo').innerHTML = '<span class="text-success">' + data.fullName + ' - ' + data.nationalID + '</span>';
+                        if (data.dormitoryCityID > 0) {
+                            document.getElementById('DormitoryCityID').value = data.dormitoryCityID;
+                        }
+                    } else {
+                        document.getElementById('studentInfo').innerHTML = '<span class="text-danger">' + data.message + '</span>';
+                    }
+                });
+        }
+    </script>
+}

@@ -1,0 +1,55 @@
+@model TotalStudentsStatisticsViewModel
+@{ ViewData["Title"] = "إحصائية إجمالي الطلاب"; }
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-people-fill"></i> إحصائية إجمالي عدد الطلاب</h2>
+        <div>
+            <a asp-action="ExportTotalStudentsExcel" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            <a asp-action="ExportTotalStudentsPdf" class="btn btn-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-2"><div class="card border-primary shadow-sm"><div class="card-body text-center"><h6 class="text-muted">إجمالي الطلاب</h6><h3 class="text-primary mb-0">@Model.TotalStudents.ToString("N0")</h3></div></div></div>
+        <div class="col-md-3 mb-2"><div class="card border-info shadow-sm"><div class="card-body text-center"><h6 class="text-muted">ذكور</h6><h3 class="text-info mb-0">@Model.MaleCount.ToString("N0")</h3></div></div></div>
+        <div class="col-md-3 mb-2"><div class="card border-danger shadow-sm"><div class="card-body text-center"><h6 class="text-muted">إناث</h6><h3 class="text-danger mb-0">@Model.FemaleCount.ToString("N0")</h3></div></div></div>
+        <div class="col-md-3 mb-2"><div class="card border-success shadow-sm"><div class="card-body text-center"><h6 class="text-muted">مسكن حالياً</h6><h3 class="text-success mb-0">@Model.ActiveAllocations.ToString("N0")</h3></div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">توزيع النوع (ذكور / إناث)</h6></div><div class="card-body"><canvas id="chartGender" height="250"></canvas></div></div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">التوزيع حسب السنة الدراسية</h6></div><div class="card-body"><canvas id="chartYear" height="250"></canvas></div></div>
+        </div>
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">التوزيع حسب الكلية</h6></div><div class="card-body"><canvas id="chartFaculty" height="350"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        new Chart(document.getElementById('chartGender'), {
+            type: 'doughnut', data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByGender.Select(x => x.Label))),
+                datasets: [{ data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByGender.Select(x => x.Value))), backgroundColor: ['#0d6efd','#d63384'] }]
+            }, options: { responsive: true, plugins: { legend: { position: 'bottom', rtl: true } } }
+        });
+        new Chart(document.getElementById('chartYear'), {
+            type: 'bar', data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByAcademicYear.Select(x => x.Label))),
+                datasets: [{ data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByAcademicYear.Select(x => x.Value))), backgroundColor: '#198754' }]
+            }, options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+        new Chart(document.getElementById('chartFaculty'), {
+            type: 'bar', data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByFaculty.Select(x => x.Label))),
+                datasets: [{ data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ByFaculty.Select(x => x.Value))), backgroundColor: '#0d6efd' }]
+            }, options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
+    </script>
+}

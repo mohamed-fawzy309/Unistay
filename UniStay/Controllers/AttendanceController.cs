@@ -9,7 +9,7 @@ using UniStay.ViewModels.Attendance;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class AttendanceController : Controller
     {
         private readonly AssuitDbContext _db;
@@ -153,6 +153,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Attendance.Manage", "CanView")]
         public async Task<IActionResult> Report(
             DateOnly? fromDate = null,
             DateOnly? toDate = null,

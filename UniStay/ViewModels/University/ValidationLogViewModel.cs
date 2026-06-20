@@ -1,4 +1,6 @@
-﻿public class ValidationDetailViewModel
+﻿namespace UniStay.ViewModels.University;
+
+public class ValidationDetailViewModel
 {
     public string NationalID { get; set; } = null!;
     public bool LocalExists { get; set; }

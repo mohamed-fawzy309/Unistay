@@ -1,0 +1,159 @@
+@model StatisticsDashboardViewModel
+@{ ViewData["Title"] = "لوحة الإحصائيات"; }
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-bar-chart-fill"></i> لوحة الإحصائيات</h2>
+        <div>
+            <a asp-action="Print" class="btn btn-outline-info" target="_blank"><i class="bi bi-printer"></i> طباعة</a>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card border-primary shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">إجمالي المتقدمين</h6>
+                    <h2 class="text-primary">@Model.TotalApplicants.ToString("N0")</h2>
+                    <small class="text-success">@Model.AcceptedApplicants مقبول</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-success shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">المقيمون حالياً</h6>
+                    <h2 class="text-success">@Model.TotalAllocated.ToString("N0")</h2>
+                    <small class="text-muted">إجمالي الطلاب @Model.TotalStudents.ToString("N0")</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-info shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">البطاقات المطبوعة</h6>
+                    <h2 class="text-info">@Model.PrintedCards.ToString("N0")</h2>
+                    <small class="text-muted">إجمالي البطاقات</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-warning shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">الوجبات اليوم</h6>
+                    <h2 class="text-warning">@Model.TodayConsumedMeals.ToString("N0")</h2>
+                    <small class="text-muted">استهلاك اليوم</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light"><h6 class="mb-0"><i class="bi bi-graph-up"></i> التقديمات الشهرية</h6></div>
+                <div class="card-body">
+                    <canvas id="chartMonthlyApps" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light"><h6 class="mb-0"><i class="bi bi-pie-chart"></i> الطلبات حسب الحالة</h6></div>
+                <div class="card-body">
+                    <canvas id="chartStatusPie" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light"><h6 class="mb-0"><i class="bi bi-bar-chart"></i> الطلبات حسب الكلية</h6></div>
+                <div class="card-body">
+                    <canvas id="chartFacultyBar" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light"><h6 class="mb-0"><i class="bi bi-building"></i> الطلبات حسب المدينة</h6></div>
+                <div class="card-body">
+                    <canvas id="chartCityBar" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 3 -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light"><h6 class="mb-0"><i class="bi bi-door-open"></i> الإشغال حسب المدينة (%)</h6></div>
+                <div class="card-body">
+                    <canvas id="chartOccupancy" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light"><h6 class="mb-0"><i class="bi bi-cup-hot"></i> استهلاك الوجبات حسب النوع</h6></div>
+                <div class="card-body">
+                    <canvas id="chartMealType" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const colors = ['#0d6efd','#198754','#dc3545','#ffc107','#6c757d','#0dcaf0','#d63384','#fd7e14','#20c997','#6610f2'];
+        function chart(id, type, labels, values, label, bgColor) {
+            new Chart(document.getElementById(id), {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{ label: label, data: values, backgroundColor: bgColor || colors.slice(0, values.length), borderColor: '#fff', borderWidth: 1 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: type === 'pie' ? 'left' : 'bottom', rtl: true } } }
+            });
+        }
+
+        chart('chartMonthlyApps', 'line',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyApplications.Select(x => x.Label))),
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyApplications.Select(x => x.Value))),
+            'طلبات');
+
+        chart('chartStatusPie', 'pie',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByStatus.Select(x => x.Label))),
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByStatus.Select(x => x.Value))),
+            'حالة',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByStatus.Select(x => x.Color))));
+
+        chart('chartFacultyBar', 'bar',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByFaculty.Select(x => x.Label))),
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByFaculty.Select(x => x.Value))),
+            'كلية');
+
+        chart('chartCityBar', 'bar',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByCity.Select(x => x.Label))),
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByCity.Select(x => x.Value))),
+            'مدينة');
+
+        chart('chartOccupancy', 'bar',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OccupancyByCity.Select(x => x.Label))),
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.OccupancyByCity.Select(x => x.Value))),
+            'نسبة الإشغال');
+
+        chart('chartMealType', 'doughnut',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MealConsumptionByType.Select(x => x.Label))),
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MealConsumptionByType.Select(x => x.Value))),
+            'وجبات');
+    </script>
+}

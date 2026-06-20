@@ -1,0 +1,8 @@
+  Determining projects to restore...
+C:\Users\Abdallah Elzanfaly\Desktop\Data from team\Unistay\UniStay\UniStay.csproj : warning NU1603: UniStay depends on QRCoder (>= 1.6.1) but QRCoder 1.6.1 was not found. QRCoder 1.7.0 was resolved instead.
+C:\Users\Abdallah Elzanfaly\Desktop\Data from team\Unistay\UniStay\UniStay.csproj : warning NU1902: Package 'MailKit' 4.3.0 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-9j88-vvj5-vhgr
+C:\Users\Abdallah Elzanfaly\Desktop\Data from team\Unistay\UniStay\UniStay.csproj : warning NU1902: Package 'RestSharp' 110.2.0 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-4rr6-2v9v-wcpc
+  All projects are up-to-date for restore.
+C:\Users\Abdallah Elzanfaly\Desktop\Data from team\Unistay\UniStay\UniStay.csproj : warning NU1603: UniStay depends on QRCoder (>= 1.6.1) but QRCoder 1.6.1 was not found. QRCoder 1.7.0 was resolved instead.
+C:\Users\Abdallah Elzanfaly\Desktop\Data from team\Unistay\UniStay\UniStay.csproj : warning NU1902: Package 'MailKit' 4.3.0 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-9j88-vvj5-vhgr
+C:\Users\Abdallah Elzanfaly\Desktop\Data from team\Unistay\UniStay\UniStay.csproj : warning NU1902: Package 'RestSharp' 110.2.0 has a known moderate severity vulnerability, https://github.com/advisories/GHSA-4rr6-2v9v-wcpc

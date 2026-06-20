@@ -1,0 +1,194 @@
+@model MealRestrictionIndexViewModel
+@{
+    ViewData["Title"] = "حجب الوجبات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title"><i class="bi bi-ban"></i> حجب الوجبات</h2>
+    <div>
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-circle"></i> حجب جديد</a>
+        <form asp-action="RemoveExpired" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-warning"><i class="bi bi-trash"></i> إزالة المنتهية</button>
+        </form>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-ban"></i></div>
+                <div>
+                    <div class="value">@Model.ActiveCount</div>
+                    <div class="label">حجب نشط</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-secondary bg-opacity-10 text-secondary"><i class="bi bi-check-circle"></i></div>
+                <div>
+                    <div class="value">@Model.ExpiredCount</div>
+                    <div class="label">حجب منتهي</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-info bg-opacity-10 text-info"><i class="bi bi-list"></i></div>
+                <div>
+                    <div class="value">@Model.TotalCount</div>
+                    <div class="label">الإجمالي</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-4">
+    <li class="nav-item">
+        <a class="nav-link @(Model.Tab == "active" ? "active" : "")" asp-action="Index" asp-route-tab="active">النشط</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.Tab == "expired" ? "active" : "")" asp-action="Index" asp-route-tab="expired">المنتهي</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.Tab == null || Model.Tab == "all" ? "active" : "")" asp-action="Index" asp-route-tab="">الكل</a>
+    </li>
+</ul>
+
+<div class="filter-bar row g-3 align-items-end mb-4">
+    <div class="col-md-3">
+        <label class="form-label small">المدينة</label>
+        <select class="form-select" onchange="filterChange()" id="cityId">
+            <option value="">-- الكل --</option>
+            @foreach (var c in Model.Cities)
+            {
+                <option value="@c.ID" selected="@(c.ID == Model.CityId)">@c.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small">نوع الوجبة</label>
+        <select class="form-select" onchange="filterChange()" id="mealType">
+            <option value="">-- الكل --</option>
+            @foreach (var mt in Model.MealTypes)
+            {
+                <option value="@mt" selected="@(mt == Model.MealType)">@mt</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label small">بحث</label>
+        <input class="form-control" id="search" value="@Model.Search" placeholder="اسم الطالب أو الرقم القومي" onkeyup="if(event.key==='Enter')filterChange()">
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+        <a class="btn btn-outline-primary" asp-action="ExportExcel" asp-route-tab="@Model.Tab" asp-route-cityId="@Model.CityId" asp-route-mealType="@Model.MealType" asp-route-search="@Model.Search"><i class="bi bi-file-earmark-excel"></i></a>
+        <a class="btn btn-outline-danger" asp-action="ExportPdf" asp-route-tab="@Model.Tab" asp-route-cityId="@Model.CityId" asp-route-mealType="@Model.MealType" asp-route-search="@Model.Search"><i class="bi bi-file-earmark-pdf"></i></a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-primary text-white"><h5 class="mb-0">قائمة الحجب</h5></div>
+    <div class="card-body">
+        <div class="table-responsive animate-fade-in">
+            <table class="table table-striped table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>الطالب</th>
+                        <th>الرقم القومي</th>
+                        <th>المدينة</th>
+                        <th>من تاريخ</th>
+                        <th>إلى تاريخ</th>
+                        <th>نوع الوجبة</th>
+                        <th>السبب</th>
+                        <th>الحالة</th>
+                        <th>بواسطة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Restrictions.Any())
+                    {
+                        <tr><td colspan="11" class="text-center text-muted py-4">لا توجد حجوزات</td></tr>
+                    }
+                    @foreach (var r in Model.Restrictions)
+                    {
+                        <tr>
+                            <td>@r.ID</td>
+                            <td>@r.StudentName</td>
+                            <td>@r.NationalID</td>
+                            <td>@r.CityName</td>
+                            <td>@r.FromDate.ToString("yyyy-MM-dd")</td>
+                            <td>@r.ToDate.ToString("yyyy-MM-dd")</td>
+                            <td>@(r.MealType ?? "جميع الوجبات")</td>
+                            <td>@r.Reason</td>
+                            <td>
+                                @if (r.IsActive)
+                                {
+                                    <span class="badge bg-danger">نشط</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">منتهي</span>
+                                }
+                            </td>
+                            <td>@r.CreatedByName</td>
+                            <td>
+                                @if (r.IsActive)
+                                {
+                                    <form asp-action="Remove" method="post" class="d-inline" onsubmit="return confirm('هل أنت متأكد من إزالة الحجب؟')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@r.ID" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success"><i class="bi bi-check-circle"></i> إزالة</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.TotalPages > 1)
+        {
+            <nav class="mt-3">
+                <ul class="pagination justify-content-center">
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.Page ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-tab="@Model.Tab" asp-route-cityId="@Model.CityId" asp-route-mealType="@Model.MealType" asp-route-search="@Model.Search" asp-route-page="@i">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterChange() {
+            var cityId = document.getElementById('cityId').value;
+            var mealType = document.getElementById('mealType').value;
+            var search = document.getElementById('search').value;
+            var url = '@Url.Action("Index")?tab=@Model.Tab&cityId=' + cityId + '&mealType=' + encodeURIComponent(mealType) + '&search=' + encodeURIComponent(search);
+            window.location.href = url;
+        }
+    </script>
+}

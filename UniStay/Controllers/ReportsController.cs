@@ -9,7 +9,7 @@ using UniStay.ViewModels.Reports;
 
 namespace UniStay.Controllers;
 
-[Authorize(AuthenticationSchemes = "AdminCookie")]
+[Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
 public class ReportsController : Controller
 {
     private readonly AssuitDbContext _db;
@@ -439,6 +439,8 @@ public class ReportsController : Controller
         {
             ID = s.ID, FullName = s.FullName, NationalID = s.NationalID,
             StudentCode = s.StudentCode, Gender = s.Gender, Faculty = s.Faculty,
+            ID = s.ID, FullName = s.FullName, NationalID = s.NationalID,
+            StudentCode = s.StudentCode, Gender = s.Gender, Faculty = s.Faculty,
             Phone = s.Phone, City = s.City, Markaz = s.Markaz
         }).ToList();
 
@@ -488,73 +490,19 @@ public class ReportsController : Controller
     [RequirePermission("Meals.Manage", "CanView")]
     public async Task<IActionResult> MealRestriction(int? cityId = null, string? type = null, DateTime? fromDate = null, DateTime? toDate = null, string? search = null, int page = 1)
     {
-        var blocks = _db.MealBlocks.Include(b => b.Student).Include(b => b.DormitoryCity)
-            .Select(b => new MealRestrictionRowViewModel
-            {
-                ID = b.ID, Type = "Block", TypeDisplay = "حظر",
-                StudentName = b.Student.FullName, NationalID = b.Student.NationalID,
-                CityName = b.DormitoryCity.Name, FromDate = b.FromDate.ToDateTime(TimeOnly.MinValue), ToDate = b.ToDate.ToDateTime(TimeOnly.MinValue),
-                IsActive = b.ToDate >= DateOnly.FromDateTime(DateTime.Now),
-                CreatedAt = b.CreatedAt ?? DateTime.Now
-            });
-
-        var cancellations = _db.MealCancellations.Include(c => c.Student).Include(c => c.DormitoryCity)
-            .Select(c => new MealRestrictionRowViewModel
-            {
-                ID = c.ID, Type = "Cancellation", TypeDisplay = "إلغاء",
-                StudentName = c.Student.FullName, NationalID = c.Student.NationalID,
-                CityName = c.DormitoryCity.Name, FromDate = c.FromDate.ToDateTime(TimeOnly.MinValue),
-                ToDate = c.ToDate.ToDateTime(TimeOnly.MinValue),
-                IsActive = c.ToDate >= DateOnly.FromDateTime(DateTime.Now) && c.FromDate <= DateOnly.FromDateTime(DateTime.Now),
-                CreatedAt = c.CreatedAt ?? DateTime.Now
-            });
-
-        var query = blocks.Union(cancellations).AsQueryable();
-
-        if (cityId.HasValue)
-        {
-            query = blocks.Where(r => r.CityName == _db.DormitoryCities.FirstOrDefault(c => c.ID == cityId)!.Name)
-                .Union(cancellations.Where(r => r.CityName == _db.DormitoryCities.FirstOrDefault(c => c.ID == cityId)!.Name));
-        }
-        // Rebuild query with filters applied differently
-        // Actually, let me use a simpler approach with in-memory filtering
         var allBlocks = await _db.MealBlocks.Include(b => b.Student).Include(b => b.DormitoryCity).ToListAsync();
         var allCancellations = await _db.MealCancellations.Include(c => c.Student).Include(c => c.DormitoryCity).ToListAsync();
 
-        var allRestrictions = new List<MealRestrictionRowViewModel>();
-        foreach (var b in allBlocks)
-        {
-            if (cityId.HasValue && b.DormitoryCityID != cityId) continue;
-            allRestrictions.Add(new MealRestrictionRowViewModel
-            {
-                ID = b.ID, Type = "Block", TypeDisplay = "حظر",
-                StudentName = b.Student.FullName, NationalID = b.Student.NationalID,
-                CityName = b.DormitoryCity.Name, FromDate = b.FromDate.ToDateTime(TimeOnly.MinValue),
-                ToDate = b.ToDate.ToDateTime(TimeOnly.MinValue),
-                IsActive = b.ToDate >= DateOnly.FromDateTime(DateTime.Now),
-                CreatedAt = b.CreatedAt ?? DateTime.Now
-            });
-        }
-        foreach (var c in allCancellations)
-        {
-            if (cityId.HasValue && c.DormitoryCityID != cityId) continue;
-            allRestrictions.Add(new MealRestrictionRowViewModel
-            {
-                ID = c.ID, Type = "Cancellation", TypeDisplay = "إلغاء",
-                StudentName = c.Student.FullName, NationalID = c.Student.NationalID,
-                CityName = c.DormitoryCity.Name,
-                FromDate = c.FromDate.ToDateTime(TimeOnly.MinValue),
-                ToDate = c.ToDate.ToDateTime(TimeOnly.MinValue),
-                IsActive = c.ToDate >= DateOnly.FromDateTime(DateTime.Now) &&
-                           c.FromDate <= DateOnly.FromDateTime(DateTime.Now),
-                CreatedAt = c.CreatedAt ?? DateTime.Now
-            });
-        }
+        var allRestrictions = BuildMealRestrictionList(allBlocks, allCancellations, cityId, type);
 
         if (!string.IsNullOrEmpty(type))
             allRestrictions = allRestrictions.Where(r => r.Type == type).ToList();
         if (!string.IsNullOrEmpty(search))
             allRestrictions = allRestrictions.Where(r => r.StudentName.Contains(search) || r.NationalID.Contains(search)).ToList();
+        if (fromDate.HasValue)
+            allRestrictions = allRestrictions.Where(r => r.FromDate >= fromDate.Value).ToList();
+        if (toDate.HasValue)
+            allRestrictions = allRestrictions.Where(r => r.ToDate <= toDate.Value).ToList();
 
         var total = allRestrictions.Count;
         var rows = allRestrictions.OrderByDescending(r => r.CreatedAt).Skip((page - 1) * 30).Take(30).ToList();
@@ -562,7 +510,7 @@ public class ReportsController : Controller
         var vm = new MealRestrictionReportViewModel
         {
             Restrictions = rows,
-            Filter = new MealRestrictionFilterViewModel { CityID = cityId, Type = type, Search = search },
+            Filter = new MealRestrictionFilterViewModel { CityID = cityId, Type = type, Search = search, FromDate = fromDate, ToDate = toDate },
             TotalBlocks = allBlocks.Count, TotalCancellations = allCancellations.Count,
             ActiveBlocks = allRestrictions.Count(r => r.IsActive),
             Page = page, TotalPages = (int)Math.Ceiling(total / 30.0),

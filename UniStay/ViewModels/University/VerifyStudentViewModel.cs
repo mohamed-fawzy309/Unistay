@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
+namespace UniStay.ViewModels.University;
+
 public class VerifyStudentRequest
 {
     [Required]

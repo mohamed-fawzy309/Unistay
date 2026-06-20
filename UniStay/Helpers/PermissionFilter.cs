@@ -1,5 +1,4 @@
-﻿// Helpers/PermissionFilter.cs
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using UniStay.Services.Interfaces;
 
@@ -23,7 +22,7 @@ namespace UniStay.Helpers
             var userIdClaim = context.HttpContext.User.FindFirst("UserID")?.Value;
             if (!int.TryParse(userIdClaim, out int userId))
             {
-                context.Result = new UnauthorizedResult();
+                context.Result = new RedirectToActionResult("Login", "Account", new { returnUrl = context.HttpContext.Request.Path });
                 return;
             }
 
@@ -31,7 +30,7 @@ namespace UniStay.Helpers
 
             if (!hasPermission)
             {
-                context.Result = new ForbidResult();
+                context.Result = new RedirectToActionResult("AccessDenied", "Account", null);
                 return;
             }
 

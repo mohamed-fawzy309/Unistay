@@ -1,0 +1,92 @@
+@model KitchenReportViewModel
+@{
+    ViewData["Title"] = "تقرير المطبخ";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="page-title"><i class="bi bi-graph-up"></i> تقرير المطبخ</h2>
+    <div>
+        <a asp-action="ExportKitchenReportExcel" asp-route-date="@Model.ReportDate.ToString("yyyy-MM-dd")" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> إكسل</a>
+        <a asp-action="Index" asp-route-date="@Model.ReportDate.ToString("yyyy-MM-dd")" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> رجوع</a>
+    </div>
+</div>
+
+<p class="text-muted">تاريخ التقرير: @Model.ReportDate.ToString("yyyy-MM-dd")</p>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-info bg-opacity-10 text-info"><i class="bi bi-cup-hot"></i></div>
+                <div>
+                    <div class="value">@Model.TotalMealsPrepared</div>
+                    <div class="label">إجمالي المعد</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle"></i></div>
+                <div>
+                    <div class="value">@Model.TotalConsumed</div>
+                    <div class="label">تم الاستهلاك</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-clock"></i></div>
+                <div>
+                    <div class="value">@Model.TotalRemaining</div>
+                    <div class="label">المتبقي</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-danger bg-opacity-10 text-danger"><i class="bi bi-currency-dollar"></i></div>
+                <div>
+                    <div class="value">@Model.TotalCost.ToString("N2")</div>
+                    <div class="label">التكلفة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-info text-white"><h5 class="mb-0">تفاصيل حسب نوع الوجبة</h5></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>نوع الوجبة</th>
+                        <th>عدد المعد</th>
+                        <th>تم الاستهلاك</th>
+                        <th>المتبقي</th>
+                        <th>التكلفة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model.MealTypeSummaries)
+                    {
+                        <tr>
+                            <td>@s.MealType</td>
+                            <td>@s.PreparedCount</td>
+                            <td>@s.ConsumedCount</td>
+                            <td>@s.RemainingCount</td>
+                            <td>@s.Cost.ToString("N2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

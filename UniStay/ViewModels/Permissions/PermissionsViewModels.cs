@@ -12,6 +12,13 @@ namespace UniStay.ViewModels.Permissions
         public int TotalCount     { get; set; }
         public int ActiveCount    { get; set; }
         public int SuperAdminCount{ get; set; }
+        public List<SelectItem> AvailableRoles { get; set; } = new();
+        public List<SelectItem> AvailableCities { get; set; } = new();
+        public static readonly List<string> RoleInCityOptions = new()
+        {
+            "Manager", "Accountant", "MealStaff", "HousingStaff",
+            "ApplicationReviewer", "MaintenanceStaff", "SecurityStaff"
+        };
     }
 
     public class UserRowViewModel
@@ -26,7 +33,8 @@ namespace UniStay.ViewModels.Permissions
         public bool      MustChangePassword  { get; set; }
         public DateTime? LastLoginAt         { get; set; }
         public DateTime  CreatedAt           { get; set; }
-        public int       PermissionsCount    { get; set; }
+        public List<string> RoleNames        { get; set; } = new();
+        public int       DirectPermCount     { get; set; }
         public List<string> CityRoles        { get; set; } = new();
     }
 
@@ -47,6 +55,69 @@ namespace UniStay.ViewModels.Permissions
         public string? NationalID { get; set; }
 
         public bool IsSuperAdmin { get; set; } = false;
+
+        public List<int> SelectedRoleIds { get; set; } = new();
+
+        public int? DormitoryCityID { get; set; }
+
+        public string? RoleInCity { get; set; }
+
+        public List<int> SelectedPermissionIds { get; set; } = new();
+
+        public List<PermissionGroupViewModel> PermissionGroups { get; set; } = new();
+    }
+
+    public class EditUserViewModel
+    {
+        public int UserID { get; set; }
+
+        [Required(ErrorMessage = "الاسم مطلوب")]
+        [StringLength(200)]
+        public string Name { get; set; } = "";
+
+        [EmailAddress(ErrorMessage = "بريد إلكتروني غير صحيح")]
+        public string? Email { get; set; }
+
+        [Phone(ErrorMessage = "رقم هاتف غير صحيح")]
+        public string? Phone { get; set; }
+
+        [StringLength(14, MinimumLength = 14, ErrorMessage = "الرقم القومي 14 رقم")]
+        public string? NationalID { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        public bool IsSuperAdmin { get; set; }
+
+        public List<int> SelectedRoleIds { get; set; } = new();
+
+        public int? DormitoryCityID { get; set; }
+
+        public string? RoleInCity { get; set; }
+
+        public bool ResetPassword { get; set; }
+
+        public List<int> SelectedPermissionIds { get; set; } = new();
+
+        public List<PermissionGroupViewModel> PermissionGroups { get; set; } = new();
+    }
+
+    public class UserDetailsViewModel
+    {
+        public int UserID { get; set; }
+        public string Name { get; set; } = "";
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+        public string? NationalID { get; set; }
+        public bool IsSuperAdmin { get; set; }
+        public bool IsActive { get; set; }
+        public bool MustChangePassword { get; set; }
+        public DateTime? LastLoginAt { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string? RoleName { get; set; }
+        public string? CityName { get; set; }
+        public string? RoleInCity { get; set; }
+        public int EffectivePermissionsCount { get; set; }
+        public int DirectPermissionsCount { get; set; }
     }
 
     // ═══════════════════════════════════════════════
@@ -198,7 +269,7 @@ namespace UniStay.ViewModels.Permissions
     public class AuditLogRowViewModel
     {
         public int      ID              { get; set; }
-        public int      UserID          { get; set; }
+        public int?     UserID          { get; set; }
         public string   UserType        { get; set; } = "";
         public string   UserDisplayName { get; set; } = "";
         public string   Action          { get; set; } = "";

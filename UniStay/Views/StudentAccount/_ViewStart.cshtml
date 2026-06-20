@@ -1,0 +1,10 @@
+@{
+    if (ViewContext.RouteData.Values["action"]?.ToString() == "ChangePassword")
+    {
+        Layout = "_StudentLayout";
+    }
+    else
+    {
+        Layout = "_LoginLayout";
+    }
+}

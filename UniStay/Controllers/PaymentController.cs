@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using UniStay.Data;
 using UniStay.Helpers;
@@ -9,7 +10,7 @@ using UniStay.ViewModels.Payment;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class PaymentController : Controller
     {
         private readonly AssuitDbContext _db;
@@ -245,6 +246,13 @@ namespace UniStay.Controllers
                 ? (await _db.DormitoryCities.FindAsync(cityId))?.Name ?? ""
                 : "الكل";
 
+            var cities = await _db.DormitoryCities
+                .Where(c => c.IsActive == true && c.IsDeleted != true)
+                .Select(c => new SelectListItem(c.Name, c.ID.ToString()))
+                .ToListAsync();
+
+            ViewBag.Cities = cities;
+
             return View(new PaymentReportViewModel
             {
                 FromDate = fromDate,
@@ -265,6 +273,39 @@ namespace UniStay.Controllers
         public IActionResult Index()
         {
             return RedirectToAction(nameof(Report));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ReportExportExcel(DateTime? fromDate, DateTime? toDate, int? cityId)
+        {
+            var paymentsQuery = _db.Payments.AsQueryable();
+            if (fromDate.HasValue) paymentsQuery = paymentsQuery.Where(p => p.RecordedAt >= fromDate.Value);
+            if (toDate.HasValue) paymentsQuery = paymentsQuery.Where(p => p.RecordedAt <= toDate.Value.AddDays(1));
+            if (cityId.HasValue) paymentsQuery = paymentsQuery.Where(p => p.Student!.Applications!.Any(a => a.DormitoryCityID == cityId));
+            var allPayments = await paymentsQuery.ToListAsync();
+            var summary = allPayments.GroupBy(p => p.PaymentType).Select(g => new {
+                PaymentType = g.Key, Count = g.Count(), TotalAmount = g.Sum(p => p.Amount), TotalPaid = g.Sum(p => p.PaidAmount)
+            }).ToList();
+            var columns = new[] { "النوع", "العدد", "الإجمالي", "المحصل" };
+            var data = _export.ExportToExcel("تقرير المدفوعات", columns, summary, r => new object?[] { r.PaymentType, r.Count, r.TotalAmount, r.TotalPaid });
+            return File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Payments.xlsx");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ReportExportPdf(DateTime? fromDate, DateTime? toDate, int? cityId)
+        {
+            var paymentsQuery = _db.Payments.AsQueryable();
+            if (fromDate.HasValue) paymentsQuery = paymentsQuery.Where(p => p.RecordedAt >= fromDate.Value);
+            if (toDate.HasValue) paymentsQuery = paymentsQuery.Where(p => p.RecordedAt <= toDate.Value.AddDays(1));
+            if (cityId.HasValue) paymentsQuery = paymentsQuery.Where(p => p.Student!.Applications!.Any(a => a.DormitoryCityID == cityId));
+            var allPayments = await paymentsQuery.ToListAsync();
+            var summary = allPayments.GroupBy(p => p.PaymentType).Select(g => new {
+                PaymentType = g.Key, Count = g.Count(), TotalAmount = g.Sum(p => p.Amount), TotalPaid = g.Sum(p => p.PaidAmount)
+            }).ToList();
+            var columns = new[] { "النوع", "العدد", "الإجمالي", "المحصل" };
+            var pdfRows = summary.Select(r => new[] { r.PaymentType, r.Count.ToString(), r.TotalAmount.ToString("N2"), r.TotalPaid.ToString("N2") }).ToArray();
+            var data = _export.ExportToPdf("تقرير المدفوعات", columns, pdfRows);
+            return File(data, "application/pdf", "Payments.pdf");
         }
 
         [HttpGet]

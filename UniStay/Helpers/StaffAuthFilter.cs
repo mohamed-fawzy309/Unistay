@@ -16,7 +16,7 @@ public class StaffAuthFilter : IAsyncActionFilter
         var httpContext = context.HttpContext;
         var path = httpContext.Request.Path.Value?.ToLower() ?? "";
 
-        if (path.Contains("/account/login")) { await next(); return; }
+        if (path.Contains("/account/login") || path.Contains("/account/accessdenied") || path.Contains("/account/forgotpassword")) { await next(); return; }
 
         var authResult = await httpContext.AuthenticateAsync("StaffCookie");
         if (!authResult.Succeeded)

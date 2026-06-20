@@ -66,10 +66,6 @@ namespace UniStay.Controllers
             }
         }
 
-
-
-
-
         [HttpGet("create")]
         public async Task<IActionResult> CreateAdminTemp()
         {
@@ -196,6 +192,13 @@ namespace UniStay.Controllers
             await HttpContext.SignOutAsync("StaffCookie");
             await HttpContext.SignOutAsync("AdminCookie");
             return RedirectToAction("Login");
+        }
+
+        [AllowAnonymous]
+        [HttpGet("AccessDenied")]
+        public IActionResult AccessDenied()
+        {
+            return View();
         }
 
         // ============================================================

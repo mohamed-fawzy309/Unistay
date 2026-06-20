@@ -1,0 +1,33 @@
+@using UniStay.ViewModels.Applications
+@model ApplicationReportViewModel
+@{ ViewData["Title"] = Model.ReportTitle; }
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-file-earmark-bar-graph"></i> @Model.ReportTitle</h5>
+        <span>@Model.TotalCount طلب</span>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small">تاريخ التقرير: @Model.GeneratedAt.ToString("yyyy/MM/dd HH:mm")</p>
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered align-middle">
+                <thead class="table-dark">
+                    <tr><th>#</th><th>الاسم</th><th>الرقم القومي</th><th>الكلية</th><th>المدينة</th><th>النوع</th><th>الحالة</th><th>تاريخ التقديم</th></tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Applications.Any()) { <tr><td colspan="8" class="text-center text-muted py-3">لا توجد نتائج</td></tr> }
+                    @foreach (var a in Model.Applications)
+                    {
+                        <tr>
+                            <td>@a.ID</td><td>@a.StudentName</td><td>@a.NationalID</td>
+                            <td>@a.Faculty</td><td>@a.CityName</td><td>@a.StudentType</td>
+                            <td><span class="badge @(a.Status == "Accepted" ? "bg-success" : a.Status == "Rejected" ? "bg-danger" : "bg-warning text-dark")">@a.StatusDisplay</span></td>
+                            <td>@a.CreatedAt.ToString("yyyy/MM/dd")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> عودة</a>
+    </div>
+</div>

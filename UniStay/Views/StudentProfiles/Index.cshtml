@@ -1,0 +1,118 @@
+@model StudentProfileListVM
+@{
+    ViewData["Title"] = "قاعدة بيانات الطلاب";
+}
+
+<div class="container-fluid" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-people-fill"></i> قاعدة بيانات الطلاب</h4>
+        <div>
+            <a asp-action="ExportExcel" asp-route-search="@Model.SearchTerm" asp-route-status="@Model.StatusFilter" asp-route-year="@Model.AcademicYearFilter" asp-route-faculty="@Model.FacultyFilter" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            <a asp-action="ExportPdf" asp-route-search="@Model.SearchTerm" asp-route-status="@Model.StatusFilter" asp-route-year="@Model.AcademicYearFilter" asp-route-faculty="@Model.FacultyFilter" class="btn btn-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        </div>
+    </div>
+
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-4">
+            <input type="text" name="search" class="form-control form-control-sm" placeholder="بحث بالاسم أو الرقم الجامعي أو القومي أو الهاتف" value="@Model.SearchTerm" />
+        </div>
+        <div class="col-md-2">
+            <select name="status" class="form-select form-select-sm">
+                <option value="">كل الحالات</option>
+                <option value="active" selected="@(Model.StatusFilter == "active")">نشط</option>
+                <option value="inactive" selected="@(Model.StatusFilter == "inactive")">غير نشط</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="number" name="year" class="form-control form-control-sm" placeholder="السنة الدراسية" value="@Model.AcademicYearFilter" />
+        </div>
+        <div class="col-md-2">
+            <input type="text" name="faculty" class="form-control form-control-sm" placeholder="الكلية" value="@Model.FacultyFilter" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-search"></i> بحث</button>
+        </div>
+    </form>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>الرقم الجامعي</th>
+                            <th>الاسم</th>
+                            <th>النوع</th>
+                            <th>الكلية</th>
+                            <th>السنة</th>
+                            <th>الحالة</th>
+                            <th>سكن</th>
+                            <th>حالات خاصة</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Students.Any())
+                        {
+                            <tr><td colspan="10" class="text-center text-muted py-3">لا توجد نتائج</td></tr>
+                        }
+                        @foreach (var s in Model.Students.Select((item, idx) => new { item, idx }))
+                        {
+                            <tr>
+                                <td>@((Model.Page - 1) * 20 + s.idx + 1)</td>
+                                <td>@s.item.StudentCode</td>
+                                <td>@s.item.Name</td>
+                                <td>@(s.item.Gender == "Male" ? "ذكر" : s.item.Gender == "Female" ? "أنثى" : s.item.Gender)</td>
+                                <td>@s.item.Faculty</td>
+                                <td>@s.item.AcademicYear</td>
+                                <td>
+                                    <span class="badge @(s.item.IsActive ? "bg-success" : "bg-secondary")">
+                                        @(s.item.IsActive ? "نشط" : "غير نشط")
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (s.item.HasActiveAllocation)
+                                    {
+                                        <span class="badge bg-info"><i class="bi bi-house-check"></i></span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>@(s.item.ActiveSpecialCases > 0 ? s.item.ActiveSpecialCases.ToString() : "-")</td>
+                                <td class="text-nowrap">
+                                    <a asp-action="Details" asp-route-id="@s.item.StudentId" class="btn btn-outline-info btn-sm" title="عرض"><i class="bi bi-eye"></i></a>
+                                    <a asp-action="Status" asp-route-id="@s.item.StudentId" class="btn btn-outline-primary btn-sm" title="بيان حالة"><i class="bi bi-card-list"></i></a>
+                                    <a asp-action="SpecialCases" asp-route-id="@s.item.StudentId" class="btn btn-outline-warning btn-sm" title="الحالات"><i class="bi bi-exclamation-triangle"></i></a>
+                                    <a asp-action="Print" asp-route-id="@s.item.StudentId" class="btn btn-outline-secondary btn-sm" title="طباعة" target="_blank"><i class="bi bi-printer"></i></a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-3">
+            <ul class="pagination pagination-sm justify-content-center">
+                <li class="page-item @(Model.Page <= 1 ? "disabled" : "")">
+                    <a class="page-link" asp-route-search="@Model.SearchTerm" asp-route-status="@Model.StatusFilter" asp-route-year="@Model.AcademicYearFilter" asp-route-faculty="@Model.FacultyFilter" asp-route-page="@(Model.Page - 1)">السابق</a>
+                </li>
+                @for (int p = Math.Max(1, Model.Page - 4); p <= Math.Min(Model.TotalPages, Model.Page + 4); p++)
+                {
+                    <li class="page-item @(p == Model.Page ? "active" : "")">
+                        <a class="page-link" asp-route-search="@Model.SearchTerm" asp-route-status="@Model.StatusFilter" asp-route-year="@Model.AcademicYearFilter" asp-route-faculty="@Model.FacultyFilter" asp-route-page="@p">@p</a>
+                    </li>
+                }
+                <li class="page-item @(Model.Page >= Model.TotalPages ? "disabled" : "")">
+                    <a class="page-link" asp-route-search="@Model.SearchTerm" asp-route-status="@Model.StatusFilter" asp-route-year="@Model.AcademicYearFilter" asp-route-faculty="@Model.FacultyFilter" asp-route-page="@(Model.Page + 1)">التالي</a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

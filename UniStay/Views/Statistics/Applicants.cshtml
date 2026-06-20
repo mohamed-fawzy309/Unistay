@@ -1,0 +1,94 @@
+@model ApplicantsStatisticsViewModel
+@{ ViewData["Title"] = "إحصائية المتقدمين"; }
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-people"></i> إحصائية المتقدمين</h2>
+        <div>
+            <a asp-action="ExportApplicantsExcel" asp-route-academicYear="@Model.FilterAcademicYear" asp-route-cityId="@Model.FilterCityId" asp-route-faculty="@Model.FilterFaculty" asp-route-fromDate="@Model.FilterFromDate" asp-route-toDate="@Model.FilterToDate" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            <a asp-action="ExportApplicantsPdf" asp-route-academicYear="@Model.FilterAcademicYear" asp-route-cityId="@Model.FilterCityId" asp-route-faculty="@Model.FilterFaculty" asp-route-fromDate="@Model.FilterFromDate" asp-route-toDate="@Model.FilterToDate" class="btn btn-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" class="row g-2 mb-4">
+        <div class="col-md-2">
+            <select name="academicYear" class="form-select form-select-sm">
+                <option value="">كل السنوات</option>
+                @foreach (var y in Model.AcademicYears) { <option value="@y" selected="@(y == Model.FilterAcademicYear)">@y</option> }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="cityId" class="form-select form-select-sm">
+                <option value="">كل المدن</option>
+                @foreach (var c in Model.Cities) { <option value="@c.ID" selected="@(c.ID == Model.FilterCityId)">@c.Name</option> }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="faculty" class="form-select form-select-sm">
+                <option value="">كل الكليات</option>
+                @foreach (var f in Model.Faculties) { <option value="@f" selected="@(f == Model.FilterFaculty)">@f</option> }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <input type="date" name="fromDate" class="form-control form-control-sm" value="@Model.FilterFromDate?.ToString("yyyy-MM-dd")" placeholder="من تاريخ" />
+        </div>
+        <div class="col-md-2">
+            <input type="date" name="toDate" class="form-control form-control-sm" value="@Model.FilterToDate?.ToString("yyyy-MM-dd")" placeholder="إلى تاريخ" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> تصفية</button>
+        </div>
+    </form>
+
+    <!-- KPI -->
+    <div class="row mb-4">
+        <div class="col-md-2 col-4 mb-2"><div class="card border-primary shadow-sm"><div class="card-body text-center p-2"><h6 class="text-muted small">الإجمالي</h6><h4 class="text-primary mb-0">@Model.Total</h4></div></div></div>
+        <div class="col-md-2 col-4 mb-2"><div class="card border-success shadow-sm"><div class="card-body text-center p-2"><h6 class="text-muted small">مقبول</h6><h4 class="text-success mb-0">@Model.Accepted</h4></div></div></div>
+        <div class="col-md-2 col-4 mb-2"><div class="card border-danger shadow-sm"><div class="card-body text-center p-2"><h6 class="text-muted small">مرفوض</h6><h4 class="text-danger mb-0">@Model.Rejected</h4></div></div></div>
+        <div class="col-md-2 col-4 mb-2"><div class="card border-warning shadow-sm"><div class="card-body text-center p-2"><h6 class="text-muted small">معلق</h6><h4 class="text-warning mb-0">@Model.Pending</h4></div></div></div>
+        <div class="col-md-2 col-4 mb-2"><div class="card border-info shadow-sm"><div class="card-body text-center p-2"><h6 class="text-muted small">قيد المراجعة</h6><h4 class="text-info mb-0">@Model.UnderReview</h4></div></div></div>
+        <div class="col-md-2 col-4 mb-2"><div class="card border-secondary shadow-sm"><div class="card-body text-center p-2"><h6 class="text-muted small">معاد</h6><h4 class="text-secondary mb-0">@Model.Returned</h4></div></div></div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">التقديمات الشهرية</h6></div><div class="card-body"><canvas id="chartMonthly" height="220"></canvas></div></div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">حالة الطلبات</h6></div><div class="card-body"><canvas id="chartStatus" height="220"></canvas></div></div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">حسب الكلية</h6></div><div class="card-body"><canvas id="chartFaculty" height="220"></canvas></div></div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">حسب المدينة</h6></div><div class="card-body"><canvas id="chartCity" height="220"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function c(id, type, labels, vals, label, bg) {
+            new Chart(document.getElementById(id), {
+                type: type, data: { labels: labels, datasets: [{ label: label, data: vals, backgroundColor: bg || '#0d6efd' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', rtl: true } } }
+            });
+        }
+        c('chartMonthly','line',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyApplications.Select(x => x.Label))),
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyApplications.Select(x => x.Value))),'طلبات');
+        c('chartStatus','doughnut',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByStatus.Select(x => x.Label))),
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByStatus.Select(x => x.Value))),'حالة',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByStatus.Select(x => x.Color))));
+        c('chartFaculty','bar',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByFaculty.Select(x => x.Label))),
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByFaculty.Select(x => x.Value))),'كلية');
+        c('chartCity','bar',
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByCity.Select(x => x.Label))),
+            @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ApplicationsByCity.Select(x => x.Value))),'مدينة');
+    </script>
+}

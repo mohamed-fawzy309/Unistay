@@ -1,0 +1,120 @@
+@using UniStay.ViewModels.Applications
+@model ApplicationDetailViewModel
+@{ ViewData["Title"] = "طباعة الطلب #" + Model.ID; Layout = null; }
+
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <title>طلب سكن #@Model.ID</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet" />
+    <style>
+        body { padding: 20px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .header { text-align: center; border-bottom: 2px solid #0d6efd; padding-bottom: 10px; margin-bottom: 20px; }
+        .header h2 { color: #0d6efd; margin: 0; }
+        .section-title { background: #f0f4ff; padding: 5px 10px; border-right: 3px solid #0d6efd; margin: 15px 0 10px; font-size: 1rem; }
+        table { width: 100%; margin-bottom: 10px; }
+        th, td { padding: 4px 8px; font-size: 13px; }
+        th { text-align: right; width: 150px; color: #555; }
+        .status-badge { display: inline-block; padding: 3px 12px; border-radius: 4px; font-size: 14px; }
+        .bg-success { background: #198754; color: #fff; }
+        .bg-danger { background: #dc3545; color: #fff; }
+        .bg-warning { background: #ffc107; color: #000; }
+        .bg-info { background: #0dcaf0; color: #000; }
+        .bg-secondary { background: #6c757d; color: #fff; }
+        .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #999; border-top: 1px solid #ddd; padding-top: 10px; }
+        @@media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <div class="no-print mb-3">
+        <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> طباعة</button>
+        <a href="@Url.Action("Details", new { id = Model.ID })" class="btn btn-outline-secondary">عودة</a>
+    </div>
+
+    <div class="header">
+        <h2>جامعة أسيوط - UniStay</h2>
+        <p class="mb-0">طلب التقديم للسكن الجامعي</p>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <strong>رقم الطلب: #@Model.ID</strong>
+        <span class="status-badge @(Model.Status switch { "Accepted" => "bg-success", "Rejected" => "bg-danger", "Pending" => "bg-warning", "UnderReview" => "bg-info", "Waitlist" => "bg-secondary", "Returned" => "bg-secondary", _ => "bg-secondary" })">
+            @(Model.Status switch { "Accepted" => "مقبول", "Rejected" => "مرفوض", "Pending" => "معلق", "UnderReview" => "قيد المراجعة", "Waitlist" => "قائمة انتظار", "Returned" => "معاد للتصحيح", _ => Model.Status })
+        </span>
+    </div>
+
+    <div class="section-title">بيانات الطالب</div>
+    <table>
+        <tr><th>الاسم</th><td>@Model.Student.FullName</td><th>الرقم القومي</th><td>@Model.Student.NationalID</td></tr>
+        <tr><th>كود الطالب</th><td>@Model.Student.StudentCode</td><th>النوع</th><td>@(Model.Student.Gender == "Male" ? "ذكر" : "أنثى")</td></tr>
+        <tr><th>الكلية</th><td>@Model.Student.Faculty</td><th>القسم</th><td>@Model.Student.Department</td></tr>
+        <tr><th>الهاتف</th><td>@Model.Student.Phone</td><th>البريد</th><td>@Model.Student.Email</td></tr>
+        <tr><th>المحافظة</th><td>@Model.Student.Governorate</td><th>المدينة</th><td>@Model.Student.City</td></tr>
+        <tr><th>المسافة</th><td>@Model.Student.DistanceFromUniv كم</td><th>نسبة التقدير</th><td>@Model.Student.GradePercentage%</td></tr>
+    </table>
+
+    @if (Model.Guardians.Any())
+    {
+        <div class="section-title">أولياء الأمور</div>
+        <table>
+            @foreach (var g in Model.Guardians)
+            {
+                <tr><th>@g.GuardianType</th><td>@g.FullName</td><th>الهاتف</th><td>@g.Phone</td><th>الوظيفة</th><td>@g.Job</td></tr>
+            }
+        </table>
+    }
+
+    <div class="section-title">بيانات الطلب</div>
+    <table>
+        <tr><th>المدينة الجامعية</th><td>@Model.DormitoryCity.Name</td><th>نوع الطالب</th><td>@Model.StudentType</td></tr>
+        <tr><th>نوع السكن</th><td>@Model.HousingType</td><th>العام الدراسي</th><td>@Model.AcademicYear</td></tr>
+        <tr><th>اشتراك وجبات</th><td>@(Model.MealSubscription == true ? "نعم" : "لا")</td><th>احتياجات خاصة</th><td>@(Model.HasSpecialNeeds == true ? Model.SpecialNeedsDescription : "لا")</td></tr>
+        <tr><th>درجة التنسيق</th><td>@Model.CoordinationScore</td><th>ترتيب التنسيق</th><td>@Model.CoordinationRank</td></tr>
+        <tr><th>تاريخ التقديم</th><td>@Model.CreatedAt?.ToString("yyyy/MM/dd HH:mm")</td><th>آخر تحديث</th><td>@Model.LastUpdatedAt?.ToString("yyyy/MM/dd HH:mm")</td></tr>
+    </table>
+
+    @if (Model.Allocation != null)
+    {
+        <div class="section-title">بيانات السكن</div>
+        <table>
+            <tr><th>المبنى</th><td>@Model.Allocation.BuildingName</td><th>الغرفة</th><td>@Model.Allocation.RoomNumber</td><th>رقم السرير</th><td>@Model.Allocation.BedNumber</td></tr>
+        </table>
+    }
+
+    @if (Model.Documents.Any())
+    {
+        <div class="section-title">المستندات</div>
+        <table>
+            <tr><th>#</th><th>النوع</th><th>الملف</th><th>الحالة</th><th>تاريخ الرفع</th></tr>
+            @foreach (var d in Model.Documents.Select((doc, i) => new { doc, i }))
+            {
+                <tr>
+                    <td>@(d.i + 1)</td>
+                    <td>@d.doc.DocumentType</td>
+                    <td>@d.doc.FileName</td>
+                    <td>@(d.doc.IsVerified == true ? "موثق" : d.doc.IsVerified == false ? "مرفوض" : "معلق")</td>
+                    <td>@d.doc.UploadedAt?.ToString("yyyy/MM/dd")</td>
+                </tr>
+            }
+        </table>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.RejectionReason))
+    {
+        <div><strong>سبب الرفض:</strong> @Model.RejectionReason</div>
+    }
+    @if (!string.IsNullOrEmpty(Model.AdminNotes))
+    {
+        <div><strong>ملاحظات المشرف:</strong> @Model.AdminNotes</div>
+    }
+
+    <div class="footer">
+        <p>تمت الطباعة في @DateTime.Now.ToString("yyyy/MM/dd HH:mm")</p>
+    </div>
+
+    <script>
+        window.onload = function () { window.print(); }
+    </script>
+</body>
+</html>

@@ -69,6 +69,7 @@
                             <th>الترتيب</th>
                             <th>الحالة</th>
                             <th>تاريخ المعالجة</th>
+                            <th>إجراءات</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -91,6 +92,11 @@
                                     }
                                 </td>
                                 <td>@r.ProcessedAt?.ToString("yyyy/MM/dd")</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-warning" onclick="loadOverride(@r.ID)" title="تعديل يدوي للدرجات">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </td>
                             </tr>
                         }
                     </tbody>
@@ -117,3 +123,104 @@
         <div class="alert alert-info">لا توجد نتائج تنسيق بعد</div>
     }
 </div>
+
+<!-- Manual Override Modal -->
+<div class="modal fade" id="overrideModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تعديل درجات التنسيق يدوياً</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-1"><strong id="ovStudent"></strong> <small id="ovNationalID" class="text-muted"></small></p>
+                <p class="text-muted small" id="ovFaculty"></p>
+                <hr />
+                <form id="overrideForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="ovId" name="ID" />
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <label>درجة المسافة</label>
+                            <input type="number" step="0.01" class="form-control" id="ovDistance" name="DistanceScore" />
+                        </div>
+                        <div class="col-6">
+                            <label>الدرجة الأكاديمية</label>
+                            <input type="number" step="0.01" class="form-control" id="ovGrade" name="GradeScore" />
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <label>درجة العمر</label>
+                            <input type="number" step="0.01" class="form-control" id="ovAge" name="AgeScore" />
+                        </div>
+                        <div class="col-6">
+                            <label>مكافأة خاصة</label>
+                            <input type="number" step="0.01" class="form-control" id="ovBonus" name="SpecialBonus" />
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-6">
+                            <label>المجموع</label>
+                            <input type="text" class="form-control" id="ovTotal" readonly />
+                        </div>
+                        <div class="col-6">
+                            <label>الترتيب</label>
+                            <input type="text" class="form-control" id="ovRank" readonly />
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-warning" onclick="saveOverride()"><i class="bi bi-save"></i> حفظ التعديلات</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function loadOverride(id) {
+        fetch('/Coordination/ManualOverride?id=' + id)
+            .then(r => r.json())
+            .then(resp => {
+                if (!resp.success) { alert(resp.message); return; }
+                var d = resp.data;
+                document.getElementById('ovId').value = d.id;
+                document.getElementById('ovStudent').textContent = d.studentName;
+                document.getElementById('ovNationalID').textContent = d.nationalID;
+                document.getElementById('ovFaculty').textContent = d.faculty;
+                document.getElementById('ovDistance').value = d.distanceScore;
+                document.getElementById('ovGrade').value = d.gradeScore;
+                document.getElementById('ovAge').value = d.ageScore;
+                document.getElementById('ovBonus').value = d.specialBonus;
+                document.getElementById('ovTotal').value = d.totalScore;
+                document.getElementById('ovRank').value = d.rank;
+                var modal = new bootstrap.Modal(document.getElementById('overrideModal'));
+                modal.show();
+            });
+    }
+
+    function saveOverride() {
+        var data = {
+            ID: parseInt(document.getElementById('ovId').value),
+            DistanceScore: parseFloat(document.getElementById('ovDistance').value) || 0,
+            GradeScore: parseFloat(document.getElementById('ovGrade').value) || 0,
+            AgeScore: parseFloat(document.getElementById('ovAge').value) || 0,
+            SpecialBonus: parseFloat(document.getElementById('ovBonus').value) || 0
+        };
+        fetch('/Coordination/ManualOverrideSave', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('input[name="__RequestVerificationToken"]').value },
+            body: JSON.stringify(data)
+        }).then(r => r.json()).then(resp => {
+            if (resp.success) {
+                document.getElementById('ovTotal').value = resp.totalScore;
+                alert('تم حفظ التعديلات بنجاح');
+                location.reload();
+            } else {
+                alert(resp.message);
+            }
+        });
+    }
+</script>

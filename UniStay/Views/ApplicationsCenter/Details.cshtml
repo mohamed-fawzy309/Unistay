@@ -1,0 +1,124 @@
+@using UniStay.ViewModels.Applications
+@model ApplicationDetailViewModel
+@{ ViewData["Title"] = "تفاصيل الطلب #" + Model.ID; }
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> تفاصيل الطلب #@Model.ID</h5>
+        <div>
+            <span class="badge fs-6 @(Model.Status switch { "Accepted" => "bg-success", "Rejected" => "bg-danger", "Pending" => "bg-warning text-dark", "UnderReview" => "bg-info text-dark", "Waitlist" => "bg-secondary", "Returned" => "bg-dark", _ => "bg-light text-dark" })">@Model.Status</span>
+        </div>
+    </div>
+    <div class="card-body">
+        @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+        @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2"><i class="bi bi-person"></i> بيانات الطالب</h6>
+                <table class="table table-sm">
+                    <tr><th>الاسم</th><td>@Model.Student.FullName</td></tr>
+                    <tr><th>الرقم القومي</th><td>@Model.Student.NationalID</td></tr>
+                    <tr><th>كود الطالب</th><td>@Model.Student.StudentCode</td></tr>
+                    <tr><th>النوع</th><td>@(Model.Student.Gender == "Male" ? "ذكر" : "أنثى")</td></tr>
+                    <tr><th>الكلية</th><td>@Model.Student.Faculty</td></tr>
+                    <tr><th>القسم</th><td>@Model.Student.Department</td></tr>
+                    <tr><th>الهاتف</th><td>@Model.Student.Phone</td></tr>
+                    <tr><th>البريد</th><td>@Model.Student.Email</td></tr>
+                    <tr><th>المحافظة</th><td>@Model.Student.Governorate</td></tr>
+                    <tr><th>المدينة</th><td>@Model.Student.City</td></tr>
+                    <tr><th>المسافة</th><td>@Model.Student.DistanceFromUniv كم</td></tr>
+                    <tr><th>نسبة التقدير</th><td>@Model.Student.GradePercentage%</td></tr>
+                </table>
+                <h6 class="border-bottom pb-2 mt-3"><i class="bi bi-people"></i> أولياء الأمور</h6>
+                @if (Model.Guardians.Any())
+                {
+                    @foreach (var g in Model.Guardians)
+                    {
+                        <div class="border rounded p-2 mb-1"><strong>@g.FullName</strong> <small>(@g.GuardianType) - @g.Phone</small></div>
+                    }
+                }
+                else { <p class="text-muted small">لا يوجد</p> }
+            </div>
+            <div class="col-md-6">
+                <h6 class="border-bottom pb-2"><i class="bi bi-info-circle"></i> بيانات الطلب</h6>
+                <table class="table table-sm">
+                    <tr><th>المدينة الجامعية</th><td>@Model.DormitoryCity.Name</td></tr>
+                    <tr><th>نوع الطالب</th><td>@Model.StudentType</td></tr>
+                    <tr><th>نوع السكن</th><td>@Model.HousingType</td></tr>
+                    <tr><th>العام الدراسي</th><td>@Model.AcademicYear</td></tr>
+                    <tr><th>اشتراك وجبات</th><td>@(Model.MealSubscription == true ? "نعم" : "لا")</td></tr>
+                    <tr><th>احتياجات خاصة</th><td>@(Model.HasSpecialNeeds == true ? Model.SpecialNeedsDescription : "لا")</td></tr>
+                    <tr><th>حالة التحقق</th><td>@Model.ServerVerificationStatus</td></tr>
+                    <tr><th>درجة التنسيق</th><td>@Model.CoordinationScore</td></tr>
+                    <tr><th>ترتيب التنسيق</th><td>@Model.CoordinationRank</td></tr>
+                    <tr><th>تاريخ التقديم</th><td>@Model.CreatedAt?.ToString("yyyy/MM/dd HH:mm")</td></tr>
+                    <tr><th>آخر تحديث</th><td>@Model.LastUpdatedAt?.ToString("yyyy/MM/dd HH:mm")</td></tr>
+                    <tr><th>مراجع بواسطة</th><td>@Model.ReviewedBy?.Name</td></tr>
+                </table>
+
+                @if (Model.Allocation != null)
+                {
+                    <h6 class="border-bottom pb-2 mt-3"><i class="bi bi-door-open"></i> السكن</h6>
+                    <table class="table table-sm">
+                        <tr><th>المبنى</th><td>@Model.Allocation.BuildingName</td></tr>
+                        <tr><th>الغرفة</th><td>@Model.Allocation.RoomNumber</td></tr>
+                        <tr><th>رقم السرير</th><td>@Model.Allocation.BedNumber</td></tr>
+                        <tr><th>الحالة</th><td>@Model.Allocation.Status</td></tr>
+                    </table>
+                }
+
+                <h6 class="border-bottom pb-2 mt-3"><i class="bi bi-file-earmark"></i> المستندات</h6>
+                @if (Model.Documents.Any())
+                {
+                    @foreach (var d in Model.Documents)
+                    {
+                        <div class="border rounded p-1 mb-1 small">
+                            <span>@d.DocumentType</span>
+                            <span class="badge @(d.IsVerified == true ? "bg-success" : d.IsVerified == false ? "bg-danger" : "bg-warning text-dark")">@(d.IsVerified == true ? "موثق" : d.IsVerified == false ? "مرفوض" : "معلق")</span>
+                        </div>
+                    }
+                }
+                else { <p class="text-muted small">لا توجد مستندات</p> }
+
+                @if (Model.Status == "Rejected" && !string.IsNullOrEmpty(Model.RejectionReason))
+                {
+                    <div class="alert alert-danger mt-3"><strong>سبب الرفض:</strong> @Model.RejectionReason</div>
+                }
+                @if (!string.IsNullOrEmpty(Model.AdminNotes))
+                {
+                    <div class="alert alert-info mt-2"><strong>ملاحظات المشرف:</strong> @Model.AdminNotes</div>
+                }
+            </div>
+        </div>
+
+        @if (Model.Status != "Accepted" && Model.Status != "Rejected")
+        {
+            <hr />
+            <h6>اتخاذ قرار</h6>
+            <form method="post" asp-action="Review" asp-route-id="@Model.ID" class="row g-2">
+                @Html.AntiForgeryToken()
+                <div class="col-md-4">
+                    <select name="Decision" class="form-select" required>
+                        <option value="">اختر القرار</option>
+                        <option value="Accepted">قبول</option>
+                        <option value="Rejected">رفض</option>
+                        <option value="UnderReview">تحويل للمراجعة</option>
+                        <option value="Returned">إعادة للتصحيح</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <input name="RejectionReason" class="form-control" placeholder="سبب الرفض (إلزامي للرفض)" />
+                </div>
+                <div class="col-md-4">
+                    <input name="AdminNotes" class="form-control" placeholder="ملاحظات المشرف" value="@Model.AdminNotes" />
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check2"></i> تنفيذ</button>
+                    <a asp-action="Print" asp-route-id="@Model.ID" class="btn btn-outline-info" target="_blank"><i class="bi bi-printer"></i> طباعة</a>
+                    <a asp-action="Index" class="btn btn-outline-secondary">عودة</a>
+                </div>
+            </form>
+        }
+    </div>
+</div>

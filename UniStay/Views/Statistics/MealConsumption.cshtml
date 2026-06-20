@@ -1,0 +1,71 @@
+@model MealConsumptionStatisticsViewModel
+@{ ViewData["Title"] = "إحصائية استلام الوجبات"; }
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-cup-hot"></i> إحصائية استلام الوجبات</h2>
+        <div>
+            <a asp-action="ExportMealsExcel" asp-route-cityId="@Model.FilterCityId" asp-route-date="@Model.FilterDate" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            <a asp-action="ExportMealsPdf" asp-route-cityId="@Model.FilterCityId" asp-route-date="@Model.FilterDate" class="btn btn-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        </div>
+    </div>
+
+    <form method="get" class="row g-2 mb-4">
+        <div class="col-md-3">
+            <select name="cityId" class="form-select form-select-sm">
+                <option value="">كل المدن</option>
+                @foreach (var c in Model.Cities) { <option value="@c.ID" selected="@(c.ID == Model.FilterCityId)">@c.Name</option> }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="date" name="date" class="form-control form-control-sm" value="@Model.FilterDate?.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i> تصفية</button>
+        </div>
+    </form>
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-2"><div class="card border-primary shadow-sm"><div class="card-body text-center"><h6 class="text-muted">الإجمالي</h6><h3 class="text-primary mb-0">@Model.Total.ToString("N0")</h3></div></div></div>
+        <div class="col-md-3 mb-2"><div class="card border-warning shadow-sm"><div class="card-body text-center"><h6 class="text-muted">إفطار</h6><h3 class="text-warning mb-0">@Model.BreakfastCount.ToString("N0")</h3></div></div></div>
+        <div class="col-md-3 mb-2"><div class="card border-success shadow-sm"><div class="card-body text-center"><h6 class="text-muted">غداء</h6><h3 class="text-success mb-0">@Model.LunchCount.ToString("N0")</h3></div></div></div>
+        <div class="col-md-3 mb-2"><div class="card border-info shadow-sm"><div class="card-body text-center"><h6 class="text-muted">عشاء</h6><h3 class="text-info mb-0">@Model.DinnerCount.ToString("N0")</h3></div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">الاستهلاك اليومي (آخر 7 أيام)</h6></div><div class="card-body"><canvas id="chartDaily" height="220"></canvas></div></div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">الاستهلاك حسب المدينة</h6></div><div class="card-body"><canvas id="chartCity" height="220"></canvas></div></div>
+        </div>
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm"><div class="card-header bg-light"><h6 class="mb-0">الاستهلاك حسب نوع الوجبة</h6></div><div class="card-body"><canvas id="chartMealType" height="220"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const mcolors = ['#ffc107','#198754','#0dcaf0'];
+        new Chart(document.getElementById('chartDaily'), {
+            type: 'line', data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DailyConsumption.Select(x => x.Label))),
+                datasets: [{ data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DailyConsumption.Select(x => x.Value))), borderColor: '#198754', fill: true, backgroundColor: '#19875420' }]
+            }, options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+        new Chart(document.getElementById('chartCity'), {
+            type: 'bar', data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsumptionByCity.Select(x => x.Label))),
+                datasets: [{ data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsumptionByCity.Select(x => x.Value))), backgroundColor: '#0d6efd' }]
+            }, options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+        new Chart(document.getElementById('chartMealType'), {
+            type: 'doughnut', data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsumptionByMealType.Select(x => x.Label))),
+                datasets: [{ data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ConsumptionByMealType.Select(x => x.Value))), backgroundColor: mcolors }]
+            }, options: { responsive: true, plugins: { legend: { position: 'bottom', rtl: true } } }
+        });
+    </script>
+}

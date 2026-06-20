@@ -169,6 +169,38 @@ namespace UniStay.ViewModels.Coordination
         public bool IsFull => CurrentCount >= MaxQuota;
     }
 
+    public class ManualOverrideViewModel
+    {
+        public int ID { get; set; }
+        public string StudentName { get; set; } = null!;
+        public string? NationalID { get; set; }
+        public string? Faculty { get; set; }
+        public decimal? DistanceScore { get; set; }
+        public decimal? GradeScore { get; set; }
+        public decimal? AgeScore { get; set; }
+        public decimal? SpecialBonus { get; set; }
+        public decimal? TotalScore { get; set; }
+        public int? Rank { get; set; }
+    }
+
+    public class ManualOverrideSaveViewModel
+    {
+        [Required]
+        public int ID { get; set; }
+
+        [Range(0, 100)]
+        public decimal? DistanceScore { get; set; }
+
+        [Range(0, 100)]
+        public decimal? GradeScore { get; set; }
+
+        [Range(0, 100)]
+        public decimal? AgeScore { get; set; }
+
+        [Range(0, 100)]
+        public decimal? SpecialBonus { get; set; }
+    }
+
     public class AddFacultyQuotaViewModel
     {
         [Required(ErrorMessage = "الكلية مطلوبة")]

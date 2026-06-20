@@ -10,7 +10,7 @@ using UniStay.ViewModels.Violation;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class ViolationController : Controller
     {
         private readonly AssuitDbContext _db;
@@ -35,6 +35,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Violations.Manage", "CanCreate")]
         public async Task<IActionResult> Add()
         {
             ViewBag.ViolationTypes = new List<SelectListItem>
@@ -177,6 +178,7 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        [RequirePermission("Violations.Manage", "CanView")]
         public async Task<IActionResult> Report(
             string? filterStatus = null,
             string? filterSeverity = null,

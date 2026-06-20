@@ -79,6 +79,7 @@
         }
 
         <form asp-action="Run" method="post" onsubmit="return confirm('تأكيد تنفيذ التنسيق؟')">
+            @Html.AntiForgeryToken()
             <input type="hidden" name="cityId" value="@Model.DormitoryCityID" />
             <input type="hidden" name="academicYear" value="@Model.AcademicYear" />
             <button type="submit" class="btn btn-success btn-lg"><i class="bi bi-play-fill"></i> تنفيذ التنسيق</button>

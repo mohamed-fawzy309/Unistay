@@ -5,12 +5,13 @@ using UniStay.Data;
 using UniStay.Helpers;
 using UniStay.Models;
 using UniStay.Services.Interfaces;
+using UniStay.ViewModels;
 using UniStay.ViewModels.Admin;
 using UniStay.ViewModels.Permissions;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class AdminController : Controller
     {
         private readonly AssuitDbContext _db;
@@ -69,6 +70,7 @@ namespace UniStay.Controllers
 
             vm.LatestApplications = await _db.Applications
                 .Include(a => a.Student)
+                .Where(a => a.CreatedAt != null)
                 .OrderByDescending(a => a.CreatedAt)
                 .Take(10)
                 .Select(a => new ApplicationRowViewModel
@@ -91,7 +93,7 @@ namespace UniStay.Controllers
             vm.RecentAuditLogs = recentLogs.Select(l => new AuditLogRowViewModel
             {
                 ID = l.ID,
-                UserDisplayName = l.UserType == "System" && userNames.ContainsKey(l.UserID) ? userNames[l.UserID] : l.UserID.ToString(),
+                UserDisplayName = l.UserType == "System" && l.UserID.HasValue && userNames.ContainsKey(l.UserID.Value) ? userNames[l.UserID.Value] : (l.UserID?.ToString() ?? ""),
                 UserType = l.UserType,
                 Action = l.Action,
                 ActionDisplay = l.Action,
@@ -412,7 +414,7 @@ namespace UniStay.Controllers
                     Status = a.Status,
                     CreatedAt = a.CreatedAt!.Value,
                     ReviewedAt = a.ReviewedAt,
-                    ReviewedByName = a.ReviewedByNavigation!.Name,
+                    ReviewedByName = a.ReviewedByNavigation != null ? a.ReviewedByNavigation.Name : null,
                     ServerVerificationStatus = a.ServerVerificationStatus
                 })
                 .ToListAsync();
@@ -520,6 +522,13 @@ namespace UniStay.Controllers
                         .Select(a => a.Status)
                         .FirstOrDefault()
                 })
+                .ToListAsync();
+
+            ViewBag.Faculties = await _db.Students
+                .Where(s => s.Faculty != null && s.Faculty != "")
+                .Select(s => s.Faculty)
+                .Distinct()
+                .OrderBy(f => f)
                 .ToListAsync();
 
             ViewBag.Page = page;
@@ -1591,8 +1600,10 @@ namespace UniStay.Controllers
 
         [HttpGet]
         [RequirePermission("Buildings.Manage", "CanView")]
-        public async Task<IActionResult> BuildingLayout(int id)
+        public async Task<IActionResult> BuildingLayout(int id = 0)
         {
+            if (id <= 0)
+                return RedirectToAction(nameof(Buildings));
             var building = await _db.CityBuildings
                 .Include(b => b.DormitoryCity)
                 .Include(b => b.CityRooms)
@@ -2318,6 +2329,13 @@ namespace UniStay.Controllers
             var role = await _db.Roles.FindAsync(model.ID);
             if (role == null) return NotFound();
 
+            var duplicate = await _db.Roles.AnyAsync(r => r.Name == model.Name && r.ID != model.ID);
+            if (duplicate)
+            {
+                TempData["Error"] = "اسم الدور موجود مسبقاً";
+                return RedirectToAction("Roles");
+            }
+
             role.Name = model.Name;
             role.Description = model.Description;
             role.IsActive = model.IsActive;
@@ -2328,6 +2346,30 @@ namespace UniStay.Controllers
 
             TempData["Success"] = "تم تحديث الدور";
             return RedirectToAction("Roles");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [RequirePermission("Roles.Manage", "CanDelete")]
+        public async Task<IActionResult> DeleteRole(int id)
+        {
+            var role = await _db.Roles.FindAsync(id);
+            if (role == null) return NotFound();
+
+            var userCount = await _db.UserRoles.CountAsync(ur => ur.RoleID == id);
+            if (userCount > 0)
+            {
+                return Json(new { success = false, message = $"لا يمكن حذف الدور — لا يزال مستخدماً من قبل {userCount} مستخدم" });
+            }
+
+            _db.RolePermissions.RemoveRange(_db.RolePermissions.Where(rp => rp.RoleID == id));
+            _db.Roles.Remove(role);
+            await _db.SaveChangesAsync();
+
+            await _audit.LogAsync(CurrentUserId, "Staff", "Role.Delete", "Role", id,
+                new { role.Name }, null);
+
+            return Json(new { success = true, message = "تم حذف الدور" });
         }
 
         // ──────────────────────────────────────────────────────────────────────────────
@@ -2434,7 +2476,7 @@ namespace UniStay.Controllers
                 ID = l.ID,
                 UserID = l.UserID,
                 UserType = l.UserType,
-                UserDisplayName = userNames.GetValueOrDefault(l.UserID, $"#{l.UserID}"),
+                UserDisplayName = l.UserID.HasValue ? userNames.GetValueOrDefault(l.UserID.Value, $"#{l.UserID.Value}") : "",
                 Action = l.Action,
                 ActionDisplay = l.Action,
                 TableName = l.TableName,
@@ -2444,6 +2486,7 @@ namespace UniStay.Controllers
                 CreatedAt = l.CreatedAt
             }).ToList();
 
+            ViewBag.TotalCount = total;
             ViewBag.Page = page;
             ViewBag.TotalPages = (int)Math.Ceiling(total / 50.0);
             return View(logVms);

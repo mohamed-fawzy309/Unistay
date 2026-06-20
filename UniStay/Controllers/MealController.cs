@@ -9,7 +9,7 @@ using UniStay.ViewModels.Meal;
 
 namespace UniStay.Controllers
 {
-    [Authorize(AuthenticationSchemes = "AdminCookie")]
+    [Authorize(AuthenticationSchemes = "StaffCookie,AdminCookie")]
     public class MealController : Controller
     {
         private readonly AssuitDbContext _db;

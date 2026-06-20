@@ -1,0 +1,130 @@
+@model StudentProfilePrintVM
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <title>@Model.Title</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; padding: 20px; }
+        .header { border-bottom: 2px solid #333; margin-bottom: 20px; padding-bottom: 10px; }
+        .header h2 { margin: 0; }
+        .photo-box { width: 120px; height: 120px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; background: #f5f5f5; }
+        .photo-box img { width: 120px; height: 120px; object-fit: cover; }
+        .section-title { background: #f0f0f0; padding: 5px 10px; font-weight: bold; margin-top: 15px; border-right: 3px solid #333; }
+        table.info-table td { padding: 3px 8px; }
+        .footer { margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #ccc; padding-top: 10px; }
+        .badge-container span { display: inline-block; padding: 2px 8px; margin: 2px; border: 1px solid #999; border-radius: 3px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="row">
+            <div class="col-8">
+                <h2>@Model.Title</h2>
+                <small>الرقم الجامعي: @Model.BasicInfo.StudentCode</small>
+            </div>
+            <div class="col-4 text-start">
+                @if (!string.IsNullOrEmpty(Model.BasicInfo.Photo))
+                {
+                    <img src="~/uploads/@Model.BasicInfo.Photo" class="photo-box" />
+                }
+                else
+                {
+                    <div class="photo-box"><i class="bi bi-person" style="font-size:3rem;color:#ccc;"></i></div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title">المعلومات الأساسية</div>
+    <table class="info-table w-100">
+        <tr><td style="width:150px;"><strong>الاسم:</strong></td><td>@Model.BasicInfo.Name</td></tr>
+        <tr><td><strong>الرقم القومي:</strong></td><td>@Model.BasicInfo.NationalID</td></tr>
+        <tr><td><strong>تاريخ الميلاد:</strong></td><td>@Model.BasicInfo.BirthDate.ToString("yyyy/MM/dd")</td></tr>
+        <tr><td><strong>النوع:</strong></td><td>@(Model.BasicInfo.Gender == "Male" ? "ذكر" : "أنثى")</td></tr>
+        <tr><td><strong>الحالة:</strong></td><td>@(Model.BasicInfo.IsActive ? "نشط" : "غير نشط")</td></tr>
+    </table>
+
+    <div class="section-title">معلومات التواصل</div>
+    <table class="info-table w-100">
+        <tr><td style="width:150px;"><strong>الهاتف:</strong></td><td>@Model.ContactInfo.Phone</td></tr>
+        <tr><td><strong>البريد:</strong></td><td>@Model.ContactInfo.Email</td></tr>
+        <tr><td><strong>العنوان:</strong></td><td>@Model.ContactInfo.Address</td></tr>
+    </table>
+
+    <div class="section-title">المعلومات الأكاديمية</div>
+    <table class="info-table w-100">
+        <tr><td style="width:150px;"><strong>الكلية:</strong></td><td>@Model.AcademicInfo.Faculty</td></tr>
+        <tr><td><strong>السنة الدراسية:</strong></td><td>@Model.AcademicInfo.AcademicYear</td></tr>
+        <tr><td><strong>القسم:</strong></td><td>@Model.AcademicInfo.Department</td></tr>
+        <tr><td><strong>النسبة:</strong></td><td>@Model.AcademicInfo.GradePercentage?.ToString("F2")</td></tr>
+        <tr><td><strong>التقدير:</strong></td><td>@Model.AcademicInfo.GradeText</td></tr>
+    </table>
+
+    <div class="section-title">السكن</div>
+    <table class="info-table w-100">
+        @if (Model.HousingInfo.IsAllocated)
+        {
+            <tr><td style="width:150px;"><strong>المبنى:</strong></td><td>@Model.HousingInfo.BuildingName</td></tr>
+            <tr><td><strong>الغرفة:</strong></td><td>@Model.HousingInfo.RoomNumber</td></tr>
+            <tr><td><strong>السرير:</strong></td><td>@Model.HousingInfo.BedNumber</td></tr>
+        }
+        else
+        {
+            <tr><td colspan="2">لا يوجد سكن حالي</td></tr>
+        }
+    </table>
+
+    @if (Model.Guardians.Any())
+    {
+        <div class="section-title">أولياء الأمور</div>
+        <table class="table table-bordered table-sm">
+            <thead><tr><th>النوع</th><th>الاسم</th><th>الرقم القومي</th><th>الهاتف</th><th>الوظيفة</th></tr></thead>
+            <tbody>
+                @foreach (var g in Model.Guardians)
+                {
+                    <tr><td>@g.GuardianType</td><td>@g.FullName</td><td>@g.NationalID</td><td>@g.Phone</td><td>@g.Job</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    @if (Model.Documents.Any())
+    {
+        <div class="section-title">المستندات</div>
+        <table class="table table-bordered table-sm">
+            <thead><tr><th>النوع</th><th>تاريخ الرفع</th><th>الحالة</th></tr></thead>
+            <tbody>
+                @foreach (var d in Model.Documents)
+                {
+                    <tr><td>@d.DocumentType</td><td>@d.UploadDate?.ToString("yyyy/MM/dd")</td><td>@(d.IsVerified ? "موثق" : "غير موثق")</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <div class="badge-container mt-2">
+        <strong>خصائص: </strong>
+        @if (Model.BasicInfo.HasDisability) { <span>ذو إعاقة</span> }
+        @if (Model.BasicInfo.IsOrphan) { <span>يتيم</span> }
+        @if (Model.BasicInfo.IsLowIncome) { <span>محدود الدخل</span> }
+        @if (Model.BasicInfo.HasFamilyAbroad) { <span>أسرة بالخارج</span> }
+        @if (Model.BasicInfo.HasMedicalCondition) { <span>حالة طبية</span> }
+        @if (Model.BasicInfo.IsForeign) { <span>وافد</span> }
+    </div>
+
+    <div class="footer">
+        <div class="row">
+            <div class="col-6">تمت الطباعة: @Model.PrintedAt</div>
+            <div class="col-6 text-start">UniStay - إدارة المدن الجامعية</div>
+        </div>
+    </div>
+
+    <script>window.print();</script>
+</body>
+</html>

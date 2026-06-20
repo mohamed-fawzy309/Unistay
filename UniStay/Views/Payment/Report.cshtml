@@ -27,6 +27,13 @@
                     <label class="form-label">المدينة</label>
                     <select name="cityId" class="form-select">
                         <option value="">الكل</option>
+                        @if (ViewBag.Cities != null)
+                        {
+                            foreach (var c in ViewBag.Cities)
+                            {
+                                <option value="@c.Value" selected="@(Model.DormitoryCityID.ToString() == c.Value)">@c.Text</option>
+                            }
+                        }
                     </select>
                 </div>
                 <div class="col-md-3 d-flex align-items-end">

@@ -1,0 +1,62 @@
+@model SocialCaseCreateVM
+@{
+    ViewData["Title"] = "إضافة حالة بحث اجتماعي";
+}
+
+<div class="container-fluid" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-plus-circle"></i> إضافة حالة بحث اجتماعي</h4>
+        <a asp-action="Index" class="btn btn-outline-dark btn-sm"><i class="bi bi-arrow-right"></i> عودة</a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">الطالب <span class="text-danger">*</span></label>
+                        <select name="StudentID" class="form-select" required>
+                            <option value="">اختر الطالب...</option>
+                        </select>
+                        <input type="text" id="studentSearch" class="form-control form-control-sm mt-1" placeholder="بحث بالاسم أو الرقم الجامعي" />
+                        <div id="studentResults" class="list-group mt-1" style="max-height:200px;overflow-y:auto;display:none;"></div>
+                        @if (ViewBag.StudentId != null)
+                        {
+                            <small class="text-muted">سيتم ربط الحالة بالطالب المحدد</small>
+                        }
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">نوع الحالة <span class="text-danger">*</span></label>
+                        <input asp-for="CaseType" class="form-control" required />
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">الوصف <span class="text-danger">*</span></label>
+                    <textarea asp-for="Description" class="form-control" rows="4" required></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">الأولوية</label>
+                        <select asp-for="Priority" class="form-select">
+                            <option value="عاجلة">عاجلة</option>
+                            <option value="عالية">عالية</option>
+                            <option value="متوسطة" selected>متوسطة</option>
+                            <option value="منخفضة">منخفضة</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
+                <a asp-action="Index" class="btn btn-secondary">إلغاء</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @* Student search via JSON *@
+}

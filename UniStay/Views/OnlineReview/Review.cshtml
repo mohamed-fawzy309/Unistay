@@ -1,0 +1,98 @@
+@using UniStay.ViewModels.Applications
+@model OnlineReviewDetailViewModel
+@{ ViewData["Title"] = "مراجعة طلب #" + Model.ApplicationID; }
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-file-earmark-check"></i> مراجعة طلب #@Model.ApplicationID - @Model.StudentName</h5>
+    </div>
+    <div class="card-body">
+        @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <table class="table table-sm">
+                    <tr><th>الاسم</th><td>@Model.StudentName</td></tr>
+                    <tr><th>الرقم القومي</th><td>@Model.NationalID</td></tr>
+                    <tr><th>الكلية</th><td>@Model.Faculty</td></tr>
+                    <tr><th>المدينة الجامعية</th><td>@Model.CityName</td></tr>
+                    <tr><th>الحالة</th><td>@Model.Status</td></tr>
+                </table>
+            </div>
+        </div>
+
+        <h6 class="border-bottom pb-2"><i class="bi bi-file-earmark"></i> المستندات المرفوعة</h6>
+        <div id="documentsList">
+            @if (!Model.Documents.Any())
+            {
+                <div class="alert alert-warning">لا توجد مستندات مرفوعة</div>
+            }
+            @foreach (var doc in Model.Documents)
+            {
+                <div class="border rounded p-3 mb-2" id="doc-@doc.DocumentID">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>@doc.DocumentType</strong>
+                            <small class="text-muted me-2">@doc.FileName</small>
+                            <span class="badge @(doc.IsVerified == true ? "bg-success" : doc.IsVerified == false ? "bg-danger" : "bg-warning text-dark") status-badge">
+                                @(doc.IsVerified == true ? "موثق" : doc.IsVerified == false ? "مرفوض" : "بانتظار التوثيق")
+                            </span>
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-success" onclick="verifyDoc(@doc.DocumentID, true)"><i class="bi bi-check-lg"></i> توثيق</button>
+                            <button class="btn btn-sm btn-danger" onclick="verifyDoc(@doc.DocumentID, false)"><i class="bi bi-x-lg"></i> رفض</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <hr />
+        <div class="row g-2">
+            <div class="col-md-4">
+                <form method="post" asp-action="ApproveApplication" asp-route-id="@Model.ApplicationID">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-success w-100"><i class="bi bi-check-circle"></i> قبول الطلب</button>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <form method="post" asp-action="RejectApplication" asp-route-id="@Model.ApplicationID" onsubmit="return confirm('تأكيد رفض الطلب؟')">
+                    @Html.AntiForgeryToken()
+                    <div class="input-group">
+                        <input name="reason" class="form-control" placeholder="سبب الرفض" required />
+                        <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle"></i> رفض</button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-4">
+                <form method="post" asp-action="RequestAdditionalDocuments" asp-route-id="@Model.ApplicationID">
+                    @Html.AntiForgeryToken()
+                    <div class="input-group">
+                        <input name="message" class="form-control" placeholder="رسالة للطالب" />
+                        <button type="submit" class="btn btn-warning"><i class="bi bi-file-earmark-plus"></i> طلب مستندات</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function verifyDoc(docId, verified) {
+            fetch('@Url.Action("VerifyDocument", "OnlineReview")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                body: `docId=${docId}&verified=${verified}`
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const badge = document.querySelector(`#doc-${docId} .status-badge`);
+                    badge.className = `badge ${verified ? 'bg-success' : 'bg-danger'} status-badge`;
+                    badge.textContent = verified ? 'موثق' : 'مرفوض';
+                }
+            });
+        }
+    </script>
+}
