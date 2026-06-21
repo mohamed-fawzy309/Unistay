@@ -59,14 +59,16 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">المبنى</label>
-                        <select id="buildingSelect" asp-for="CityRoomID" class="form-select" onchange="loadRooms(this.value)">
+                        <select id="buildingSelect" class="form-select" onchange="loadRooms(this.value)">
                             <option value="">-- اختر المبنى أولاً --</option>
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">رقم السرير</label>
-                        <input asp-for="BedNumber" class="form-control" type="number" min="1" max="8" />
-                        <span asp-validation-for="BedNumber" class="text-danger"></span>
+                        <label class="form-label">الغرفة</label>
+                        <select asp-for="CityRoomID" id="roomSelect" class="form-select" required>
+                            <option value="">-- اختر المبنى أولاً --</option>
+                        </select>
+                        <span asp-validation-for="CityRoomID" class="text-danger"></span>
                     </div>
                 </div>
 
@@ -85,17 +87,46 @@
     <script>
         function loadBuildings(cityId) {
             if (!cityId) return;
-            $.get('@Url.Action("GetBuildingsByCity", "Allocation")', { cityId: cityId }, function (data) {
-                var sel = $('#buildingSelect');
-                sel.empty().append('<option value="">-- اختر المبنى --</option>');
-                data.forEach(function (b) { sel.append('<option value="' + b.id + '">' + b.buildingName + '</option>'); });
-            });
+            fetch('@Url.Action("GetBuildingsByCity", "Allocation")?cityId=' + cityId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var sel = document.getElementById('buildingSelect');
+                    sel.innerHTML = '<option value="">-- اختر المبنى --</option>';
+                    data.forEach(function (b) {
+                        var opt = document.createElement('option');
+                        opt.value = b.id;
+                        opt.textContent = b.buildingName;
+                        sel.appendChild(opt);
+                    });
+                    var rs = document.getElementById('roomSelect');
+                    rs.innerHTML = '<option value="">-- اختر المبنى أولاً --</option>';
+                });
         }
         function loadRooms(buildingId) {
             if (!buildingId) return;
-            $.get('@Url.Action("GetRoomsByBuilding", "Allocation")', { buildingId: buildingId }, function (data) {
-                console.log('Rooms:', data);
-            });
+            fetch('@Url.Action("GetRoomsByBuilding", "Allocation")?buildingId=' + buildingId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var sel = document.getElementById('roomSelect');
+                    sel.innerHTML = '<option value="">-- اختر الغرفة --</option>';
+                    var hasRooms = false;
+                    data.forEach(function (r) {
+                        if (r.available > 0) {
+                            hasRooms = true;
+                            var opt = document.createElement('option');
+                            opt.value = r.id;
+                            opt.textContent = 'غرفة ' + r.roomNumber + ' - دور ' + r.floorNumber + ' (المتاح: ' + r.available + ' من ' + r.bedsCount + ')';
+                            sel.appendChild(opt);
+                        }
+                    });
+                    if (!hasRooms) {
+                        var opt = document.createElement('option');
+                        opt.value = '';
+                        opt.disabled = true;
+                        opt.textContent = 'لا توجد غرف متاحة';
+                        sel.appendChild(opt);
+                    }
+                });
         }
     </script>
 <script>

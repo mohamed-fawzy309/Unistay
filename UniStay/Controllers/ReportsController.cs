@@ -211,6 +211,7 @@ public class ReportsController : Controller
         var query = _db.CityRooms
             .Include(r => r.CityBuilding).ThenInclude(b => b.DormitoryCity)
             .Include(r => r.Allocations.Where(a => a.Status == "Active"))
+            .Where(r => r.RoomType != "إشراف" && r.RoomType != "مخزن")
             .AsQueryable();
 
         if (cityId.HasValue)
@@ -230,6 +231,7 @@ public class ReportsController : Controller
             return new RoomOccupancyRowViewModel
             {
                 RoomID = r.ID,
+                RoomType = r.RoomType,
                 CityName = r.CityBuilding.DormitoryCity.Name,
                 BuildingName = r.CityBuilding.BuildingName,
                 RoomNumber = r.RoomNumber,
@@ -272,9 +274,9 @@ public class ReportsController : Controller
     public async Task<IActionResult> RoomOccupancyExportExcel(int? cityId = null, int? buildingId = null)
     {
         var rows = await BuildRoomOccupancyData(cityId, buildingId);
-        var columns = new[] { "المدينة", "المبنى", "رقم الغرفة", "الدور", "عدد الأسرة", "المشغول", "المتاح", "نسبة الإشغال", "الحالة" };
+        var columns = new[] { "المدينة", "المبنى", "رقم الغرفة", "الدور", "النوع", "عدد الأسرة", "المشغول", "المتاح", "نسبة الإشغال", "الحالة" };
         var data = _export.ExportToExcel("إشغال الغرف", columns, rows, r => new object?[] {
-            r.CityName, r.BuildingName, r.RoomNumber, r.FloorNumber,
+            r.CityName, r.BuildingName, r.RoomNumber, r.FloorNumber, r.RoomType,
             r.BedsCount, r.CurrentOccupancy, r.AvailableBeds, r.OccupancyPercent + "%", r.Status
         });
         return File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "RoomOccupancy.xlsx");
@@ -285,10 +287,10 @@ public class ReportsController : Controller
     public async Task<IActionResult> RoomOccupancyExportPdf(int? cityId = null, int? buildingId = null)
     {
         var rows = await BuildRoomOccupancyData(cityId, buildingId);
-        var columns = new[] { "المدينة", "المبنى", "الغرفة", "الدور", "الأسرة", "المشغول", "نسبة الإشغال" };
+        var columns = new[] { "المدينة", "المبنى", "الغرفة", "الدور", "النوع", "الأسرة", "المشغول", "نسبة الإشغال" };
         var data = rows.Select(r => new[] {
             r.CityName, r.BuildingName, r.RoomNumber, r.FloorNumber.ToString(),
-            r.BedsCount.ToString(), r.CurrentOccupancy.ToString(), r.OccupancyPercent + "%"
+            r.RoomType ?? "", r.BedsCount.ToString(), r.CurrentOccupancy.ToString(), r.OccupancyPercent + "%"
         }).ToArray();
         var pdf = _export.ExportToPdf("تقرير إشغال الغرف", columns, data);
         return File(pdf, "application/pdf", "RoomOccupancy.pdf");
@@ -299,12 +301,14 @@ public class ReportsController : Controller
         var query = _db.CityRooms
             .Include(r => r.CityBuilding).ThenInclude(b => b.DormitoryCity)
             .Include(r => r.Allocations.Where(a => a.Status == "Active"))
+            .Where(r => r.RoomType != "إشراف" && r.RoomType != "مخزن")
             .AsQueryable();
         if (cityId.HasValue) query = query.Where(r => r.CityBuilding.DormitoryCityID == cityId);
         if (buildingId.HasValue) query = query.Where(r => r.CityBuildingID == buildingId);
         return (await query.OrderBy(r => r.CityBuilding.DormitoryCity.Name).ThenBy(r => r.CityBuilding.BuildingName).ThenBy(r => r.FloorNumber).ThenBy(r => r.RoomNumber).ToListAsync())
             .Select(r => { var occ = r.Allocations.Count(a => a.Status == "Active"); return new RoomOccupancyRowViewModel
             {
+                RoomType = r.RoomType,
                 CityName = r.CityBuilding.DormitoryCity.Name, BuildingName = r.CityBuilding.BuildingName,
                 RoomNumber = r.RoomNumber, FloorNumber = r.FloorNumber,
                 BedsCount = r.BedsCount, CurrentOccupancy = occ, AvailableBeds = r.BedsCount - occ,
@@ -437,8 +441,6 @@ public class ReportsController : Controller
 
         var rows = students.Select(s => new StudentNoPhotoRowViewModel
         {
-            ID = s.ID, FullName = s.FullName, NationalID = s.NationalID,
-            StudentCode = s.StudentCode, Gender = s.Gender, Faculty = s.Faculty,
             ID = s.ID, FullName = s.FullName, NationalID = s.NationalID,
             StudentCode = s.StudentCode, Gender = s.Gender, Faculty = s.Faculty,
             Phone = s.Phone, City = s.City, Markaz = s.Markaz

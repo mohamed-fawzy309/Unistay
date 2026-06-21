@@ -52,11 +52,13 @@ namespace UniStay.Controllers
                 .ToListAsync();
 
             var totalBeds = await _db.CityRooms
-                .Where(r => r.IsActive == true && r.IsDeleted != true)
+                .Where(r => r.IsActive == true && r.IsDeleted != true
+                    && r.RoomType != "إشراف" && r.RoomType != "مخزن")
                 .SumAsync(r => (int)r.BedsCount);
 
             var occupiedBeds = await _db.CityRooms
-                .Where(r => r.IsActive == true && r.IsDeleted != true)
+                .Where(r => r.IsActive == true && r.IsDeleted != true
+                    && r.RoomType != "إشراف" && r.RoomType != "مخزن")
                 .SumAsync(r => (int)r.CurrentOccupancy);
 
             return View(new AllocationIndexViewModel
@@ -87,7 +89,8 @@ namespace UniStay.Controllers
                     BuildingType = b.BuildingType,
                     FloorCount = b.FloorCount,
                     AvailableBeds = b.CityRooms!
-                        .Where(r => r.IsActive == true && r.IsDeleted != true)
+                        .Where(r => r.IsActive == true && r.IsDeleted != true
+                            && r.RoomType != "إشراف" && r.RoomType != "مخزن")
                         .Sum(r => (int)r.BedsCount - (int)r.CurrentOccupancy)
                 })
                 .Where(b => b.AvailableBeds > 0)
@@ -114,7 +117,8 @@ namespace UniStay.Controllers
 
             var floors = await _db.CityRooms
                 .Where(r => r.CityBuildingID == buildingId && r.IsActive == true && r.IsDeleted != true
-                    && r.CurrentOccupancy < r.BedsCount)
+                    && r.CurrentOccupancy < r.BedsCount
+                    && r.RoomType != "إشراف" && r.RoomType != "مخزن")
                 .Select(r => (int)r.FloorNumber)
                 .Distinct()
                 .OrderBy(f => f)
@@ -139,7 +143,8 @@ namespace UniStay.Controllers
 
             var rooms = await _db.CityRooms
                 .Where(r => r.CityBuildingID == buildingId && r.FloorNumber == floor
-                    && r.IsActive == true && r.IsDeleted != true)
+                    && r.IsActive == true && r.IsDeleted != true
+                    && r.RoomType != "إشراف" && r.RoomType != "مخزن")
                 .Select(r => new RoomOptionViewModel
                 {
                     ID = r.ID,
@@ -307,7 +312,7 @@ namespace UniStay.Controllers
             {
                 StudentID = model.StudentID,
                 CityRoomID = model.CityRoomID,
-                BedNumber = model.BedNumber,
+                BedNumber = 1,
                 AcademicYear = model.AcademicYear,
                 StartDate = DateOnly.FromDateTime(DateTime.Today),
                 Status = "Active",
@@ -340,7 +345,8 @@ namespace UniStay.Controllers
             var availableRooms = await _db.CityRooms
                 .Where(r => r.CityBuilding.DormitoryCityID == alloc.CityRoom.CityBuilding.DormitoryCityID
                     && r.IsActive == true && r.IsDeleted != true
-                    && r.CurrentOccupancy < r.BedsCount)
+                    && r.CurrentOccupancy < r.BedsCount
+                    && r.RoomType != "إشراف" && r.RoomType != "مخزن")
                 .Select(r => new RoomOptionViewModel
                 {
                     ID = r.ID,
@@ -414,7 +420,8 @@ namespace UniStay.Controllers
         public async Task<IActionResult> GetRoomsByBuilding(int buildingId)
         {
             var rooms = await _db.CityRooms
-                .Where(r => r.CityBuildingID == buildingId && r.IsActive == true && r.IsDeleted != true)
+                .Where(r => r.CityBuildingID == buildingId && r.IsActive == true && r.IsDeleted != true
+                    && r.RoomType != "إشراف" && r.RoomType != "مخزن")
                 .Select(r => new { r.ID, r.RoomNumber, r.FloorNumber, r.BedsCount, r.CurrentOccupancy, Available = (int)r.BedsCount - (int)r.CurrentOccupancy })
                 .ToListAsync();
             return Json(rooms);

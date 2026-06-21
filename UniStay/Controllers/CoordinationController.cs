@@ -137,7 +137,8 @@ namespace UniStay.Controllers
 
                 var availableBeds = await _db.CityRooms
                     .Where(r => r.CityBuilding != null && r.CityBuilding.DormitoryCityID == cityId
-                        && r.IsActive == true && r.IsDeleted != true)
+                        && r.IsActive == true && r.IsDeleted != true
+                        && r.RoomType != "إشراف" && r.RoomType != "مخزن")
                     .SumAsync(r => (int)r.BedsCount - (int)r.CurrentOccupancy);
 
                 return View(new CoordinationPreviewViewModel

@@ -76,6 +76,7 @@ public class RoomOccupancyRowViewModel
     public string BuildingName { get; set; } = "";
     public string RoomNumber { get; set; } = "";
     public int FloorNumber { get; set; }
+    public string? RoomType { get; set; }
     public int BedsCount { get; set; }
     public int CurrentOccupancy { get; set; }
     public int AvailableBeds { get; set; }
