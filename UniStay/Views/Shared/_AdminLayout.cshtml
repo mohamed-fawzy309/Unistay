@@ -426,6 +426,42 @@
                     </div>
                 </li>
 
+                <!-- ===== الرسوم والمدفوعات ===== -->
+                <li class="nav-item">
+                    <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuFees" role="button">
+                        <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الرسوم والمدفوعات
+                    </div>
+                    <div class="collapse" id="menuFees">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Payment" asp-action="StudentPayments">
+                                    <i class="bi bi-currency-exchange"></i> تسجيل الرسوم
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Payment" asp-action="Report">
+                                    <i class="bi bi-file-text"></i> بيان بالرسوم
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="FeeTypes">
+                                    <i class="bi bi-tag"></i> أنواع الرسوم
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Admin" asp-action="FeeConfigurations">
+                                    <i class="bi bi-gear"></i> تكوين الرسوم
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Payment" asp-action="GatewayLog">
+                                    <i class="bi bi-credit-card-2-back"></i> سجل بوابة الدفع
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
                 <!-- ===== المواعيد والتعليمات ===== -->
                 <li class="nav-item">
                     <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuSchedules" role="button">
@@ -465,13 +501,53 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" asp-controller="MealBooking" asp-action="Index">
+                                    <i class="bi bi-calendar-check"></i> حجز الوجبات بالباركود
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="MealBooking" asp-action="Import">
+                                    <i class="bi bi-file-earmark-excel"></i> حجز الوجبات (إكسل)
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="MealReceiving" asp-action="Index">
+                                    <i class="bi bi-upc-scan"></i> استلام الوجبات (باركود)
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="MealReceiving" asp-action="Import">
+                                    <i class="bi bi-file-earmark-excel"></i> استلام الوجبات (إكسل)
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="MealPreparation" asp-action="Index">
+                                    <i class="bi bi-cup-hot-fill"></i> تجهيز الوجبات
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" asp-controller="Meal" asp-action="Consume">
                                     <i class="bi bi-upc-scan"></i> صرف الوجبات
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link" asp-controller="MealRestrictions" asp-action="Index">
+                                    <i class="bi bi-ban"></i> حجب الوجبات
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link" asp-controller="Admin" asp-action="MealTypes">
                                     <i class="bi bi-list"></i> أنواع الوجبات
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Meal" asp-action="RamadanSchedule">
+                                    <i class="bi bi-moon-stars"></i> جداول رمضان
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Meal" asp-action="ChristianSchedule">
+                                    <i class="bi bi-cross"></i> جداول المسيحيين
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -508,37 +584,6 @@
                         </ul>
                     </div>
                 </li>
-                <!-- ===== المالية ===== -->
-                <li class="nav-item">
-                    <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuFinance" role="button">
-                        <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> المالية
-                    </div>
-                    <div class="collapse" id="menuFinance">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Payment" asp-action="Index">
-                                    <i class="bi bi-currency-exchange"></i> الرسوم والمدفوعات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="FeeTypes">
-                                    <i class="bi bi-tag"></i> أنواع الرسوم
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="FeeConfigurations">
-                                    <i class="bi bi-gear"></i> تكوين الرسوم
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Payment" asp-action="Report">
-                                    <i class="bi bi-cash-stack"></i> تقرير المدفوعات
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
-
                 <!-- ===== الإدارة ===== -->
                 <li class="nav-item">
                     <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuAdmin" role="button">
@@ -621,38 +666,46 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const currentPath = window.location.pathname.toLowerCase();
+            const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '');
 
             // Highlight active nav link and expand parent collapse
+            let activeFound = false;
             document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-                const href = link.getAttribute('href');
-                if (href && href !== '#' && currentPath.includes(href.toLowerCase())) {
-                    link.classList.add('active');
-                    // Expand parent collapse group
-                    const collapse = link.closest('.collapse');
-                    if (collapse) {
-                        collapse.classList.add('show');
-                        const trigger = document.querySelector(`[data-bs-target="#${collapse.id}"]`);
-                        if (trigger) trigger.setAttribute('aria-expanded', 'true');
+                let href = link.getAttribute('href');
+                if (!href || href === '#') return;
+                href = href.toLowerCase().replace(/\/+$/, '');
+                // Match exact path or controller path (without action)
+                if (currentPath === href || currentPath.startsWith(href + '/')) {
+                    if (href !== '/') {  // skip home
+                        link.classList.add('active');
+                        activeFound = true;
+                        const collapse = link.closest('.collapse');
+                        if (collapse) {
+                            collapse.classList.add('show');
+                            const trigger = document.querySelector(`[data-bs-target="#${collapse.id}"]`);
+                            if (trigger) trigger.setAttribute('aria-expanded', 'true');
+                        }
                     }
                 }
             });
 
-            // Remove active from dashboard if another link is active
-            const activeLinks = document.querySelectorAll('.sidebar .nav-link.active');
-            if (activeLinks.length > 1) {
-                document.querySelector('.sidebar .nav-link[asp-action="Index"]')?.classList.remove('active');
+            // Remove dashboard active if another link is active
+            if (activeFound) {
+                document.querySelector('.sidebar a[asp-controller="Admin"][asp-action="Index"]')?.classList.remove('active');
             }
 
-            // Toast auto-dismiss
-            var toasts = document.querySelectorAll('.toast');
-            toasts.forEach(function (t) {
-                var bsToast = new bootstrap.Toast(t, { delay: 5000 });
-                bsToast.show();
-            });
-
-            // Sync collapse icons on toggle
+            // Sync collapse icons on toggle + set initial icon state
             document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(toggle => {
+                const icon = toggle.querySelector('.collapse-icon');
+                if (icon) {
+                    const targetId = toggle.getAttribute('data-bs-target');
+                    if (targetId) {
+                        const target = document.querySelector(targetId);
+                        if (target && target.classList.contains('show')) {
+                            icon.style.transform = 'rotate(-90deg)';
+                        }
+                    }
+                }
                 toggle.addEventListener('click', function () {
                     const icon = this.querySelector('.collapse-icon');
                     if (icon) {
@@ -664,6 +717,13 @@
                         }
                     }
                 });
+            });
+
+            // Toast auto-dismiss
+            var toasts = document.querySelectorAll('.toast');
+            toasts.forEach(function (t) {
+                var bsToast = new bootstrap.Toast(t, { delay: 5000 });
+                bsToast.show();
             });
         });
     </script>

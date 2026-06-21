@@ -1,14 +1,80 @@
 @model StudentPaymentsViewModel
 @{
-    ViewData["Title"] = "مدفوعات الطالب";
+    ViewData["Title"] = Model != null ? "مدفوعات الطالب" : "تسجيل الرسوم";
+}
+
+@if (Model == null)
+{
+    <div class="container-fluid py-4">
+        <h2 class="mb-4"><i class="bi bi-currency-exchange"></i> تسجيل الرسوم</h2>
+        <div class="card">
+            <div class="card-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-md-6">
+                        <input type="text" id="studentSearch" class="form-control" placeholder="ابحث باسم الطالب أو الرقم القومي..." autocomplete="off">
+                    </div>
+                    <div class="col-md-3">
+                        <select id="studentSelect" class="form-select" onchange="if(this.value) window.location.href='@Url.Action("StudentPayments")?studentId=' + this.value">
+                            <option value="">-- اختر الطالب --</option>
+                            @foreach (var s in (IEnumerable<SelectListItem>)ViewBag.Students)
+                            {
+                                <option value="@s.Value">@s.Text</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div id="searchResults" class="list-group" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            let searchTimeout;
+            document.getElementById('studentSearch').addEventListener('input', function () {
+                clearTimeout(searchTimeout);
+                const term = this.value.trim();
+                if (term.length < 2) {
+                    document.getElementById('searchResults').style.display = 'none';
+                    return;
+                }
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const res = await fetch('@Url.Action("StudentPayments")?term=' + encodeURIComponent(term));
+                        const data = await res.json();
+                        const container = document.getElementById('searchResults');
+                        container.innerHTML = '';
+                        if (data.length === 0) {
+                            container.innerHTML = '<a class="list-group-item text-muted">لا توجد نتائج</a>';
+                        } else {
+                            data.forEach(s => {
+                                const a = document.createElement('a');
+                                a.href = '@Url.Action("StudentPayments")?studentId=' + s.id;
+                                a.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center';
+                                a.innerHTML = '<span><strong>' + s.fullName + '</strong><br><small class="text-muted">' + s.nationalID + '</small></span><i class="bi bi-chevron-left"></i>';
+                                container.appendChild(a);
+                            });
+                        }
+                        container.style.display = 'block';
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }, 300);
+            });
+        </script>
+    }
+    return;
 }
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-credit-card"></i> مدفوعات @Model.StudentName</h2>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
-            <i class="bi bi-plus-circle"></i> تسجيل دفعة
-        </button>
+        <div>
+            <a asp-action="StudentPayments" class="btn btn-outline-secondary me-2"><i class="bi bi-search"></i> بحث</a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#recordPaymentModal">
+                <i class="bi bi-plus-circle"></i> تسجيل دفعة
+            </button>
+        </div>
     </div>
 
     <div class="row mb-4">
@@ -147,18 +213,35 @@
 
 @section Scripts {
     <script>
-        $('#recordPaymentForm').submit(function (e) {
+        document.getElementById('recordPaymentForm')?.addEventListener('submit', async function (e) {
             e.preventDefault();
-            $.post('@Url.Action("Record")', $(this).serialize(), function (res) {
-                if (res.success) { location.reload(); } else { alert(res.message); }
-            });
+            const formData = new FormData(this);
+            try {
+                const res = await fetch('@Url.Action("Record")', {
+                    method: 'POST',
+                    body: new URLSearchParams(formData),
+                    headers: { 'Request-Verification-Token': document.querySelector('input[name="__RequestVerificationToken"]')?.value || '' }
+                });
+                const data = await res.json();
+                if (data.success) { location.reload(); } else { alert(data.message); }
+            } catch (e) {
+                alert('حدث خطأ');
+            }
         });
 
-        function markOverdue(id) {
+        async function markOverdue(id) {
             if (!confirm('تأكيد وضع الدفعة كمتأخرة؟')) return;
-            $.post('@Url.Action("MarkOverdue")', { paymentId: id }, function (res) {
-                if (res.success) { location.reload(); } else { alert(res.message); }
-            });
+            try {
+                const res = await fetch('@Url.Action("MarkOverdue")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'paymentId=' + id
+                });
+                const data = await res.json();
+                if (data.success) { location.reload(); } else { alert(data.message); }
+            } catch (e) {
+                alert('حدث خطأ');
+            }
         }
     </script>
 }
