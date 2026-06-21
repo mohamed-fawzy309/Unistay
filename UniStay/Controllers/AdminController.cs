@@ -924,7 +924,16 @@ namespace UniStay.Controllers
                 await _db.SaveChangesAsync();
             }
 
+            var faculties = await _db.Faculties
+                .Where(f => f.IsActive)
+                .OrderBy(f => f.Name)
+                .Select(f => f.Name)
+                .ToListAsync();
+
             ViewBag.CityName = city.Name;
+            ViewBag.Faculties = faculties;
+            ViewBag.AllowedFaculties = DeserializeJsonList(config.AllowedFacultiesOnly);
+            ViewBag.ExcludedFaculties = DeserializeJsonList(config.ExcludedFaculties);
             return View(config);
         }
 
@@ -2600,6 +2609,16 @@ namespace UniStay.Controllers
                 null, new { ResetTo = "NationalID" });
 
             return Json(new { success = true, message = "تم إعادة تعيين كلمة المرور لرقم القومي" });
+        }
+
+        private static List<string> DeserializeJsonList(string? json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return new List<string>();
+            try
+            {
+                return System.Text.Json.JsonSerializer.Deserialize<List<string>>(json) ?? new List<string>();
+            }
+            catch { return new List<string>(); }
         }
     }
 }

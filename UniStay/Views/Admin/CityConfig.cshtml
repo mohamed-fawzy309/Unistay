@@ -127,20 +127,112 @@ else
 
     <div class="card-header bg-info text-white mt-3"><h5 class="mb-0">الكليات المسموحة / المستثناة</h5></div>
     <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <div class="d-flex gap-2 align-items-center">
+                    <select id="facultySelect" class="form-select" style="max-width:400px">
+                        <option value="">-- اختر كلية --</option>
+                        @foreach (var f in (List<string>)ViewBag.Faculties)
+                        {
+                            <option value="@f">@f</option>
+                        }
+                    </select>
+                    <button type="button" class="btn btn-success" onclick="addFaculty('allowed')">← إضافة للمسموحة</button>
+                    <button type="button" class="btn btn-danger" onclick="addFaculty('excluded')">إضافة للمستثناة →</button>
+                </div>
+            </div>
+        </div>
         <div class="row">
             <div class="col-md-6 mb-3">
-                <label class="form-label">الكليات المسموحة فقط (JSON)</label>
-                <textarea asp-for="AllowedFacultiesOnly" class="form-control" rows="3" placeholder='["كلية الهندسة", "كلية الطب"]'></textarea>
+                <label class="form-label">الكليات المسموحة فقط</label>
+                <div id="allowedContainer" class="border rounded p-2" style="min-height:150px;max-height:300px;overflow-y:auto">
+                    @foreach (var f in (List<string>)ViewBag.AllowedFaculties)
+                    {
+                        <span class="badge bg-success fs-6 m-1 p-2 d-inline-flex align-items-center gap-1">
+                            @f
+                            <button type="button" class="btn-close btn-close-white" style="font-size:10px" onclick="removeFaculty(this,'allowed')"></button>
+                        </span>
+                    }
+                </div>
+                <input type="hidden" asp-for="AllowedFacultiesOnly" id="AllowedFacultiesOnly" />
             </div>
             <div class="col-md-6 mb-3">
-                <label class="form-label">الكليات المستثناة (JSON)</label>
-                <textarea asp-for="ExcludedFaculties" class="form-control" rows="3" placeholder='["كلية الحقوق"]'></textarea>
+                <label class="form-label">الكليات المستثناة</label>
+                <div id="excludedContainer" class="border rounded p-2" style="min-height:150px;max-height:300px;overflow-y:auto">
+                    @foreach (var f in (List<string>)ViewBag.ExcludedFaculties)
+                    {
+                        <span class="badge bg-danger fs-6 m-1 p-2 d-inline-flex align-items-center gap-1">
+                            @f
+                            <button type="button" class="btn-close btn-close-white" style="font-size:10px" onclick="removeFaculty(this,'excluded')"></button>
+                        </span>
+                    }
+                </div>
+                <input type="hidden" asp-for="ExcludedFaculties" id="ExcludedFaculties" />
             </div>
         </div>
     </div>
 
     <div class="card-footer">
-        <button type="submit" class="btn btn-primary btn-lg">حفظ الإعدادات</button>
+        <button type="submit" class="btn btn-primary btn-lg" onclick="syncFaculties()">حفظ الإعدادات</button>
         <a asp-action="Cities" class="btn btn-secondary">إلغاء</a>
     </div>
 </form>
+
+@section Scripts {
+    <script>
+        function addFaculty(type) {
+            var select = document.getElementById('facultySelect');
+            var name = select.value;
+            if (!name) return;
+
+            var container = document.getElementById(type + 'Container');
+            var existing = container.querySelectorAll('.badge');
+            for (var i = 0; i < existing.length; i++) {
+                if (existing[i].textContent.trim() === name) return;
+            }
+
+            var otherType = type === 'allowed' ? 'excluded' : 'allowed';
+            var otherContainer = document.getElementById(otherType + 'Container');
+            var otherBadges = otherContainer.querySelectorAll('.badge');
+            for (var i = 0; i < otherBadges.length; i++) {
+                if (otherBadges[i].textContent.trim() === name) {
+                    otherBadges[i].remove();
+                    break;
+                }
+            }
+
+            var badgeClass = type === 'allowed' ? 'bg-success' : 'bg-danger';
+            var span = document.createElement('span');
+            span.className = 'badge ' + badgeClass + ' fs-6 m-1 p-2 d-inline-flex align-items-center gap-1';
+            span.textContent = name;
+
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn-close btn-close-white';
+            btn.style.fontSize = '10px';
+            btn.onclick = function() { removeFaculty(btn, type); };
+            span.appendChild(btn);
+
+            container.appendChild(span);
+            select.value = '';
+        }
+
+        function removeFaculty(btn, type) {
+            btn.parentElement.remove();
+        }
+
+        function syncFaculties() {
+            var allowed = [];
+            document.querySelectorAll('#allowedContainer .badge').forEach(function(el) {
+                allowed.push(el.textContent.trim());
+            });
+            document.getElementById('AllowedFacultiesOnly').value = JSON.stringify(allowed);
+
+            var excluded = [];
+            document.querySelectorAll('#excludedContainer .badge').forEach(function(el) {
+                excluded.push(el.textContent.trim());
+            });
+            document.getElementById('ExcludedFaculties').value = JSON.stringify(excluded);
+        }
+    </script>
+}

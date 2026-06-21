@@ -114,6 +114,8 @@ public partial class AssuitDbContext : DbContext
 
     public virtual DbSet<Village> Villages { get; set; }
 
+    public virtual DbSet<Faculty> Faculties { get; set; }
+
     public virtual DbSet<HousingType> HousingTypes { get; set; }
 
     public virtual DbSet<MealType> MealTypes { get; set; }
@@ -783,6 +785,15 @@ public partial class AssuitDbContext : DbContext
                 .HasForeignKey(d => d.StudentID)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Eviction_Student");
+        });
+
+        modelBuilder.Entity<Faculty>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__Faculty__3214EC27");
+            entity.ToTable("Faculty");
+            entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
         });
 
         modelBuilder.Entity<FacultyQuotum>(entity =>

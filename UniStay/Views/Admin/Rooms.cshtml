@@ -135,6 +135,24 @@
                         <label class="form-label">النوع</label>
 
                         <select name="RoomType" class="form-select">
+                            @if (r.RoomType == "إشراف")
+                            {
+                                <option value="إشراف" selected>إشراف</option>
+                            }
+                            else
+                            {
+                                <option value="إشراف">إشراف</option>
+                            }
+
+                            @if (r.RoomType == "مخزن")
+                            {
+                                <option value="مخزن" selected>مخزن</option>
+                            }
+                            else
+                            {
+                                <option value="مخزن">مخزن</option>
+                            }
+
                             @if (r.RoomType == "Quad")
 {
     <option value="Quad" selected>رباعي</option>
@@ -253,6 +271,8 @@ else
                     <div class="col-md-6 mb-3">
                         <label class="form-label">النوع</label>
                         <select name="RoomType" class="form-select">
+                            <option value="إشراف">إشراف</option>
+                            <option value="مخزن">مخزن</option>
                             <option value="Quad">رباعي</option>
                             <option value="Triple">ثلاثي</option>
                             <option value="Double">ثنائي</option>

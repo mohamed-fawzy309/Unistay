@@ -1,0 +1,153 @@
+@model BulkPermissionViewModel
+@{
+    ViewData["Title"] = "تصريح جماعي";
+}
+
+<h2 class="page-title mb-4"><i class="bi bi-calendar-check"></i> تصريح جماعي</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+<form asp-action="BulkPermission" method="post" class="filter-bar p-4">
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">اختيار الطلاب <span class="text-danger">*</span></label>
+            <input type="text" id="studentSearch" class="form-control mb-2" placeholder="ابحث بالاسم أو الرقم القومي..." autocomplete="off" />
+            <div id="studentResults" class="mb-2 small" style="max-height:150px;overflow-y:auto"></div>
+            <div id="selectedStudents" class="d-flex flex-wrap gap-1 mb-2"></div>
+            <span asp-validation-for="StudentIDs" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="DormitoryCityID" class="form-label">المدينة الجامعية <span class="text-danger">*</span></label>
+            <select asp-for="DormitoryCityID" class="form-select" asp-items="ViewBag.Cities">
+                <option value="">-- اختر المدينة --</option>
+            </select>
+            <span asp-validation-for="DormitoryCityID" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="FromDate" class="form-label">من تاريخ <span class="text-danger">*</span></label>
+            <input asp-for="FromDate" class="form-control" type="date" />
+            <span asp-validation-for="FromDate" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="ToDate" class="form-label">إلى تاريخ <span class="text-danger">*</span></label>
+            <input asp-for="ToDate" class="form-control" type="date" />
+            <span asp-validation-for="ToDate" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="GuardianName" class="form-label">اسم ولي الأمر <span class="text-danger">*</span></label>
+            <input asp-for="GuardianName" class="form-control" />
+            <span asp-validation-for="GuardianName" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="GuardianRelation" class="form-label">صلة القرابة <span class="text-danger">*</span></label>
+            <input asp-for="GuardianRelation" class="form-control" placeholder="مثال: أب، أم، ولي..." />
+            <span asp-validation-for="GuardianRelation" class="text-danger"></span>
+        </div>
+        <div class="col-md-4">
+            <label asp-for="GuardianPhone" class="form-label">رقم هاتف ولي الأمر <span class="text-danger">*</span></label>
+            <input asp-for="GuardianPhone" class="form-control" type="tel" />
+            <span asp-validation-for="GuardianPhone" class="text-danger"></span>
+        </div>
+        <div class="col-12">
+            <label asp-for="Reason" class="form-label">السبب</label>
+            <textarea asp-for="Reason" class="form-control" rows="2"></textarea>
+            <span asp-validation-for="Reason" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="bi bi-check-circle"></i> إصدار التصاريح
+        </button>
+        <a asp-controller="Attendance" asp-action="Report" class="btn btn-secondary">تقرير الغياب والتصاريح</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        var selected = {};
+
+        function addStudent(id, name) {
+            if (selected[id]) return;
+            selected[id] = name;
+            renderSelected();
+            updateHidden();
+        }
+
+        function removeStudent(id) {
+            delete selected[id];
+            renderSelected();
+            updateHidden();
+        }
+
+        function renderSelected() {
+            var container = document.getElementById('selectedStudents');
+            container.innerHTML = '';
+            Object.keys(selected).forEach(function (id) {
+                var span = document.createElement('span');
+                span.className = 'badge bg-primary fs-6 p-2 d-inline-flex align-items-center gap-1';
+                span.textContent = selected[id];
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn-close btn-close-white';
+                btn.style.fontSize = '10px';
+                btn.onclick = function () { removeStudent(id); };
+                span.appendChild(btn);
+                container.appendChild(span);
+            });
+        }
+
+        function updateHidden() {
+            var existing = document.querySelectorAll('input[name="StudentIDs"]');
+            existing.forEach(function (e) { e.remove(); });
+            var form = document.querySelector('form');
+            Object.keys(selected).forEach(function (id) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'StudentIDs';
+                input.value = id;
+                form.appendChild(input);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var searchTimeout;
+            var searchInput = document.getElementById('studentSearch');
+            var resultsDiv = document.getElementById('studentResults');
+
+            searchInput.addEventListener('input', function () {
+                clearTimeout(searchTimeout);
+                var val = this.value.trim();
+                if (val.length < 2) { resultsDiv.innerHTML = ''; return; }
+                searchTimeout = setTimeout(async function () {
+                    try {
+                        var res = await fetch('@Url.Action("GetStudents", "Discipline")?term=' + encodeURIComponent(val));
+                        var data = await res.json();
+                        if (data.length > 0) {
+                            resultsDiv.innerHTML = data.map(function (s) {
+                                var already = selected[s.id] ? ' (مضاف)' : '';
+                                var btn = selected[s.id]
+                                    ? '<span class="text-muted">مضاف ✓</span>'
+                                    : '<button type="button" class="btn btn-sm btn-outline-primary" onclick="addStudent(' + s.id + ',\'' + s.fullName.replace(/'/g, "\\'") + ' - ' + s.nationalID + '\')">إضافة</button>';
+                                return '<div class="d-flex justify-content-between align-items-center p-1 border-bottom">' +
+                                    '<span>' + s.fullName + ' - ' + s.nationalID + already + '</span>' + btn +
+                                    '</div>';
+                            }).join('');
+                        } else {
+                            resultsDiv.innerHTML = '<span class="text-muted">لا توجد نتائج</span>';
+                        }
+                    } catch { resultsDiv.innerHTML = '<span class="text-danger">خطأ في البحث</span>'; }
+                }, 300);
+            });
+        });
+    </script>
+}

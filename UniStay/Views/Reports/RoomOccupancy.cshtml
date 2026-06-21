@@ -117,6 +117,7 @@
                 <th>المبنى</th>
                 <th>رقم الغرفة</th>
                 <th>الدور</th>
+                <th>النوع</th>
                 <th>عدد الأسرة</th>
                 <th>المشغول حالياً</th>
                 <th>المتاح</th>
@@ -133,6 +134,7 @@
                     <td>@r.BuildingName</td>
                     <td class="fw-semibold">@r.RoomNumber</td>
                     <td>@r.FloorNumber</td>
+                    <td>@r.RoomType</td>
                     <td>@r.BedsCount</td>
                     <td>@r.CurrentOccupancy</td>
                     <td>@r.AvailableBeds</td>
@@ -153,7 +155,7 @@
             }
             @if (!Model.Rooms.Any())
             {
-                <tr><td colspan="9" class="text-center text-muted py-4">لا توجد غرف</td></tr>
+                <tr><td colspan="10" class="text-center text-muted py-4">لا توجد غرف</td></tr>
             }
         </tbody>
     </table>

@@ -224,7 +224,8 @@ namespace UniStay.Controllers
             var buildings = await _context.CityBuildings
                 .Where(b => b.DormitoryCityID == app.DormitoryCityID && b.IsActive && b.IsDeleted != true)
                 .Include(b => b.CityRooms.Where(r => r.IsActive == true && r.IsDeleted != true
-                    && r.CurrentOccupancy < r.BedsCount))
+                    && r.CurrentOccupancy < r.BedsCount
+                    && r.RoomType != "إشراف" && r.RoomType != "مخزن"))
                 .OrderBy(b => b.BuildingName)
                 .ToListAsync();
 
