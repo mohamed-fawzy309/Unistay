@@ -6,6 +6,7 @@ using UniStay.Data;
 using UniStay.Helpers;
 using UniStay.Models;
 using UniStay.Services.Interfaces;
+using UniStay.ViewModels.Discipline;
 using UniStay.ViewModels.Payment;
 
 namespace UniStay.Controllers
@@ -29,8 +30,28 @@ namespace UniStay.Controllers
         private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
 
         [HttpGet]
-        public async Task<IActionResult> StudentPayments(int studentId)
+        public async Task<IActionResult> StudentPayments(int? studentId, string? term = null)
         {
+            if (!studentId.HasValue)
+            {
+                if (!string.IsNullOrWhiteSpace(term) && term.Length >= 2)
+                {
+                    var results = await _db.Students
+                        .Where(s => s.IsActive == true && (s.FullName.Contains(term) || s.NationalID.Contains(term)))
+                        .OrderBy(s => s.FullName)
+                        .Take(20)
+                        .Select(s => new StudentLookupItem { ID = s.ID, FullName = s.FullName, NationalID = s.NationalID })
+                        .ToListAsync();
+                    return Json(results);
+                }
+                ViewBag.Students = await _db.Students
+                    .Where(s => s.IsActive == true)
+                    .OrderBy(s => s.FullName)
+                    .Select(s => new SelectListItem(s.FullName + " - " + s.NationalID, s.ID.ToString()))
+                    .ToListAsync();
+                return View();
+            }
+
             var student = await _db.Students.FindAsync(studentId);
             if (student == null) return NotFound();
 
@@ -58,7 +79,7 @@ namespace UniStay.Controllers
 
             return View(new StudentPaymentsViewModel
             {
-                StudentID = studentId,
+                StudentID = studentId.Value,
                 StudentName = student.FullName,
                 NationalID = student.NationalID,
                 Faculty = student.Faculty,

@@ -526,16 +526,21 @@
 
     @if (HasAny("FeeTypes.Manage", "FeeConfigurations.Manage", "Payments.View", "Payments.Manage"))
     {
-        <!-- ===== المالية ===== -->
-        <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuFinance" role="button">
-            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> المالية
+        <!-- ===== الرسوم والمدفوعات ===== -->
+        <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuFeesPartial" role="button">
+            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الرسوم والمدفوعات
         </li>
-        <div class="collapse show" id="menuFinance">
+        <div class="collapse show" id="menuFeesPartial">
             @if (HasAny("Payments.View", "Payments.Manage"))
             {
                 <li class="nav-item">
+                    <a class="nav-link" asp-controller="Payment" asp-action="StudentPayments">
+                        <i class="bi bi-currency-exchange"></i> تسجيل الرسوم
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" asp-controller="Payment" asp-action="Report">
-                        <i class="bi bi-currency-exchange"></i> الرسوم والمدفوعات
+                        <i class="bi bi-file-text"></i> بيان بالرسوم
                     </a>
                 </li>
                 <li class="nav-item">

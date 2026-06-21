@@ -51,46 +51,6 @@
                             </button>
                         </td>
                     </tr>
-
-                    <div class="modal fade" id="editModal-@item.ID" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <form asp-action="EditFeeType" method="post" class="modal-content">
-                                <input type="hidden" name="ID" value="@item.ID">
-                                <div class="modal-header">
-                                    <h5 class="modal-title fw-bold">تعديل @item.Name</h5>
-                                    <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">الاسم <span class="text-danger">*</span></label>
-                                        <input name="Name" class="form-control" value="@item.Name" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">الوصف</label>
-                                        <textarea name="Description" class="form-control" rows="2">@item.Description</textarea>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">التصنيف <span class="text-danger">*</span></label>
-                                        <select name="FeeCategory" class="form-select" required>
-                                            <option value="Housing" selected="@(item.FeeCategory == "Housing")">سكن</option>
-                                            <option value="Meal" selected="@(item.FeeCategory == "Meal")">وجبات</option>
-                                            <option value="Service" selected="@(item.FeeCategory == "Service")">خدمات</option>
-                                            <option value="Fine" selected="@(item.FeeCategory == "Fine")">غرامات</option>
-                                            <option value="Other" selected="@(item.FeeCategory == "Other")">أخرى</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-check form-switch">
-                                        <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@item.IsActive" id="ft-active-@item.ID">
-                                        <label class="form-check-label" for="ft-active-@item.ID">نشط</label>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
                 }
             }
             else
@@ -100,6 +60,49 @@
         </tbody>
     </table>
 </div>
+
+@foreach (var item in Model)
+{
+    <div class="modal fade" id="editModal-@item.ID" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form asp-action="EditFeeType" method="post" class="modal-content">
+                <input type="hidden" name="ID" value="@item.ID">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">تعديل @item.Name</h5>
+                    <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">الاسم <span class="text-danger">*</span></label>
+                        <input name="Name" class="form-control" value="@item.Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">الوصف</label>
+                        <textarea name="Description" class="form-control" rows="2">@item.Description</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">التصنيف <span class="text-danger">*</span></label>
+                        <select name="FeeCategory" class="form-select" required>
+                            <option value="Housing" selected="@(item.FeeCategory == "Housing")">سكن</option>
+                            <option value="Meal" selected="@(item.FeeCategory == "Meal")">وجبات</option>
+                            <option value="Service" selected="@(item.FeeCategory == "Service")">خدمات</option>
+                            <option value="Fine" selected="@(item.FeeCategory == "Fine")">غرامات</option>
+                            <option value="Other" selected="@(item.FeeCategory == "Other")">أخرى</option>
+                        </select>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@item.IsActive" id="ft-active-@item.ID">
+                        <label class="form-check-label" for="ft-active-@item.ID">نشط</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
 
 <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
