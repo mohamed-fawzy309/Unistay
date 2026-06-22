@@ -940,7 +940,171 @@ namespace UniStay.ViewModels.Admin
     }
 
     // ══════════════════════════════════════════════════════════════
-    // 17. Role Permissions
+    // 17. Application Types
+    // ══════════════════════════════════════════════════════════════
+
+    public class ApplicationTypeViewModel
+    {
+        public int ID { get; set; }
+        public string Name { get; set; } = null!;
+        public string? Description { get; set; }
+        public bool IsActive { get; set; }
+    }
+
+    public class CreateApplicationTypeViewModel
+    {
+        [Required(ErrorMessage = "الاسم مطلوب")]
+        [StringLength(100)]
+        public string Name { get; set; } = null!;
+
+        [StringLength(500)]
+        public string? Description { get; set; }
+    }
+
+    public class EditApplicationTypeViewModel
+    {
+        [Required]
+        public int ID { get; set; }
+
+        [Required]
+        [StringLength(100)]
+        public string Name { get; set; } = null!;
+
+        [StringLength(500)]
+        public string? Description { get; set; }
+
+        public bool IsActive { get; set; }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 18. University Photos
+    // ══════════════════════════════════════════════════════════════
+
+    public class UniversityPhotoViewModel
+    {
+        public int ID { get; set; }
+        public string? Title { get; set; }
+        public string? PhotoType { get; set; }
+        public string? FilePath { get; set; }
+        public int? SortOrder { get; set; }
+        public bool? IsActive { get; set; }
+        public string? CityName { get; set; }
+    }
+
+    public class CreateUniversityPhotoViewModel
+    {
+        [StringLength(200)]
+        public string? Title { get; set; }
+
+        [StringLength(50)]
+        public string? PhotoType { get; set; }
+
+        public int? DormitoryCityID { get; set; }
+
+        [Required(ErrorMessage = "الملف مطلوب")]
+        public IFormFile File { get; set; } = null!;
+
+        [Range(0, 255)]
+        public int? SortOrder { get; set; }
+    }
+
+    public class EditUniversityPhotoViewModel
+    {
+        [Required]
+        public int ID { get; set; }
+
+        [StringLength(200)]
+        public string? Title { get; set; }
+
+        [StringLength(50)]
+        public string? PhotoType { get; set; }
+
+        public int? DormitoryCityID { get; set; }
+
+        public IFormFile? File { get; set; }
+
+        [Range(0, 255)]
+        public int? SortOrder { get; set; }
+
+        public bool IsActive { get; set; }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 19. Student Advanced Operations
+    // ══════════════════════════════════════════════════════════════
+
+    public class StudentAdvancedOpsViewModel
+    {
+        public List<StudentSearchRow> Students { get; set; } = new();
+    }
+
+    public class StudentSearchRow
+    {
+        public int ID { get; set; }
+        public string FullName { get; set; } = null!;
+        public string NationalID { get; set; } = null!;
+        public string? StudentCode { get; set; }
+        public string? Faculty { get; set; }
+        public string? ApplicationStatus { get; set; }
+        public bool HasLogin { get; set; }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 20. System Admin - Students by Housing Type Statistics
+    // ══════════════════════════════════════════════════════════════
+
+    public class StudentsByHousingTypeViewModel
+    {
+        public List<HousingTypeStatRow> Stats { get; set; } = new();
+        public int TotalStudents { get; set; }
+    }
+
+    public class HousingTypeStatRow
+    {
+        public string HousingType { get; set; } = null!;
+        public int Count { get; set; }
+        public decimal Percentage { get; set; }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 21. Create Admin ViewModel
+    // ══════════════════════════════════════════════════════════════
+
+    public class CreateAdminViewModel
+    {
+        [Required(ErrorMessage = "الاسم مطلوب")]
+        [StringLength(200)]
+        public string Name { get; set; } = null!;
+
+        [Required(ErrorMessage = "البريد الإلكتروني مطلوب")]
+        [EmailAddress(ErrorMessage = "البريد الإلكتروني غير صحيح")]
+        [StringLength(100)]
+        public string Email { get; set; } = null!;
+
+        [Required(ErrorMessage = "رقم الهاتف مطلوب")]
+        [StringLength(20)]
+        public string Phone { get; set; } = null!;
+
+        [StringLength(14, MinimumLength = 14, ErrorMessage = "الرقم القومي 14 رقم")]
+        public string? NationalID { get; set; }
+
+        public List<PermissionCheckItem> Permissions { get; set; } = new();
+    }
+
+    public class PermissionCheckItem
+    {
+        public int PermissionID { get; set; }
+        public string PermissionKey { get; set; } = null!;
+        public string DisplayName { get; set; } = null!;
+        public string? GroupName { get; set; }
+        public bool CanView { get; set; }
+        public bool CanCreate { get; set; }
+        public bool CanEdit { get; set; }
+        public bool CanDelete { get; set; }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 22. Role Permissions
     // ══════════════════════════════════════════════════════════════
 
     public class SaveRolePermissionsRequest

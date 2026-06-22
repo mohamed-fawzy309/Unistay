@@ -1,0 +1,66 @@
+@model UniStay.ViewModels.Admin.StudentsByHousingTypeViewModel
+@{
+    ViewData["Title"] = "أعداد الطلاب حسب أنواع السكن";
+}
+
+<h2 class="page-title mb-3">أعداد الطلاب حسب أنواع السكن</h2>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm text-center p-4">
+            <div class="display-5 fw-bold text-primary">@Model.TotalStudents</div>
+            <div class="text-muted mt-2">إجمالي الطلاب</div>
+        </div>
+    </div>
+    @foreach (var stat in Model.Stats)
+    {
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center p-4">
+                <div class="display-5 fw-bold text-success">@stat.Count</div>
+                <div class="text-muted mt-2">@stat.HousingType</div>
+                <small class="text-secondary">@stat.Percentage% من الإجمالي</small>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white fw-bold">
+        <i class="bi bi-pie-chart"></i> توزيع الطلاب حسب السكن
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-bordered bg-white">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>نوع السكن</th>
+                        <th>العدد</th>
+                        <th>النسبة المئوية</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int i = 1; }
+                    @foreach (var stat in Model.Stats)
+                    {
+                        <tr>
+                            <td>@(i++)</td>
+                            <td>@stat.HousingType</td>
+                            <td>@stat.Count</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1" style="height:20px;">
+                                        <div class="progress-bar @(i == 2 ? "bg-success" : "bg-secondary")" role="progressbar"
+                                             style="width:@stat.Percentage%" aria-valuenow="@stat.Percentage" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <span class="ms-2 fw-bold">@stat.Percentage%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

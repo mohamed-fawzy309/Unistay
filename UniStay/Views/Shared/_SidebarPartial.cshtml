@@ -16,6 +16,86 @@
         </a>
     </li>
 
+    @if (isSuperAdmin)
+    {
+        <!-- ===== اشراف النظام ===== -->
+        <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuSuperAdmin" role="button">
+            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> اشراف النظام
+        </li>
+        <div class="collapse show" id="menuSuperAdmin">
+            <li class="menu-header d-flex align-items-center" style="padding-right:2.5rem;font-size:0.8rem;color:rgba(255,255,255,0.5)!important;">
+                <i class="bi bi-dot small"></i> بيانات أساسية وإعدادات
+            </li>
+            @if (HasAny("ApplicationSchedules.Manage"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Schedules"><i class="bi bi-calendar-event"></i> مواعيد التقديم</a></li>
+            }
+            @if (HasAny("Instructions.Manage"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Instructions"><i class="bi bi-info-circle"></i> تعليمات التقدم</a></li>
+            }
+            @if (HasAny("Photos.Manage"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="UniversityPhotos" asp-action="Index"><i class="bi bi-images"></i> صور الجامعة</a></li>
+            }
+            @if (HasAny("HousingTypes.Manage"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="HousingTypes"><i class="bi bi-house-gear"></i> أنواع السكن المميز</a></li>
+            }
+            @if (HasAny("MealTypes.Manage"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="MealTypes"><i class="bi bi-list"></i> الوجبات</a></li>
+            }
+            @if (HasAny("FeeTypes.Manage"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="FeeTypes"><i class="bi bi-tag"></i> الرسوم</a></li>
+            }
+            @if (HasAny("Rooms.Manage"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Rooms"><i class="bi bi-door-open"></i> الغرف</a></li>
+            }
+            @if (HasAny("StudentCategories.Manage"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="StudentCategories"><i class="bi bi-tags"></i> الفئات</a></li>
+            }
+            @if (HasAny("Countries.Manage"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Countries"><i class="bi bi-globe"></i> البلاد</a></li>
+            }
+            @if (HasAny("SystemUsers.Manage"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="Permissions" asp-action="Users"><i class="bi bi-shield-lock"></i> المستخدمين</a></li>
+            }
+            @if (HasAny("AppConfig.Manage"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="ApplicationTypes"><i class="bi bi-file-earmark-text"></i> تطبيقات الطلاب</a></li>
+                <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="CreateAdmin"><i class="bi bi-person-plus"></i> إنشاء أدمن وتحديد صلاحياته</a></li>
+            }
+
+            <li class="menu-header d-flex align-items-center" style="padding-right:2.5rem;font-size:0.8rem;color:rgba(255,255,255,0.5)!important;">
+                <i class="bi bi-dot small"></i> إدارة بيانات الطالب (صلاحيات متقدمة)
+            </li>
+            @if (HasAny("Students.Manage", "Students.Edit"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="StudentOperations"><i class="bi bi-pencil-square"></i> إدارة بيانات الطالب</a></li>
+            }
+
+            <li class="menu-header d-flex align-items-center" style="padding-right:2.5rem;font-size:0.8rem;color:rgba(255,255,255,0.5)!important;">
+                <i class="bi bi-dot small"></i> إحصائيات وتقارير عامة
+            </li>
+            @if (HasAny("Statistics.View"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="Index"><i class="bi bi-speedometer2"></i> إحصائيات عامة</a></li>
+                <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="MealConsumption"><i class="bi bi-cup-hot"></i> إحصائية استلام الوجبات</a></li>
+                <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="StudentsByHousingType"><i class="bi bi-pie-chart"></i> أعداد الطلاب حسب أنواع السكن</a></li>
+            }
+            @if (HasAny("Reports.View"))
+            {
+                <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="StudentLists"><i class="bi bi-file-text"></i> تقارير</a></li>
+            }
+        </div>
+    }
+
     @if (HasAny("Students.View", "Students.Manage", "Students.Edit", "StudentStatus.View", "SpecialCases.Manage", "SocialCases.Manage", "Document.View", "Document.Manage"))
     {
         <!-- ===== الطلاب ===== -->
@@ -659,77 +739,6 @@
                 <li class="nav-item">
                     <a class="nav-link" asp-controller="Reports" asp-action="SocialCase">
                         <i class="bi bi-search-heart"></i> قوائم البحث الاجتماعي
-                    </a>
-                </li>
-            }
-        </div>
-    }
-
-    @if (HasAny("SystemUsers.Manage", "Permissions.Manage", "Roles.Manage", "Countries.Manage", "AppConfig.Manage", "AuditLog.View"))
-    {
-        <!-- ===== الإدارة ===== -->
-        <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuAdmin" role="button">
-            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الإدارة
-        </li>
-        <div class="collapse show" id="menuAdmin">
-            @if (isSuperAdmin && HasAny("SystemUsers.Manage", "Permissions.Manage"))
-            {
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Permissions" asp-action="Users">
-                        <i class="bi bi-shield-lock"></i> المستخدمين والصلاحيات
-                    </a>
-                </li>
-            }
-            @if (isSuperAdmin && HasAny("Roles.Manage"))
-            {
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Permissions" asp-action="Roles">
-                        <i class="bi bi-person-badge"></i> الأدوار
-                    </a>
-                </li>
-            }
-            @if (HasAny("Countries.Manage"))
-            {
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Admin" asp-action="Countries">
-                        <i class="bi bi-globe"></i> الدول
-                    </a>
-                </li>
-            }
-            @if (HasAny("AppConfig.Manage"))
-            {
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Admin" asp-action="AppConfig">
-                        <i class="bi bi-sliders"></i> إعدادات التطبيق
-                    </a>
-                </li>
-            }
-            @if (HasAny("AuditLog.View"))
-            {
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Admin" asp-action="AuditLog">
-                        <i class="bi bi-clock-history"></i> سجل التدقيق (مبسط)
-                    </a>
-                </li>
-            }
-            @if (isSuperAdmin && HasAny("AuditLog.View"))
-            {
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Permissions" asp-action="AuditLog">
-                        <i class="bi bi-search"></i> سجل التدقيق (متقدم)
-                    </a>
-                </li>
-            }
-            @if (HasAny("UniversityApi.Validate"))
-            {
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="UniversityApi" asp-action="ValidationLog">
-                        <i class="bi bi-diagram-3"></i> سجل التحقق من الجامعة
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="UniversityApi" asp-action="BulkValidate">
-                        <i class="bi bi-cloud-upload"></i> التحقق الدفعي
                     </a>
                 </li>
             }
