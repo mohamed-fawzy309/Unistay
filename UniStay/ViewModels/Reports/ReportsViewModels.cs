@@ -273,3 +273,41 @@ public class BuildingLookup
     public string Name { get; set; } = "";
     public int? CityID { get; set; }
 }
+
+public class StudentObligationsReportViewModel
+{
+    public List<StudentObligationRowViewModel> Obligations { get; set; } = new();
+    public StudentObligationsFilterViewModel Filter { get; set; } = new();
+    public int TotalCount { get; set; }
+    public int TotalSigned { get; set; }
+    public int TotalPending { get; set; }
+    public int Page { get; set; }
+    public int TotalPages { get; set; }
+    public List<CityLookup> Cities { get; set; } = new();
+}
+
+public class StudentObligationsFilterViewModel
+{
+    public string? Search { get; set; }
+    public int? CityID { get; set; }
+    public string? Status { get; set; }
+    public DateTime? FromDate { get; set; }
+    public DateTime? ToDate { get; set; }
+}
+
+public class StudentObligationRowViewModel
+{
+    public int ID { get; set; }
+    public string FullName { get; set; } = "";
+    public string NationalID { get; set; } = "";
+    public string? StudentCode { get; set; }
+    public string? Faculty { get; set; }
+    public string? CityName { get; set; }
+    public string ObligationType { get; set; } = "";
+    public string ObligationTypeDisplay { get; set; } = "";
+    public string Status { get; set; } = "";
+    public string StatusDisplay { get; set; } = "";
+    public DateTime? SignedAt { get; set; }
+    public string? SignedByName { get; set; }
+    public string? Notes { get; set; }
+}

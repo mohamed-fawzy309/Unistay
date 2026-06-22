@@ -1,0 +1,162 @@
+@model SmsStatisticsViewModel
+@{ ViewData["Title"] = "إحصائية الرسائل القصيرة"; }
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-envelope-paper"></i> إحصائية الرسائل القصيرة</h2>
+        <div>
+            <a asp-action="SmsStatisticsExportExcel" asp-route-fromDate="@Model.FilterFromDate" asp-route-toDate="@Model.FilterToDate" asp-route-status="@Model.FilterStatus" asp-route-type="@Model.FilterType" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+            <a asp-action="SmsStatisticsExportPdf" asp-route-fromDate="@Model.FilterFromDate" asp-route-toDate="@Model.FilterToDate" asp-route-status="@Model.FilterStatus" asp-route-type="@Model.FilterType" class="btn btn-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+            <a href="javascript:window.print()" class="btn btn-outline-primary btn-sm"><i class="bi bi-printer"></i> طباعة</a>
+        </div>
+    </div>
+
+    <p class="text-muted mb-4"><i class="bi bi-info-circle me-1"></i> إحصائية بعدد الرسائل النصية (SMS) المرسلة للطلاب وأولياء الأمور، مقسمة حسب الحالة والنوع</p>
+
+    <form method="get" class="row g-2 mb-4 bg-white p-3 rounded shadow-sm">
+        <div class="col-md-2">
+            <label class="form-label small">من تاريخ</label>
+            <input type="date" name="fromDate" class="form-control form-control-sm" value="@Model.FilterFromDate?.ToString("yyyy-MM-dd")">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">إلى تاريخ</label>
+            <input type="date" name="toDate" class="form-control form-control-sm" value="@Model.FilterToDate?.ToString("yyyy-MM-dd")">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small">الحالة</label>
+            <select name="status" class="form-select form-select-sm">
+                <option value="">الكل</option>
+                <option value="Sent" selected="@(Model.FilterStatus == "Sent")">تم الإرسال</option>
+                <option value="Failed" selected="@(Model.FilterStatus == "Failed")">فشل</option>
+                <option value="Pending" selected="@(Model.FilterStatus == "Pending")">قيد الانتظار</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small">نوع الرسالة</label>
+            <input type="text" name="type" class="form-control form-control-sm" placeholder="نوع الرسالة..." value="@Model.FilterType">
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-funnel"></i></button>
+        </div>
+    </form>
+
+    <div class="row mb-4">
+        <div class="col-md-3 mb-2"><div class="card border-primary shadow-sm"><div class="card-body text-center"><h6 class="text-muted">الإجمالي</h6><h3 class="text-primary mb-0">@Model.TotalLogs.ToString("N0")</h3></div></div></div>
+        <div class="col-md-3 mb-2"><div class="card border-success shadow-sm"><div class="card-body text-center"><h6 class="text-muted">تم الإرسال</h6><h3 class="text-success mb-0">@Model.TotalSent.ToString("N0")</h3></div></div></div>
+        <div class="col-md-3 mb-2"><div class="card border-danger shadow-sm"><div class="card-body text-center"><h6 class="text-muted">فشل</h6><h3 class="text-danger mb-0">@Model.TotalFailed.ToString("N0")</h3></div></div></div>
+        <div class="col-md-3 mb-2"><div class="card border-warning shadow-sm"><div class="card-body text-center"><h6 class="text-muted">قيد الانتظار</h6><h3 class="text-warning mb-0">@Model.TotalPendingSms.ToString("N0")</h3></div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light"><h6 class="mb-0">حالة الإرسال</h6></div>
+                <div class="card-body"><canvas id="chartStatus" height="220"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light"><h6 class="mb-0">حسب النوع</h6></div>
+                <div class="card-body"><canvas id="chartType" height="220"></canvas></div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light"><h6 class="mb-0">الإرسال اليومي</h6></div>
+                <div class="card-body"><canvas id="chartDaily" height="220"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">سجل الرسائل المرسلة</h6>
+            <span class="badge bg-primary">@Model.TotalLogs.ToString("N0") رسالة</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>المستلم</th>
+                            <th>جهة الاتصال</th>
+                            <th>النوع</th>
+                            <th>الحالة</th>
+                            <th>المحتوى</th>
+                            <th>تاريخ الإرسال</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var msg in Model.RecentLogs)
+                        {
+                            <tr>
+                                <td class="fw-semibold">@msg.RecipientName</td>
+                                <td dir="ltr" class="text-start">@msg.PhoneNumber</td>
+                                <td>@msg.MessageTypeDisplay</td>
+                                <td>
+                                    <span class="badge bg-@(msg.Status switch { "Sent" or "Success" => "success", "Failed" or "Error" => "danger", _ => "warning" })">
+                                        @msg.StatusDisplay
+                                    </span>
+                                </td>
+                                <td class="text-truncate" style="max-width:200px">@(msg.MessageContent ?? "—")</td>
+                                <td>@msg.SentAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                            </tr>
+                        }
+                        @if (!Model.RecentLogs.Any())
+                        {
+                            <tr><td colspan="6" class="text-center text-muted py-4">لا توجد رسائل</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav class="mt-3">
+            <ul class="pagination pagination-modern justify-content-center">
+                @for (int i = 1; i <= Model.TotalPages; i++)
+                {
+                    <li class="page-item @(i == Model.Page ? "active" : "")">
+                        <a class="page-link" href="@Url.Action("SmsStatistics", new { page = i, fromDate = Model.FilterFromDate, toDate = Model.FilterToDate, status = Model.FilterStatus, type = Model.FilterType })">@i</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const colors = ['#00c853', '#ff1744', '#ffd600'];
+        new Chart(document.getElementById('chartStatus'), {
+            type: 'doughnut',
+            data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SmsByStatus.Select(x => x.Label))),
+                datasets: [{
+                    data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SmsByStatus.Select(x => (double)x.Value))),
+                    backgroundColor: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SmsByStatus.Select(x => x.Color ?? "#0d6efd")))
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+        new Chart(document.getElementById('chartType'), {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SmsByType.Select(x => x.Label))),
+                datasets: [{ data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.SmsByType.Select(x => (double)x.Value))), backgroundColor: '#0d6efd' }]
+            },
+            options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
+        new Chart(document.getElementById('chartDaily'), {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DailySmsSent.Select(x => x.Label))),
+                datasets: [{ data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DailySmsSent.Select(x => (double)x.Value))), borderColor: '#0d6efd', fill: true }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } } }
+        });
+    </script>
+}

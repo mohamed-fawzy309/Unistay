@@ -1,0 +1,146 @@
+@model UniStay.ViewModels.Reports.StudentObligationsReportViewModel
+@{
+    ViewData["Title"] = "بيان استلام الطلاب للواجبات";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">بيان استلام الطلاب للواجبات</h2>
+    <div class="btn-group">
+        <a href="@Url.Action("StudentObligationsExportExcel", new { search = Model.Filter.Search, cityId = Model.Filter.CityID, status = Model.Filter.Status, fromDate = Model.Filter.FromDate, toDate = Model.Filter.ToDate })" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        <a href="#" class="btn btn-danger" onclick="alert('سيتم تفعيل خاصية PDF قريباً'); return false;"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        <a href="javascript:window.print()" class="btn btn-outline-primary"><i class="bi bi-printer"></i> طباعة</a>
+    </div>
+</div>
+
+<p class="text-muted mb-3"><i class="bi bi-info-circle me-1"></i> تقرير يوضح حالة استلام الطلاب للواجبات والمهام الموكلة إليهم (مستلزمات الغرف، التعهدات، إلخ)</p>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-list-check"></i></div>
+                <div>
+                    <div class="value">@Model.TotalCount</div>
+                    <div class="label">إجمالي الواجبات</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle"></i></div>
+                <div>
+                    <div class="value">@Model.TotalSigned</div>
+                    <div class="label">تم الاستلام</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card bg-white">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-clock"></i></div>
+                <div>
+                    <div class="value">@Model.TotalPending</div>
+                    <div class="label">قيد الانتظار</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="get" class="filter-bar row g-2 mb-3">
+    <div class="col-md-3">
+        <label class="form-label small">بحث</label>
+        <input type="text" name="search" class="form-control" placeholder="اسم الطالب أو الرقم القومي..." value="@Model.Filter.Search">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">المدينة</label>
+        <select name="cityId" class="form-select" onchange="this.form.submit()">
+            <option value="">الكل</option>
+            @foreach (var c in Model.Cities)
+            {
+                <option value="@c.ID" selected="@(Model.Filter.CityID == c.ID)">@c.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">الحالة</label>
+        <select name="status" class="form-select" onchange="this.form.submit()">
+            <option value="">الكل</option>
+            <option value="Signed" selected="@(Model.Filter.Status == "Signed")">تم الاستلام</option>
+            <option value="Pending" selected="@(Model.Filter.Status == "Pending")">قيد الانتظار</option>
+            <option value="Returned" selected="@(Model.Filter.Status == "Returned")">تم الإرجاع</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">من تاريخ</label>
+        <input type="date" name="fromDate" class="form-control" value="@Model.Filter.FromDate?.ToString("yyyy-MM-dd")">
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">إلى تاريخ</label>
+        <input type="date" name="toDate" class="form-control" value="@Model.Filter.ToDate?.ToString("yyyy-MM-dd")">
+    </div>
+    <div class="col-md-1 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+    </div>
+</form>
+
+<div class="table-responsive bg-white rounded shadow-sm animate-fade-in">
+    <table class="table table-hover mb-0">
+        <thead class="table-dark">
+            <tr>
+                <th>الطالب</th>
+                <th>الرقم القومي</th>
+                <th>كود الطالب</th>
+                <th>الكلية</th>
+                <th>المدينة</th>
+                <th>نوع الواجب</th>
+                <th>الحالة</th>
+                <th>تاريخ الاستلام</th>
+                <th>مسؤول التسليم</th>
+                <th>ملاحظات</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Obligations)
+            {
+                <tr>
+                    <td class="fw-semibold">@item.FullName</td>
+                    <td>@item.NationalID</td>
+                    <td>@(item.StudentCode ?? "—")</td>
+                    <td>@(item.Faculty ?? "—")</td>
+                    <td>@(item.CityName ?? "—")</td>
+                    <td>@item.ObligationTypeDisplay</td>
+                    <td>
+                        <span class="badge bg-@(item.Status switch { "Signed" => "success", "Pending" => "warning", "Returned" => "info", _ => "secondary" })">
+                            @item.StatusDisplay
+                        </span>
+                    </td>
+                    <td>@(item.SignedAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</td>
+                    <td>@(item.SignedByName ?? "—")</td>
+                    <td>@(item.Notes ?? "—")</td>
+                </tr>
+            }
+            @if (!Model.Obligations.Any())
+            {
+                <tr><td colspan="10" class="text-center text-muted py-4">لا توجد بيانات</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-3">
+        <ul class="pagination pagination-modern justify-content-center">
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" href="@Url.Action("StudentObligations", new { page = i, search = Model.Filter.Search, cityId = Model.Filter.CityID, status = Model.Filter.Status, fromDate = Model.Filter.FromDate, toDate = Model.Filter.ToDate })">@i</a>
+                </li>
+            }
+        </ul>
+    </nav>
+}
