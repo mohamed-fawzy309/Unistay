@@ -773,6 +773,132 @@ public class ReportsController : Controller
         }).ToList();
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // 8. Student Obligations Report (واجبات الطلاب)
+    // ════════════════════════════════════════════════════════════════
+
+    [HttpGet]
+    [RequirePermission("Students.Manage", "CanView")]
+    public async Task<IActionResult> StudentObligations(string? search = null, int? cityId = null, string? status = null, DateTime? fromDate = null, DateTime? toDate = null, int page = 1)
+    {
+        var query = _db.StudentInventories
+            .Include(si => si.Student)
+            .Include(si => si.InventoryItem)
+            .Include(si => si.AssignedByNavigation)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(search))
+            query = query.Where(si => si.Student.FullName.Contains(search) || si.Student.NationalID.Contains(search));
+        if (cityId.HasValue)
+            query = query.Where(si => si.Allocation!.CityRoom.CityBuilding.DormitoryCityID == cityId);
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (status == "Signed")
+                query = query.Where(si => si.AssignedAt != null);
+            else if (status == "Pending")
+                query = query.Where(si => si.AssignedAt == null);
+            else if (status == "Returned")
+                query = query.Where(si => si.IsReturned == true);
+        }
+        if (fromDate.HasValue)
+            query = query.Where(si => si.AssignedAt >= fromDate.Value);
+        if (toDate.HasValue)
+            query = query.Where(si => si.AssignedAt <= toDate.Value.AddDays(1));
+
+        var total = await query.CountAsync();
+        var items = await query.OrderByDescending(si => si.AssignedAt).ThenBy(si => si.Student.FullName)
+            .Skip((page - 1) * 30).Take(30).ToListAsync();
+
+        var rows = items.Select(si =>
+        {
+            var statusVal = si.IsReturned == true ? "Returned" : si.AssignedAt != null ? "Signed" : "Pending";
+            return new StudentObligationRowViewModel
+            {
+                ID = si.ID,
+                FullName = si.Student.FullName,
+                NationalID = si.Student.NationalID,
+                StudentCode = si.Student.StudentCode,
+                Faculty = si.Student.Faculty,
+                CityName = si.Allocation?.CityRoom?.CityBuilding?.DormitoryCity?.Name,
+                ObligationType = si.InventoryItem?.ItemName ?? "",
+                ObligationTypeDisplay = si.InventoryItem?.ItemName ?? "",
+                Status = statusVal,
+                StatusDisplay = statusVal == "Returned" ? "تم الإرجاع" : statusVal == "Signed" ? "تم الاستلام" : "قيد الانتظار",
+                SignedAt = si.AssignedAt,
+                SignedByName = si.AssignedByNavigation?.Name,
+                Notes = si.Condition
+            };
+        }).ToList();
+
+        var vm = new StudentObligationsReportViewModel
+        {
+            Obligations = rows,
+            Filter = new StudentObligationsFilterViewModel { Search = search, CityID = cityId, Status = status, FromDate = fromDate, ToDate = toDate },
+            TotalCount = total,
+            TotalSigned = rows.Count(r => r.Status == "Signed"),
+            TotalPending = rows.Count(r => r.Status == "Pending"),
+            Page = page,
+            TotalPages = (int)Math.Ceiling(total / 30.0),
+            Cities = await _db.DormitoryCities.Where(c => c.IsActive && !c.IsDeleted)
+                .Select(c => new CityLookup { ID = c.ID, Name = c.Name }).ToListAsync()
+        };
+
+        return View(vm);
+    }
+
+    [HttpGet]
+    [RequirePermission("Students.Manage", "CanView")]
+    public async Task<IActionResult> StudentObligationsExportExcel(string? search = null, int? cityId = null, string? status = null, DateTime? fromDate = null, DateTime? toDate = null)
+    {
+        var rows = await BuildStudentObligationsData(search, cityId, status, fromDate, toDate);
+        var columns = new[] { "الطالب", "الرقم القومي", "كود الطالب", "الكلية", "المدينة", "نوع الواجب", "الحالة", "تاريخ الاستلام", "مسؤول التسليم", "ملاحظات" };
+        var data = _export.ExportToExcel("استلام الطلاب للواجبات", columns, rows, r => new object?[] {
+            r.FullName, r.NationalID, r.StudentCode, r.Faculty, r.CityName,
+            r.ObligationTypeDisplay, r.StatusDisplay, r.SignedAt?.ToString("yyyy-MM-dd HH:mm"),
+            r.SignedByName, r.Notes
+        });
+        return File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "StudentObligations.xlsx");
+    }
+
+    private async Task<List<StudentObligationRowViewModel>> BuildStudentObligationsData(string? search, int? cityId, string? status, DateTime? fromDate, DateTime? toDate)
+    {
+        var query = _db.StudentInventories
+            .Include(si => si.Student)
+            .Include(si => si.InventoryItem)
+            .Include(si => si.AssignedByNavigation)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(search))
+            query = query.Where(si => si.Student.FullName.Contains(search) || si.Student.NationalID.Contains(search));
+        if (cityId.HasValue)
+            query = query.Where(si => si.Allocation!.CityRoom.CityBuilding.DormitoryCityID == cityId);
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (status == "Signed")
+                query = query.Where(si => si.AssignedAt != null);
+            else if (status == "Pending")
+                query = query.Where(si => si.AssignedAt == null);
+            else if (status == "Returned")
+                query = query.Where(si => si.IsReturned == true);
+        }
+        if (fromDate.HasValue) query = query.Where(si => si.AssignedAt >= fromDate.Value);
+        if (toDate.HasValue) query = query.Where(si => si.AssignedAt <= toDate.Value.AddDays(1));
+
+        return (await query.OrderByDescending(si => si.AssignedAt).ThenBy(si => si.Student.FullName).ToListAsync()).Select(si =>
+        {
+            var statusVal = si.IsReturned == true ? "Returned" : si.AssignedAt != null ? "Signed" : "Pending";
+            return new StudentObligationRowViewModel
+            {
+                FullName = si.Student.FullName, NationalID = si.Student.NationalID,
+                StudentCode = si.Student.StudentCode, Faculty = si.Student.Faculty,
+                CityName = si.Allocation?.CityRoom?.CityBuilding?.DormitoryCity?.Name,
+                ObligationType = si.InventoryItem?.ItemName ?? "", ObligationTypeDisplay = si.InventoryItem?.ItemName ?? "",
+                Status = statusVal, StatusDisplay = statusVal == "Returned" ? "تم الإرجاع" : statusVal == "Signed" ? "تم الاستلام" : "قيد الانتظار",
+                SignedAt = si.AssignedAt, SignedByName = si.AssignedByNavigation?.Name, Notes = si.Condition
+            };
+        }).ToList();
+    }
+
     private static string MapCaseType(string? type) => type switch
     {
         "Orphan" => "يتيم", "LowIncome" => "ضعف دخل", "Disability" => "إعاقة",

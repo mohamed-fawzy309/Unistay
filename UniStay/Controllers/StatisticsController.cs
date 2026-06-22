@@ -83,7 +83,7 @@ public class StatisticsController : Controller
             ApplicationsByCity = await GetApplicationsByCity(academicYear, cityId, faculty, null),
             AcademicYears = await _db.Applications.Where(a => a.AcademicYear != null).Select(a => a.AcademicYear!).Distinct().OrderByDescending(y => y).ToListAsync(),
             Cities = await _db.DormitoryCities.Where(c => c.IsActive && !c.IsDeleted).Select(c => new FilterLookup { ID = c.ID, Name = c.Name }).ToListAsync(),
-            Faculties = await _db.Students.Where(s => s.Faculty != null).Select(s => s.Faculty!).Distinct().OrderBy(f => f).ToListAsync(),
+            Faculties = await _db.Faculties.Where(f => f.IsActive).Select(f => f.Name).OrderBy(f => f).ToListAsync(),
             FilterAcademicYear = academicYear,
             FilterCityId = cityId,
             FilterFaculty = faculty,
@@ -496,16 +496,17 @@ public class StatisticsController : Controller
         var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
         query = query.Where(a => a.CreatedAt >= sixMonthsAgo);
 
-        var data = await query.GroupBy(a => new { a.CreatedAt!.Value.Year, a.CreatedAt.Value.Month })
-            .Select(g => new ChartDataPoint
-            {
-                Label = g.Key.Year + "/" + g.Key.Month.ToString("00"),
-                Value = g.Count()
-            })
-            .OrderBy(x => x.Label)
+        var raw = await query
+            .GroupBy(a => new { a.CreatedAt!.Value.Year, a.CreatedAt.Value.Month })
+            .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+            .OrderBy(x => x.Year).ThenBy(x => x.Month)
             .ToListAsync();
 
-        return data;
+        return raw.Select(x => new ChartDataPoint
+        {
+            Label = $"{x.Year}/{x.Month:D2}",
+            Value = x.Count
+        }).ToList();
     }
 
     private async Task<List<ChartDataPoint>> GetApplicationsByFaculty(string? academicYear, int? cityId, string? faculty, DateTime? toDate)
@@ -583,12 +584,17 @@ public class StatisticsController : Controller
         var sevenDaysAgo = DateTime.UtcNow.AddDays(-7);
         query = query.Where(q => q.PrintedAt >= sevenDaysAgo);
 
-        var data = await query.GroupBy(q => q.PrintedAt!.Value.Date)
-            .Select(g => new ChartDataPoint { Label = g.Key.ToString("MM/dd"), Value = g.Count() })
-            .OrderBy(x => x.Label)
+        var raw = await query
+            .GroupBy(q => q.PrintedAt!.Value.Date)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .OrderBy(x => x.Date)
             .ToListAsync();
 
-        return data;
+        return raw.Select(x => new ChartDataPoint
+        {
+            Label = x.Date.ToString("MM/dd"),
+            Value = x.Count
+        }).ToList();
     }
 
     private async Task<List<ChartDataPoint>> GetMonthlyPrinting(DateTime? fromDate, DateTime? toDate)
@@ -600,12 +606,17 @@ public class StatisticsController : Controller
         var sixMonthsAgo = DateTime.UtcNow.AddMonths(-6);
         query = query.Where(q => q.PrintedAt >= sixMonthsAgo);
 
-        var data = await query.GroupBy(q => new { q.PrintedAt!.Value.Year, q.PrintedAt.Value.Month })
-            .Select(g => new ChartDataPoint { Label = g.Key.Year + "/" + g.Key.Month.ToString("00"), Value = g.Count() })
-            .OrderBy(x => x.Label)
+        var raw = await query
+            .GroupBy(q => new { q.PrintedAt!.Value.Year, q.PrintedAt.Value.Month })
+            .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count() })
+            .OrderBy(x => x.Year).ThenBy(x => x.Month)
             .ToListAsync();
 
-        return data;
+        return raw.Select(x => new ChartDataPoint
+        {
+            Label = $"{x.Year}/{x.Month:D2}",
+            Value = x.Count
+        }).ToList();
     }
 
     private async Task<List<ChartDataPoint>> GetDailyMealConsumption(int? cityId, DateTime? date)
@@ -617,12 +628,17 @@ public class StatisticsController : Controller
         var sevenDaysAgo = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-7));
         query = query.Where(m => m.MealDate >= sevenDaysAgo);
 
-        var data = await query.GroupBy(m => m.MealDate)
-            .Select(g => new ChartDataPoint { Label = g.Key.ToString("MM/dd"), Value = g.Count() })
-            .OrderBy(x => x.Label)
+        var raw = await query
+            .GroupBy(m => m.MealDate)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .OrderBy(x => x.Date)
             .ToListAsync();
 
-        return data;
+        return raw.Select(x => new ChartDataPoint
+        {
+            Label = x.Date.ToString("MM/dd"),
+            Value = x.Count
+        }).ToList();
     }
 
     private async Task<List<ChartDataPoint>> GetMealConsumptionByCity(DateTime? date)
@@ -659,6 +675,144 @@ public class StatisticsController : Controller
             Status = a.Status,
             Date = a.CreatedAt?.ToString("yyyy/MM/dd") ?? ""
         }).ToList();
+    }
+
+    // ====================================================================
+    // MODULE 6: SMS STATISTICS
+    // ====================================================================
+    [HttpGet]
+    [RequirePermission("Statistics.View", "CanView")]
+    public async Task<IActionResult> SmsStatistics(DateTime? fromDate, DateTime? toDate, string? status, string? type, int page = 1)
+    {
+        const int pageSize = 30;
+
+        var query = _db.EmailLogs.Include(s => s.Student).AsQueryable();
+
+        if (fromDate.HasValue) query = query.Where(s => s.SentAt >= fromDate.Value || s.CreatedAt >= fromDate.Value);
+        if (toDate.HasValue) query = query.Where(s => s.SentAt <= toDate.Value.AddDays(1) || s.CreatedAt <= toDate.Value.AddDays(1));
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (status == "Sent") query = query.Where(s => s.Status == "Sent" || s.Status == "Success");
+            else if (status == "Failed") query = query.Where(s => s.Status == "Failed" || s.Status == "Error");
+            else if (status == "Pending") query = query.Where(s => s.Status == "Pending" || s.Status == null);
+        }
+        if (!string.IsNullOrEmpty(type))
+            query = query.Where(s => s.EmailType == type);
+
+        // Summary stats
+        var allLogs = await query.ToListAsync();
+        var totalSent = allLogs.Count(s => s.Status == "Sent" || s.Status == "Success");
+        var totalFailed = allLogs.Count(s => s.Status == "Failed" || s.Status == "Error");
+        var totalPending = allLogs.Count(s => s.Status == "Pending" || s.Status == null);
+        var total = allLogs.Count;
+
+        // Charts
+        var dailySms = allLogs
+            .GroupBy(s => (s.SentAt ?? s.CreatedAt ?? DateTime.MinValue).Date)
+            .OrderBy(g => g.Key)
+            .Select(g => new ChartDataPoint { Label = g.Key.ToString("yyyy-MM-dd"), Value = g.Count() })
+            .ToList();
+
+        var smsByType = allLogs
+            .GroupBy(s => s.EmailType ?? "أخرى")
+            .Select(g => new ChartDataPoint { Label = g.Key, Value = g.Count() })
+            .ToList();
+
+        var smsByStatus = new List<ChartDataPoint>
+        {
+            new() { Label = "تم الإرسال", Value = totalSent, Color = "#00c853" },
+            new() { Label = "فشل", Value = totalFailed, Color = "#ff1744" },
+            new() { Label = "قيد الانتظار", Value = totalPending, Color = "#ffd600" }
+        };
+
+        // Paginated logs
+        var logs = allLogs.OrderByDescending(s => s.SentAt ?? s.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(s => new SmsLogRowViewModel
+            {
+                ID = s.ID,
+                RecipientName = s.Student?.FullName ?? s.RecipientEmail,
+                PhoneNumber = s.RecipientEmail,
+                MessageType = s.EmailType ?? "",
+                MessageTypeDisplay = s.EmailType ?? "",
+                Status = s.Status ?? "Pending",
+                StatusDisplay = s.Status == "Sent" || s.Status == "Success" ? "تم الإرسال" : s.Status == "Failed" || s.Status == "Error" ? "فشل" : "قيد الانتظار",
+                MessageContent = s.Subject,
+                SentAt = s.SentAt ?? s.CreatedAt
+            }).ToList();
+
+        var vm = new SmsStatisticsViewModel
+        {
+            TotalSent = totalSent,
+            TotalDelivered = totalSent,
+            TotalFailed = totalFailed,
+            TotalPendingSms = totalPending,
+            DailySmsSent = dailySms,
+            SmsByType = smsByType,
+            SmsByStatus = smsByStatus,
+            RecentLogs = logs,
+            FilterFromDate = fromDate,
+            FilterToDate = toDate,
+            FilterStatus = status,
+            FilterType = type,
+            Page = page,
+            TotalPages = (int)Math.Ceiling(total / (double)pageSize),
+            TotalLogs = total
+        };
+
+        return View(vm);
+    }
+
+    [HttpGet]
+    [RequirePermission("Statistics.Export", "CanView")]
+    public async Task<IActionResult> SmsStatisticsExportExcel(DateTime? fromDate, DateTime? toDate, string? status, string? type)
+    {
+        var query = _db.EmailLogs.Include(s => s.Student).AsQueryable();
+        if (fromDate.HasValue) query = query.Where(s => s.SentAt >= fromDate.Value || s.CreatedAt >= fromDate.Value);
+        if (toDate.HasValue) query = query.Where(s => s.SentAt <= toDate.Value.AddDays(1) || s.CreatedAt <= toDate.Value.AddDays(1));
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (status == "Sent") query = query.Where(s => s.Status == "Sent" || s.Status == "Success");
+            else if (status == "Failed") query = query.Where(s => s.Status == "Failed" || s.Status == "Error");
+            else if (status == "Pending") query = query.Where(s => s.Status == "Pending" || s.Status == null);
+        }
+        if (!string.IsNullOrEmpty(type)) query = query.Where(s => s.EmailType == type);
+
+        var logs = await query.OrderByDescending(s => s.SentAt ?? s.CreatedAt).ToListAsync();
+        var rows = logs.Select((s, idx) => new { s, idx }).ToList();
+        var columns = new[] { "#", "المستلم", "جهة الاتصال", "نوع الرسالة", "الحالة", "المحتوى", "تاريخ الإرسال" };
+        var data = _export.ExportToExcel("إحصائية الرسائل", columns, rows, r => new object?[] {
+            r.idx + 1, r.s.Student?.FullName ?? r.s.RecipientEmail, r.s.RecipientEmail, r.s.EmailType ?? "",
+            r.s.Status == "Sent" || r.s.Status == "Success" ? "تم الإرسال" : r.s.Status == "Failed" || r.s.Status == "Error" ? "فشل" : "قيد الانتظار",
+            r.s.Subject, (r.s.SentAt ?? r.s.CreatedAt)?.ToString("yyyy-MM-dd HH:mm")
+        });
+        return File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "SmsStatistics.xlsx");
+    }
+
+    [HttpGet]
+    [RequirePermission("Statistics.Export", "CanView")]
+    public async Task<IActionResult> SmsStatisticsExportPdf(DateTime? fromDate, DateTime? toDate, string? status, string? type)
+    {
+        var query = _db.EmailLogs.Include(s => s.Student).AsQueryable();
+        if (fromDate.HasValue) query = query.Where(s => s.SentAt >= fromDate.Value || s.CreatedAt >= fromDate.Value);
+        if (toDate.HasValue) query = query.Where(s => s.SentAt <= toDate.Value.AddDays(1) || s.CreatedAt <= toDate.Value.AddDays(1));
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (status == "Sent") query = query.Where(s => s.Status == "Sent" || s.Status == "Success");
+            else if (status == "Failed") query = query.Where(s => s.Status == "Failed" || s.Status == "Error");
+            else if (status == "Pending") query = query.Where(s => s.Status == "Pending" || s.Status == null);
+        }
+        if (!string.IsNullOrEmpty(type)) query = query.Where(s => s.EmailType == type);
+
+        var logs = await query.OrderByDescending(s => s.SentAt ?? s.CreatedAt).ToListAsync();
+        var columns = new[] { "المستلم", "النوع", "الحالة", "التاريخ" };
+        var pdfData = logs.Select(s => new[] {
+            s.Student?.FullName ?? s.RecipientEmail, s.EmailType ?? "",
+            s.Status == "Sent" || s.Status == "Success" ? "تم" : s.Status == "Failed" || s.Status == "Error" ? "فشل" : "معلق",
+            (s.SentAt ?? s.CreatedAt)?.ToString("yyyy-MM-dd") ?? ""
+        }).ToArray();
+        var pdf = _export.ExportToPdf("إحصائية الرسائل القصيرة", columns, pdfData);
+        return File(pdf, "application/pdf", "SmsStatistics.pdf");
     }
 
     private static string GetCurrentAcademicYear()

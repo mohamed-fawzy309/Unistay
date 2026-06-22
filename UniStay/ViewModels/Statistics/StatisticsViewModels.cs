@@ -133,7 +133,41 @@ public class MealConsumptionStatisticsViewModel
     public DateTime? FilterDate { get; set; }
 }
 
-// ─── Module 6: SMS Statistics (placeholder — SMS entity missing) ───
+// ─── Module 6: SMS Statistics ───
+public class SmsStatisticsViewModel
+{
+    public int TotalSent { get; set; }
+    public int TotalDelivered { get; set; }
+    public int TotalFailed { get; set; }
+    public int TotalPendingSms { get; set; }
+
+    public List<ChartDataPoint> DailySmsSent { get; set; } = new();
+    public List<ChartDataPoint> SmsByType { get; set; } = new();
+    public List<ChartDataPoint> SmsByStatus { get; set; } = new();
+
+    public List<SmsLogRowViewModel> RecentLogs { get; set; } = new();
+
+    public DateTime? FilterFromDate { get; set; }
+    public DateTime? FilterToDate { get; set; }
+    public string? FilterStatus { get; set; }
+    public string? FilterType { get; set; }
+    public int Page { get; set; }
+    public int TotalPages { get; set; }
+    public int TotalLogs { get; set; }
+}
+
+public class SmsLogRowViewModel
+{
+    public int ID { get; set; }
+    public string RecipientName { get; set; } = "";
+    public string PhoneNumber { get; set; } = "";
+    public string MessageType { get; set; } = "";
+    public string MessageTypeDisplay { get; set; } = "";
+    public string Status { get; set; } = "";
+    public string StatusDisplay { get; set; } = "";
+    public string? MessageContent { get; set; }
+    public DateTime? SentAt { get; set; }
+}
 
 // ─── Shared ───
 public class FilterLookup

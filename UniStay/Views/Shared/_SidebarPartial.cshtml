@@ -326,6 +326,11 @@
                         <i class="bi bi-cup-hot"></i> إحصائية استلام الوجبات
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Statistics" asp-action="SmsStatistics">
+                        <i class="bi bi-envelope-paper"></i> إحصائية الرسائل القصيرة
+                    </a>
+                </li>
             }
         </div>
     }
@@ -562,6 +567,98 @@
                 <li class="nav-item">
                     <a class="nav-link" asp-controller="Admin" asp-action="FeeConfigurations">
                         <i class="bi bi-gear"></i> تكوين الرسوم
+                    </a>
+                </li>
+            }
+        </div>
+    }
+
+    @if (HasAny("Reports.View", "Students.Manage", "Violations.Manage", "Attendance.Manage", "Payments.View", "Buildings.Manage", "Rooms.Manage", "Cards.View", "Meals.Manage", "SocialCases.Manage"))
+    {
+        <!-- ===== التقارير ===== -->
+        <li class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuReportsPartial" role="button">
+            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> التقارير
+        </li>
+        <div class="collapse show" id="menuReportsPartial">
+            @if (HasAny("Students.View", "Students.Manage"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Reports" asp-action="StudentLists">
+                        <i class="bi bi-list-ul"></i> قوائم الطلاب
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Reports" asp-action="StudentsWithoutPhotos">
+                        <i class="bi bi-camera-off"></i> طلاب بدون صور
+                    </a>
+                </li>
+            }
+            @if (HasAny("Violations.Manage"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Violation" asp-action="Report">
+                        <i class="bi bi-exclamation-triangle"></i> الجزاءات
+                    </a>
+                </li>
+            }
+            @if (HasAny("Attendance.Manage"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Attendance" asp-action="Report">
+                        <i class="bi bi-calendar-x"></i> الغياب والتصاريح
+                    </a>
+                </li>
+            }
+            @if (HasAny("Payments.View"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Payment" asp-action="Report">
+                        <i class="bi bi-currency-exchange"></i> الرسوم
+                    </a>
+                </li>
+            }
+            @if (HasAny("Buildings.Manage", "Rooms.Manage"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Reports" asp-action="RoomOccupancy">
+                        <i class="bi bi-bar-chart"></i> حالة الغرف
+                    </a>
+                </li>
+            }
+            @if (HasAny("Cards.View", "Cards.Print"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Reports" asp-action="PrintedCards">
+                        <i class="bi bi-printer"></i> البطاقات المطبوعة
+                    </a>
+                </li>
+            }
+            @if (HasAny("Students.View", "Students.Manage"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Reports" asp-action="StudentObligations">
+                        <i class="bi bi-file-check"></i> بيان استلام الطلاب للواجبات
+                    </a>
+                </li>
+            }
+            @if (HasAny("Meals.Manage"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Reports" asp-action="MealRestriction">
+                        <i class="bi bi-ban"></i> المحرومون من الوجبات
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Reports" asp-action="StudentMealHistory">
+                        <i class="bi bi-journal"></i> وجبات الطالب
+                    </a>
+                </li>
+            }
+            @if (HasAny("SocialCases.Manage"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="Reports" asp-action="SocialCase">
+                        <i class="bi bi-search-heart"></i> قوائم البحث الاجتماعي
                     </a>
                 </li>
             }
