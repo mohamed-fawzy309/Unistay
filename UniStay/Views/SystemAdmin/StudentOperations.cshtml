@@ -1,0 +1,235 @@
+@model UniStay.ViewModels.Admin.StudentAdvancedOpsViewModel
+@{
+    ViewData["Title"] = "إدارة بيانات الطالب - صلاحيات متقدمة";
+}
+
+<h2 class="page-title mb-3">إدارة بيانات الطالب <small class="text-muted fs-6">(صلاحيات متقدمة)</small></h2>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-8">
+                <label class="form-label fw-semibold">البحث عن طالب</label>
+                <input name="search" class="form-control" placeholder="اسم الطالب / الرقم القومي / رقم الجلوس" value="@ViewBag.Search">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(ViewBag.Search))
+{
+    if (Model.Students.Any())
+    {
+        <div class="table-responsive mb-4">
+            <table class="table table-hover table-bordered bg-white animate-fade-in">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>الاسم</th>
+                        <th>الرقم القومي</th>
+                        <th>رقم الطالب</th>
+                        <th>الكلية</th>
+                        <th>حالة الطلب</th>
+                        <th>حساب دخول</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int i = 1; }
+                    @foreach (var s in Model.Students)
+                    {
+                        <tr>
+                            <td>@(i++)</td>
+                            <td>@s.FullName</td>
+                            <td>@s.NationalID</td>
+                            <td>@s.StudentCode</td>
+                            <td>@s.Faculty</td>
+                            <td>
+                                @if (s.ApplicationStatus == "Accepted")
+                                {
+                                    <span class="badge bg-success">مقبول</span>
+                                }
+                                else if (s.ApplicationStatus == "Rejected")
+                                {
+                                    <span class="badge bg-danger">مرفوض</span>
+                                }
+                                else if (s.ApplicationStatus == "Pending")
+                                {
+                                    <span class="badge bg-warning text-dark">معلق</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">لا يوجد</span>
+                                }
+                            </td>
+                            <td><span class="badge @(s.HasLogin ? "bg-success" : "bg-secondary")">@(s.HasLogin ? "موجود" : "لا يوجد")</span></td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="bi bi-gear"></i> إجراء
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#correctNationalId-@s.ID"><i class="bi bi-pencil-square"></i> تصحيح الرقم القومي</a></li>
+                                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#changeNumber-@s.ID"><i class="bi bi-123"></i> تغيير رقم الطالب</a></li>
+                                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#cancelAcceptance-@s.ID"><i class="bi bi-x-circle"></i> إلغاء قبول طالب</a></li>
+                                        <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#transferUniv-@s.ID"><i class="bi bi-arrow-right-left"></i> نقل طالب من الجامعة</a></li>
+                                        @if (s.HasLogin)
+                                        {
+                                            <li><a class="dropdown-item" href="#" onclick="resetPassword(@s.ID, '@s.FullName')"><i class="bi bi-key"></i> تغيير كلمة المرور</a></li>
+                                        }
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @foreach (var s in Model.Students)
+        {
+            <div class="modal fade" id="correctNationalId-@s.ID" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <form asp-controller="Admin" asp-action="CorrectNationalId" method="post" class="modal-content">
+                        <input type="hidden" name="StudentID" value="@s.ID">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold">تصحيح الرقم القومي - @s.FullName</h5>
+                            <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">الرقم القومي الحالي</label>
+                                <input class="form-control" value="@s.NationalID" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">الرقم القومي الجديد <span class="text-danger">*</span></label>
+                                <input name="NewNationalID" class="form-control" maxlength="14" placeholder="14 رقم" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">سبب التصحيح</label>
+                                <textarea name="Reason" class="form-control" rows="2" placeholder="سبب التصحيح"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="modal fade" id="changeNumber-@s.ID" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <form asp-controller="Admin" asp-action="ChangeStudentNumber" method="post" class="modal-content">
+                        <input type="hidden" name="StudentID" value="@s.ID">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold">تغيير رقم الطالب - @s.FullName</h5>
+                            <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">رقم الطالب الحالي</label>
+                                <input class="form-control" value="@s.StudentCode" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">الرقم الجديد <span class="text-danger">*</span></label>
+                                <input name="NewStudentCode" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">سبب التغيير</label>
+                                <textarea name="Reason" class="form-control" rows="2" placeholder="سبب التغيير"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="modal fade" id="cancelAcceptance-@s.ID" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <form asp-controller="Admin" asp-action="ReverseAcceptance" method="post" class="modal-content">
+                        <input type="hidden" name="StudentID" value="@s.ID">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold">إلغاء قبول طالب - @s.FullName</h5>
+                            <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle"></i> أنت على وشك إلغاء قبول هذا الطالب. هذا الإجراء سيغير حالة الطلب إلى "معلق".
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">سبب الإلغاء <span class="text-danger">*</span></label>
+                                <textarea name="Reason" class="form-control" rows="3" placeholder="سبب إلغاء القبول" required></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle"></i> تأكيد الإلغاء</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="modal fade" id="transferUniv-@s.ID" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <form asp-controller="Admin" asp-action="TransferUniversity" method="post" class="modal-content">
+                        <input type="hidden" name="StudentID" value="@s.ID">
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold">نقل طالب من الجامعة - @s.FullName</h5>
+                            <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">الكلية الحالية</label>
+                                <input class="form-control" value="@s.Faculty" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">الجامعة الجديدة <span class="text-danger">*</span></label>
+                                <select name="NewUniversityID" class="form-select" required>
+                                    <option value="">-- اختر الجامعة --</option>
+                                    @foreach (var u in (List<UniStay.Models.University>)ViewBag.Universities)
+                                    {
+                                        <option value="@u.ID">@u.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">سبب النقل</label>
+                                <textarea name="Reason" class="form-control" rows="2" placeholder="سبب النقل"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="alert alert-info">لم يتم العثور على طلاب مطابقين لمعايير البحث</div>
+    }
+}
+
+<form id="resetPasswordForm" asp-controller="Admin" asp-action="ResetStudentPassword" method="post" style="display:none">
+    <input type="hidden" name="studentId" id="resetStudentId">
+</form>
+
+@section Scripts {
+    <script>
+        function resetPassword(studentId, studentName) {
+            if (confirm('هل أنت متأكد من إعادة تعيين كلمة مرور الطالب ' + studentName + '؟')) {
+                document.getElementById('resetStudentId').value = studentId;
+                document.getElementById('resetPasswordForm').submit();
+            }
+        }
+    </script>
+}

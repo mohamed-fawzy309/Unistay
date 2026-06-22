@@ -22,6 +22,8 @@ public partial class AssuitDbContext : DbContext
 
     public virtual DbSet<Application> Applications { get; set; }
 
+    public virtual DbSet<ApplicationType> ApplicationTypes { get; set; }
+
     public virtual DbSet<ApplicationSchedule> ApplicationSchedules { get; set; }
 
     public virtual DbSet<AuditLog> AuditLogs { get; set; }

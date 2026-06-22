@@ -1,0 +1,179 @@
+@model List<UniStay.ViewModels.Admin.UniversityPhotoViewModel>
+@{
+    ViewData["Title"] = "صور الجامعة";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">صور الجامعة</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+        <i class="bi bi-plus-circle"></i> إضافة صورة
+    </button>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show animate-fade-in">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show animate-fade-in">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="row g-3">
+    @if (Model.Any())
+    {
+        foreach (var photo in Model)
+        {
+            <div class="col-md-4 col-lg-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="position-relative" style="height:200px;overflow:hidden;">
+                        <img src="@photo.FilePath" class="card-img-top h-100" style="object-fit:cover;" alt="@photo.Title">
+                        <span class="badge @(photo.IsActive == true ? "bg-success" : "bg-secondary") position-absolute top-0 end-0 m-2">
+                            @(photo.IsActive == true ? "نشط" : "غير نشط")
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title fw-bold">@(photo.Title ?? "بدون عنوان")</h6>
+                        <p class="small text-muted mb-1">@(photo.PhotoType ?? "عام")</p>
+                        @if (!string.IsNullOrEmpty(photo.CityName))
+                        {
+                            <p class="small text-muted mb-2"><i class="bi bi-building"></i> @photo.CityName</p>
+                        }
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editModal-@photo.ID">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="deletePhoto(@photo.ID)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="alert alert-info text-center">لا توجد صور مضافة بعد</div>
+        </div>
+    }
+</div>
+
+@foreach (var photo in Model)
+{
+    <div class="modal fade" id="editModal-@photo.ID" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form asp-action="Edit" method="post" enctype="multipart/form-data" class="modal-content">
+                <input type="hidden" name="ID" value="@photo.ID">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">تعديل الصورة</h5>
+                    <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(photo.FilePath))
+                    {
+                        <div class="text-center mb-3">
+                            <img src="@photo.FilePath" style="max-height:150px;" class="img-thumbnail">
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">العنوان</label>
+                        <input name="Title" class="form-control" value="@photo.Title">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">نوع الصورة</label>
+                        <select name="PhotoType" class="form-select">
+                            <option value="Campus" selected="@(photo.PhotoType == "Campus")">حرم جامعي</option>
+                            <option value="Building" selected="@(photo.PhotoType == "Building")">مبنى</option>
+                            <option value="City" selected="@(photo.PhotoType == "City")">مدينة جامعية</option>
+                            <option value="Logo" selected="@(photo.PhotoType == "Logo")">شعار</option>
+                            <option value="Other" selected="@(photo.PhotoType == "Other")">أخرى</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">استبدال الصورة</label>
+                        <input name="File" type="file" class="form-control" accept="image/*">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">ترتيب العرض</label>
+                        <input name="SortOrder" type="number" class="form-control" value="@photo.SortOrder" min="0" max="255">
+                    </div>
+                    <div class="form-check form-switch">
+                        <input name="IsActive" class="form-check-input" type="checkbox" value="true" checked="@(photo.IsActive == true)" id="up-active-@photo.ID">
+                        <label class="form-check-label" for="up-active-@photo.ID">نشط</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form asp-action="Create" method="post" enctype="multipart/form-data" class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title fw-bold">إضافة صورة جديدة</h4>
+                <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">العنوان</label>
+                    <input name="Title" class="form-control" placeholder="عنوان الصورة">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">نوع الصورة</label>
+                    <select name="PhotoType" class="form-select">
+                        <option value="Campus">حرم جامعي</option>
+                        <option value="Building">مبنى</option>
+                        <option value="City">مدينة جامعية</option>
+                        <option value="Logo">شعار</option>
+                        <option value="Other">أخرى</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">المدينة الجامعية</label>
+                    <select name="DormitoryCityID" class="form-select">
+                        <option value="">-- بدون --</option>
+                        @foreach (var city in (List<UniStay.Models.DormitoryCity>)ViewBag.Cities)
+                        {
+                            <option value="@city.ID">@city.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">الصورة <span class="text-danger">*</span></label>
+                    <input name="File" type="file" class="form-control" accept="image/*" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">ترتيب العرض</label>
+                    <input name="SortOrder" type="number" class="form-control" value="0" min="0" max="255">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg"></i> إضافة</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<form id="deletePhotoForm" asp-action="Delete" method="post" style="display:none">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deletePhotoId">
+</form>
+
+@section Scripts {
+    <script>
+        function deletePhoto(id) {
+            if (confirm('هل أنت متأكد من حذف هذه الصورة؟')) {
+                document.getElementById('deletePhotoId').value = id;
+                document.getElementById('deletePhotoForm').submit();
+            }
+        }
+    </script>
+}

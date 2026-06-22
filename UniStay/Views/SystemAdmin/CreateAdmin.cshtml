@@ -1,0 +1,106 @@
+@model UniStay.ViewModels.Admin.CreateAdminViewModel
+@{
+    ViewData["Title"] = "إنشاء أدمن وتحديد صلاحياته";
+}
+
+<h2 class="page-title mb-3">إنشاء أدمن وتحديد صلاحياته</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show animate-fade-in">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<form asp-action="CreateAdmin" method="post">
+    <div class="row g-4">
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-person-plus"></i> بيانات المستخدم
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">الاسم <span class="text-danger">*</span></label>
+                        <input asp-for="Name" class="form-control" placeholder="الاسم الكامل" required>
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">البريد الإلكتروني <span class="text-danger">*</span></label>
+                        <input asp-for="Email" class="form-control" type="email" placeholder="email@example.com" required>
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">رقم الهاتف <span class="text-danger">*</span></label>
+                        <input asp-for="Phone" class="form-control" placeholder="رقم الهاتف" required>
+                        <span asp-validation-for="Phone" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">الرقم القومي</label>
+                        <input asp-for="NationalID" class="form-control" maxlength="14" placeholder="14 رقم">
+                        <span asp-validation-for="NationalID" class="text-danger small"></span>
+                        <small class="text-muted">كلمة المرور الأولية ستكون الرقم القومي أو رقم الهاتف</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-shield-lock"></i> صلاحيات النظام
+                </div>
+                <div class="card-body" style="max-height:600px;overflow-y:auto;">
+                    @if (Model.Permissions.Any())
+                    {
+                        var groups = Model.Permissions.GroupBy(p => p.GroupName ?? "عام").OrderBy(g => g.Key);
+                        foreach (var group in groups)
+                        {
+                            <div class="mb-3">
+                                <h6 class="fw-bold border-bottom pb-2">@group.Key</h6>
+                                <div class="row">
+                                    @foreach (var perm in group)
+                                    {
+                                        <div class="col-md-6 mb-2">
+                                            <div class="border rounded p-2 bg-light">
+                                                <div class="fw-semibold small mb-1">@perm.DisplayName</div>
+                                                <div class="d-flex gap-2 small">
+                                                    <label class="form-check-label">
+                                                        <input type="checkbox" name="Permissions[@(Model.Permissions.IndexOf(perm))].CanView" value="true" class="form-check-input" />
+                                                        عرض
+                                                    </label>
+                                                    <label class="form-check-label">
+                                                        <input type="checkbox" name="Permissions[@(Model.Permissions.IndexOf(perm))].CanCreate" value="true" class="form-check-input" />
+                                                        إضافة
+                                                    </label>
+                                                    <label class="form-check-label">
+                                                        <input type="checkbox" name="Permissions[@(Model.Permissions.IndexOf(perm))].CanEdit" value="true" class="form-check-input" />
+                                                        تعديل
+                                                    </label>
+                                                    <label class="form-check-label">
+                                                        <input type="checkbox" name="Permissions[@(Model.Permissions.IndexOf(perm))].CanDelete" value="true" class="form-check-input" />
+                                                        حذف
+                                                    </label>
+                                                </div>
+                                                <input type="hidden" name="Permissions[@(Model.Permissions.IndexOf(perm))].PermissionID" value="@perm.PermissionID" />
+                                                <input type="hidden" name="Permissions[@(Model.Permissions.IndexOf(perm))].PermissionKey" value="@perm.PermissionKey" />
+                                                <input type="hidden" name="Permissions[@(Model.Permissions.IndexOf(perm))].DisplayName" value="@perm.DisplayName" />
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted">لا توجد صلاحيات متاحة</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-person-check"></i> إنشاء المستخدم</button>
+        <a asp-controller="Permissions" asp-action="Users" class="btn btn-secondary btn-lg">إلغاء</a>
+    </div>
+</form>
