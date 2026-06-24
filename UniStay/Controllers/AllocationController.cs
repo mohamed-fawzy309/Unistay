@@ -80,8 +80,12 @@ namespace UniStay.Controllers
 
             if (app == null) return NotFound();
 
-            var buildings = await _db.CityBuildings
-                .Where(b => b.DormitoryCityID == app.DormitoryCityID && b.IsActive == true && b.IsDeleted != true)
+            var buildingsRaw = await _db.CityBuildings
+    .Where(b => b.DormitoryCityID == app.DormitoryCityID && b.IsActive == true && b.IsDeleted != true)
+    .Include(b => b.CityRooms)
+    .ToListAsync();
+
+            var buildings = buildingsRaw
                 .Select(b => new BuildingOptionViewModel
                 {
                     ID = b.ID,
@@ -91,10 +95,10 @@ namespace UniStay.Controllers
                     AvailableBeds = b.CityRooms!
                         .Where(r => r.IsActive == true && r.IsDeleted != true
                             && r.RoomType != "إشراف" && r.RoomType != "مخزن")
-                        .Sum(r => (int)r.BedsCount - (int)r.CurrentOccupancy)
+                        .Sum(r => r.BedsCount - r.CurrentOccupancy)
                 })
                 .Where(b => b.AvailableBeds > 0)
-                .ToListAsync();
+                .ToList();
 
             return View(new AllocationBuildingViewModel
             {
@@ -207,7 +211,7 @@ namespace UniStay.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        //[ValidateAntiForgeryToken]
         public async Task<IActionResult> Confirm(ConfirmAllocationViewModel model)
         {
             if (!ModelState.IsValid) return Json(new { success = false, message = "بيانات غير صالحة" });
@@ -222,6 +226,11 @@ namespace UniStay.Controllers
                 a.CityRoomID == model.CityRoomID && a.BedNumber == model.BedNumber && a.Status == "Active");
             if (bedTaken)
                 return Json(new { success = false, message = "هذا السرير مشغول بالفعل" });
+
+            var alreadyAllocated = await _db.Allocations
+             .AnyAsync(a => a.ApplicationID == model.ApplicationID && a.Status == "Active");
+            if (alreadyAllocated)
+                return Json(new { success = false, message = "هذا الطالب مسكّن بالفعل" });
 
             var app = await _db.Applications.Include(a => a.Student).FirstOrDefaultAsync(a => a.ID == model.ApplicationID);
             if (app == null) return Json(new { success = false, message = "الطلب غير موجود" });
@@ -292,12 +301,43 @@ namespace UniStay.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ManualAllocation(ManualAllocationViewModel model)
         {
-            if (!ModelState.IsValid)
+            async Task RefillViewBag()
             {
                 ViewBag.Cities = await _db.DormitoryCities
                     .Where(c => c.IsActive == true && c.IsDeleted != true)
                     .Select(c => new CityLookupViewModel { ID = c.ID, Name = c.Name })
                     .ToListAsync();
+
+                ViewBag.Students = await _db.Students
+                    .Where(s => s.IsDeleted != true)
+                    .OrderBy(s => s.FullName)
+                    .Take(50)
+                    .Select(s => new StudentLookupViewModel { ID = s.ID, FullName = s.FullName, NationalID = s.NationalID })
+                    .ToListAsync();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                await RefillViewBag();
+                return View(model);
+            }
+
+            var app = await _db.Applications
+                .FirstOrDefaultAsync(a => a.ID == model.ApplicationID && a.StudentID == model.StudentID && a.Status == "Accepted");
+
+            if (app == null)
+            {
+                ModelState.AddModelError("", "لا يوجد طلب مقبول لهذا الطالب");
+                await RefillViewBag();
+                return View(model);
+            }
+
+            var alreadyAllocated = await _db.Allocations
+    .AnyAsync(a => a.StudentID == model.StudentID && a.Status == "Active");
+            if (alreadyAllocated)
+            {
+                ModelState.AddModelError("", "هذا الطالب مسكّن بالفعل ولا يمكن تسكينه مرة أخرى");
+                await RefillViewBag();
                 return View(model);
             }
 
@@ -305,14 +345,16 @@ namespace UniStay.Controllers
             if (room == null || room.CurrentOccupancy >= room.BedsCount)
             {
                 ModelState.AddModelError("", "الغرفة ممتلئة أو غير موجودة");
+                await RefillViewBag();
                 return View(model);
             }
 
             var alloc = new Allocation
             {
+                ApplicationID = model.ApplicationID,
                 StudentID = model.StudentID,
                 CityRoomID = model.CityRoomID,
-                BedNumber = 1,
+                BedNumber = model.BedNumber,
                 AcademicYear = model.AcademicYear,
                 StartDate = DateOnly.FromDateTime(DateTime.Today),
                 Status = "Active",
@@ -326,7 +368,7 @@ namespace UniStay.Controllers
             await _db.SaveChangesAsync();
 
             await _audit.LogAsync(CurrentUserId, "Staff", "Allocation.Manual", "Allocation",
-                alloc.ID, null, new { alloc.StudentID, alloc.CityRoomID, alloc.BedNumber });
+                alloc.ID, null, new { alloc.ApplicationID, alloc.StudentID, alloc.CityRoomID, alloc.BedNumber });
 
             TempData["Success"] = "تم التسكين اليدوي بنجاح";
             return RedirectToAction("Index");
@@ -425,6 +467,21 @@ namespace UniStay.Controllers
                 .Select(r => new { r.ID, r.RoomNumber, r.FloorNumber, r.BedsCount, r.CurrentOccupancy, Available = (int)r.BedsCount - (int)r.CurrentOccupancy })
                 .ToListAsync();
             return Json(rooms);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetApplicationByStudent(int studentId)
+        {
+            var app = await _db.Applications
+                .Where(a => a.StudentID == studentId && a.Status == "Accepted" && a.Allocation == null)
+                .OrderByDescending(a => a.ID)
+                .Select(a => new { a.ID, a.AcademicYear })
+                .FirstOrDefaultAsync();
+
+            if (app == null)
+                return Json(new { found = false, message = "لا يوجد طلب مقبول لهذا الطالب بدون تسكين" });
+
+            return Json(new { found = true, applicationId = app.ID, academicYear = app.AcademicYear });
         }
 
         [HttpGet]

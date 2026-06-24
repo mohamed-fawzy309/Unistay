@@ -15,36 +15,30 @@
         </div>
         <div class="card-body">
             <form asp-action="ManualAllocation" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-               <div class="col-md-6">
+                <input type="hidden" asp-for="ApplicationID" id="applicationIdField" />
 
-    <label class="form-label">بحث الطالب</label>
-
-    <input type="text"
-           id="studentSearch"
-           class="form-control mb-2"
-           placeholder="بحث بالاسم أو الرقم القومي..." />
-
-    <select asp-for="StudentID"
-            id="studentSelect"
-            class="form-select"
-            required>
-
-        <option value="">-- اختر الطالب --</option>
-
-        @foreach (var s in (IEnumerable<UniStay.ViewModels.Allocation.StudentLookupViewModel>)ViewBag.Students)
-        {
-            <option value="@s.ID">
-                @s.FullName - @s.NationalID
-            </option>
-        }
-
-    </select>
-
-    <span asp-validation-for="StudentID" class="text-danger"></span>
-
-</div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">بحث الطالب</label>
+                    <input type="text"
+                           id="studentSearch"
+                           class="form-control mb-2"
+                           placeholder="بحث بالاسم أو الرقم القومي..." />
+                    <select asp-for="StudentID"
+                            id="studentSelect"
+                            class="form-select"
+                            required>
+                        <option value="">-- اختر الطالب --</option>
+                        @foreach (var s in (IEnumerable<UniStay.ViewModels.Allocation.StudentLookupViewModel>)ViewBag.Students)
+                        {
+                            <option value="@s.ID">@s.FullName - @s.NationalID</option>
+                        }
+                    </select>
+                    <div id="appWarning" class="text-danger small mt-1" style="display:none;"></div>
+                    <span asp-validation-for="StudentID" class="text-danger"></span>
+                </div>
 
                 <div class="row mb-3">
                     <div class="col-md-4">
@@ -72,12 +66,27 @@
                     </div>
                 </div>
 
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">العام الدراسي</label>
+                        <input asp-for="AcademicYear" class="form-control" placeholder="مثال: 2025-2026" />
+                        <span asp-validation-for="AcademicYear" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">رقم السرير</label>
+                        <input asp-for="BedNumber" class="form-control" type="number" min="1" max="8" />
+                        <span asp-validation-for="BedNumber" class="text-danger"></span>
+                    </div>
+                </div>
+
                 <div class="mb-3">
                     <label class="form-label">ملاحظات</label>
                     <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> تسكين</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> تسكين
+                </button>
             </form>
         </div>
     </div>
@@ -98,10 +107,10 @@
                         opt.textContent = b.buildingName;
                         sel.appendChild(opt);
                     });
-                    var rs = document.getElementById('roomSelect');
-                    rs.innerHTML = '<option value="">-- اختر المبنى أولاً --</option>';
+                    document.getElementById('roomSelect').innerHTML = '<option value="">-- اختر المبنى أولاً --</option>';
                 });
         }
+
         function loadRooms(buildingId) {
             if (!buildingId) return;
             fetch('@Url.Action("GetRoomsByBuilding", "Allocation")?buildingId=' + buildingId)
@@ -128,30 +137,39 @@
                     }
                 });
         }
+
+        document.getElementById('studentSearch').addEventListener('keyup', function () {
+            let filter = this.value.toLowerCase();
+            let select = document.getElementById('studentSelect');
+            let options = select.options;
+            for (let i = 0; i < options.length; i++) {
+                let txt = options[i].text.toLowerCase();
+                options[i].style.display = txt.includes(filter) ? '' : 'none';
+            }
+        });
+
+        document.getElementById('studentSelect').addEventListener('change', function () {
+            const studentId = this.value;
+            const warning = document.getElementById('appWarning');
+            const appField = document.getElementById('applicationIdField');
+            const yearField = document.querySelector('[name="AcademicYear"]');
+
+            appField.value = '';
+            warning.style.display = 'none';
+
+            if (!studentId) return;
+
+            fetch('@Url.Action("GetApplicationByStudent", "Allocation")?studentId=' + studentId)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.found) {
+                        appField.value = data.applicationId;
+                        if (yearField && !yearField.value) yearField.value = data.academicYear;
+                    } else {
+                        warning.textContent = data.message;
+                        warning.style.display = 'block';
+                    }
+                });
+        });
     </script>
-<script>
-
-document.getElementById('studentSearch')
-.addEventListener('keyup', function () {
-
-    let filter = this.value.toLowerCase();
-
-    let select = document.getElementById('studentSelect');
-
-    let options = select.options;
-
-    for (let i = 0; i < options.length; i++) {
-
-        let txt = options[i].text.toLowerCase();
-
-        if (txt.includes(filter)) {
-            options[i].style.display = '';
-        }
-        else {
-            options[i].style.display = 'none';
-        }
-    }
-});
-
-</script>
 }

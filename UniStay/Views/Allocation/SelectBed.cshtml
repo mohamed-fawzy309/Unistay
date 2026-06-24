@@ -5,6 +5,7 @@
 
 <div class="container-fluid py-4">
     <nav aria-label="breadcrumb">
+        @Html.AntiForgeryToken()
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a asp-action="Index">التسكين</a></li>
             <li class="breadcrumb-item"><a asp-action="SelectBuilding" asp-route-appId="@Model.ApplicationID">اختيار المبنى</a></li>
@@ -57,18 +58,22 @@
     <script>
         function confirmAllocation(roomId, bedNumber) {
             if (!confirm('تأكيد تسكين هذا السرير؟')) return;
-            $.post('@Url.Action("Confirm")', {
-                applicationId: @Model.ApplicationID,
-                cityRoomId: roomId,
-                bedNumber: bedNumber
-            }, function (res) {
-                if (res.success) {
-                    alert(res.message);
-                    window.location.href = '@Url.Action("Index")';
-                } else {
-                    alert(res.message);
-                }
-            });
+
+            const formData = new FormData();
+            formData.append('ApplicationID', @Model.ApplicationID);
+            formData.append('CityRoomID', roomId);
+            formData.append('BedNumber', bedNumber);
+
+            fetch('@Url.Action("Confirm", "Allocation")', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                if (data.success) window.location.href = '@Url.Action("Index")';
+            })
+            .catch(() => alert('حدث خطأ أثناء الاتصال بالخادم'));
         }
     </script>
 }
