@@ -32,7 +32,9 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = "X-CSRF-TOKEN";
     options.Cookie.Name = ".UniStay.Antiforgery";
     options.Cookie.HttpOnly = true;
-    options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest
+        : Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
     options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
 });
 

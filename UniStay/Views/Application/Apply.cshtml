@@ -211,7 +211,7 @@
     <section class="section">
         <div class="container">
 
-            <form asp-action="Apply" method="post" id="applicationForm" novalidate>
+            <form asp-action="Apply" method="post" id="applicationForm" enctype="multipart/form-data" novalidate>
                 @Html.AntiForgeryToken()
 
                 @* Validation Summary *@
@@ -517,6 +517,42 @@
                     </div>
                 </div>
 
+                @* Section 4B: Photo & Meals *@
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="step-badge">4ب</span>
+                        <i class="fa-solid fa-camera"></i>
+                        الصورة الشخصية والوجبات
+                    </div>
+                    <div class="instructions-box">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <p>الصورة الشخصية إلزامية للبطاقة الجامعية. الاشتراك في الوجبات يمنحك صلاحية الحصول على وجبات بسعر مخفض خلال العام.</p>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Photo" class="field-label">
+                                الصورة الشخصية <span class="required">*</span>
+                                <span class="hint">— JPG أو PNG، أقصى حجم 2MB</span>
+                            </label>
+                            <input asp-for="Photo" type="file" class="form-control" accept="image/jpeg,image/png" id="photoInput" onchange="previewPhoto(event)" />
+                            <span asp-validation-for="Photo" class="text-danger"></span>
+                            <div id="photoPreview" class="mt-2" style="display:none">
+                                <img id="photoPreviewImg" src="" alt="معاينة" style="max-width:150px;max-height:150px;border-radius:10px;border:2px solid var(--border)" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" asp-for="MealSubscription" id="mealCheck">
+                                <label class="form-check-label fw-bold" asp-for="MealSubscription">
+                                    <i class="fa-solid fa-utensils me-1" style="color:var(--red)"></i>
+                                    اشتراك في خدمة الوجبات
+                                </label>
+                            </div>
+                            <span class="text-muted-small d-block mt-1">بالإشتراك يمكنك الحصول على وجبات مدعومة طوال العام الدراسي</span>
+                        </div>
+                    </div>
+                </div>
+
                 @* Section 5: Account *@
                 <div class="form-card">
                     <div class="form-card-header">
@@ -718,6 +754,21 @@
         function toggleMedicalDesc() {
             document.getElementById('medicalDescDiv').style.display =
                 document.getElementById('medicalCheck').checked ? 'block' : 'none';
+        }
+
+        // ── Photo preview
+        function previewPhoto(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('photoPreview');
+            const img = document.getElementById('photoPreviewImg');
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) { img.src = ev.target.result; preview.style.display = 'block'; };
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
+                img.src = '';
+            }
         }
 
         // ── Submit loading

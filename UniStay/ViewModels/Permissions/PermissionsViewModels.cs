@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace UniStay.ViewModels.Permissions
 {
@@ -64,6 +65,7 @@ namespace UniStay.ViewModels.Permissions
 
         public List<int> SelectedPermissionIds { get; set; } = new();
 
+        [BindNever]
         public List<PermissionGroupViewModel> PermissionGroups { get; set; } = new();
     }
 
@@ -98,6 +100,7 @@ namespace UniStay.ViewModels.Permissions
 
         public List<int> SelectedPermissionIds { get; set; } = new();
 
+        [BindNever]
         public List<PermissionGroupViewModel> PermissionGroups { get; set; } = new();
     }
 
