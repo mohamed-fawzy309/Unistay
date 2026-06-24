@@ -32,6 +32,9 @@ public class ApplicationsCenterController : Controller
 
     private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
 
+    // =====================================================================
+    // INDEX
+    // =====================================================================
     [HttpGet]
     [RequirePermission("Applications.View", "CanView")]
     public async Task<IActionResult> Index(
@@ -104,11 +107,19 @@ public class ApplicationsCenterController : Controller
             Applications = apps,
             Filter = new ApplicationsFilterViewModel
             {
-                Search = search, Status = status, StudentType = studentType,
-                CityID = cityId, Faculty = faculty, FromDate = fromDate, ToDate = toDate,
-                SortBy = sortBy, SortDir = sortDir
+                Search = search,
+                Status = status,
+                StudentType = studentType,
+                CityID = cityId,
+                Faculty = faculty,
+                FromDate = fromDate,
+                ToDate = toDate,
+                SortBy = sortBy,
+                SortDir = sortDir
             },
-            TotalCount = total, Page = page, TotalPages = (int)Math.Ceiling(total / (double)pageSize),
+            TotalCount = total,
+            Page = page,
+            TotalPages = (int)Math.Ceiling(total / (double)pageSize),
             PendingCount = await _db.Applications.CountAsync(a => a.Status == "Pending"),
             AcceptedCount = await _db.Applications.CountAsync(a => a.Status == "Accepted"),
             RejectedCount = await _db.Applications.CountAsync(a => a.Status == "Rejected"),
@@ -120,7 +131,10 @@ public class ApplicationsCenterController : Controller
         return View(vm);
     }
 
-    [HttpGet]
+    // =====================================================================
+    // DETAILS  ← FIX: أضفنا Route صريح بـ id اختياري مع Guard
+    // =====================================================================
+    [HttpGet("{controller}/Details/{id:int}")]
     [RequirePermission("Applications.View", "CanView")]
     public async Task<IActionResult> Details(int id)
     {
@@ -134,60 +148,14 @@ public class ApplicationsCenterController : Controller
 
         if (app == null) return NotFound();
 
-        var vm = new ApplicationDetailViewModel
-        {
-            ID = app.ID, Status = app.Status, StudentType = app.StudentType,
-            HousingType = app.HousingType, AcademicYear = app.AcademicYear,
-            MealSubscription = app.MealSubscription, HasSpecialNeeds = app.HasSpecialNeeds,
-            SpecialNeedsDescription = app.SpecialNeedsDescription,
-            RejectionReason = app.RejectionReason, AdminNotes = app.AdminNotes,
-            CoordinationScore = app.CoordinationScore, CoordinationRank = app.CoordinationRank,
-            ServerVerificationStatus = app.ServerVerificationStatus,
-            ServerVerificationAt = app.ServerVerificationAt,
-            CreatedAt = app.CreatedAt, LastUpdatedAt = app.LastUpdatedAt,
-            Student = app.Student != null ? new StudentInfoViewModel
-            {
-                ID = app.Student.ID, FullName = app.Student.FullName,
-                NationalID = app.Student.NationalID, StudentCode = app.Student.StudentCode,
-                Gender = app.Student.Gender, Faculty = app.Student.Faculty,
-                Department = app.Student.Department, Phone = app.Student.Phone,
-                Email = app.Student.Email, Governorate = app.Student.Governorate,
-                City = app.Student.City, DistanceFromUniv = app.Student.DistanceFromUniv,
-                GradePercentage = app.Student.GradePercentage,
-                HasDisability = app.Student.HasDisability, IsOrphan = app.Student.IsOrphan,
-                IsLowIncome = app.Student.IsLowIncome,
-                HasFamilyAbroad = app.Student.HasFamilyAbroad,
-                HasMedicalCondition = app.Student.HasMedicalCondition,
-                IsForeign = app.Student.IsForeign
-            } : new StudentInfoViewModel(),
-            DormitoryCity = new CityInfoViewModel { ID = app.DormitoryCity.ID, Name = app.DormitoryCity.Name },
-            ReviewedBy = app.ReviewedByNavigation != null ? new ReviewInfoViewModel
-            {
-                Name = app.ReviewedByNavigation.Name, ReviewedAt = app.ReviewedAt
-            } : null,
-            Allocation = app.Allocation != null ? new AllocationInfoViewModel
-            {
-                ID = app.Allocation.ID,
-                BuildingName = app.Allocation.CityRoom?.CityBuilding?.BuildingName,
-                RoomNumber = app.Allocation.CityRoom?.RoomNumber,
-                BedNumber = app.Allocation.BedNumber, Status = app.Allocation.Status
-            } : null,
-            Documents = app.Documents.Select(d => new DocumentInfoViewModel
-            {
-                ID = d.ID, DocumentType = d.DocumentType, FileName = d.FileName,
-                IsVerified = d.IsVerified, UploadedAt = d.UploadedAt
-            }).ToList(),
-            Guardians = app.Student?.Guardians.Select(g => new GuardianInfoViewModel
-            {
-                FullName = g.FullName, GuardianType = g.GuardianType,
-                Phone = g.Phone, Job = g.Job
-            }).ToList() ?? new()
-        };
-
+        var vm = BuildDetailViewModel(app);
         return View(vm);
     }
 
-    [HttpGet]
+    // =====================================================================
+    // PRINT  ← FIX: أضفنا Route صريح بـ id اختياري مع Guard
+    // =====================================================================
+    [HttpGet("{controller}/Print/{id:int}")]
     [RequirePermission("Applications.View", "CanView")]
     public async Task<IActionResult> Print(int id)
     {
@@ -201,59 +169,51 @@ public class ApplicationsCenterController : Controller
 
         if (app == null) return NotFound();
 
-        var vm = new ApplicationDetailViewModel
-        {
-            ID = app.ID, Status = app.Status, StudentType = app.StudentType,
-            HousingType = app.HousingType, AcademicYear = app.AcademicYear,
-            MealSubscription = app.MealSubscription, HasSpecialNeeds = app.HasSpecialNeeds,
-            SpecialNeedsDescription = app.SpecialNeedsDescription,
-            RejectionReason = app.RejectionReason, AdminNotes = app.AdminNotes,
-            CoordinationScore = app.CoordinationScore, CoordinationRank = app.CoordinationRank,
-            ServerVerificationStatus = app.ServerVerificationStatus,
-            ServerVerificationAt = app.ServerVerificationAt,
-            CreatedAt = app.CreatedAt, LastUpdatedAt = app.LastUpdatedAt,
-            Student = app.Student != null ? new StudentInfoViewModel
-            {
-                ID = app.Student.ID, FullName = app.Student.FullName,
-                NationalID = app.Student.NationalID, StudentCode = app.Student.StudentCode,
-                Gender = app.Student.Gender, Faculty = app.Student.Faculty,
-                Department = app.Student.Department, Phone = app.Student.Phone,
-                Email = app.Student.Email, Governorate = app.Student.Governorate,
-                City = app.Student.City, DistanceFromUniv = app.Student.DistanceFromUniv,
-                GradePercentage = app.Student.GradePercentage,
-                HasDisability = app.Student.HasDisability, IsOrphan = app.Student.IsOrphan,
-                IsLowIncome = app.Student.IsLowIncome,
-                HasFamilyAbroad = app.Student.HasFamilyAbroad,
-                HasMedicalCondition = app.Student.HasMedicalCondition,
-                IsForeign = app.Student.IsForeign
-            } : new StudentInfoViewModel(),
-            DormitoryCity = new CityInfoViewModel { ID = app.DormitoryCity.ID, Name = app.DormitoryCity.Name },
-            ReviewedBy = app.ReviewedByNavigation != null ? new ReviewInfoViewModel
-            {
-                Name = app.ReviewedByNavigation.Name, ReviewedAt = app.ReviewedAt
-            } : null,
-            Allocation = app.Allocation != null ? new AllocationInfoViewModel
-            {
-                ID = app.Allocation.ID,
-                BuildingName = app.Allocation.CityRoom?.CityBuilding?.BuildingName,
-                RoomNumber = app.Allocation.CityRoom?.RoomNumber,
-                BedNumber = app.Allocation.BedNumber, Status = app.Allocation.Status
-            } : null,
-            Documents = app.Documents.Select(d => new DocumentInfoViewModel
-            {
-                ID = d.ID, DocumentType = d.DocumentType, FileName = d.FileName,
-                IsVerified = d.IsVerified, UploadedAt = d.UploadedAt
-            }).ToList(),
-            Guardians = app.Student?.Guardians.Select(g => new GuardianInfoViewModel
-            {
-                FullName = g.FullName, GuardianType = g.GuardianType,
-                Phone = g.Phone, Job = g.Job
-            }).ToList() ?? new()
-        };
-
+        var vm = BuildDetailViewModel(app);
         return View(vm);
     }
 
+    // =====================================================================
+    // REPORT  ← FIX: أضفنا action اسمه Report عام + الـ 3 المخصصة
+    // =====================================================================
+
+    // مسار عام: /ApplicationsCenter/Report?status=Pending&faculty=...
+    [HttpGet]
+    [RequirePermission("Applications.View", "CanView")]
+    public async Task<IActionResult> Report(string? status = null, string? faculty = null, int? cityId = null)
+    {
+        string title = status switch
+        {
+            "Accepted" => "الطلاب المقبولون",
+            "Rejected" => "الطلاب المرفوضون",
+            "Pending" => "الطلبات المعلقة",
+            "UnderReview" => "الطلبات قيد المراجعة",
+            "Waitlist" => "قائمة الانتظار",
+            "Returned" => "الطلبات المعادة للتصحيح",
+            _ => "تقرير الطلبات"
+        };
+
+        return await BuildReport(status, faculty, cityId, title);
+    }
+
+    [HttpGet]
+    [RequirePermission("Applications.View", "CanView")]
+    public async Task<IActionResult> ReportAccepted()
+        => await BuildReport("Accepted", null, null, "الطلاب المقبولون");
+
+    [HttpGet]
+    [RequirePermission("Applications.View", "CanView")]
+    public async Task<IActionResult> ReportRejected()
+        => await BuildReport("Rejected", null, null, "الطلاب المرفوضون");
+
+    [HttpGet]
+    [RequirePermission("Applications.View", "CanView")]
+    public async Task<IActionResult> ReportPending()
+        => await BuildReport("Pending", null, null, "الطلبات المعلقة");
+
+    // =====================================================================
+    // REVIEW
+    // =====================================================================
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission("Applications.Review", "CanEdit")]
@@ -313,6 +273,9 @@ public class ApplicationsCenterController : Controller
         return RedirectToAction("Index");
     }
 
+    // =====================================================================
+    // QUICK ACTION
+    // =====================================================================
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission("Applications.Review", "CanEdit")]
@@ -370,6 +333,9 @@ public class ApplicationsCenterController : Controller
         return RedirectToAction("Index");
     }
 
+    // =====================================================================
+    // VERIFY FROM SERVER
+    // =====================================================================
     [HttpPost]
     [ValidateAntiForgeryToken]
     [RequirePermission("Applications.Manage", "CanEdit")]
@@ -394,6 +360,9 @@ public class ApplicationsCenterController : Controller
         return Json(new { success = true, status = app.ServerVerificationStatus });
     }
 
+    // =====================================================================
+    // EXPORT EXCEL
+    // =====================================================================
     [HttpGet]
     [RequirePermission("Applications.View", "CanView")]
     public async Task<IActionResult> ExportExcel(string? status = null, int? cityId = null, string? faculty = null)
@@ -403,9 +372,12 @@ public class ApplicationsCenterController : Controller
 
         var rows = apps.Select(a => new ApplicationRowViewModel
         {
-            StudentName = a.Student?.FullName ?? "", NationalID = a.Student?.NationalID ?? "",
-            Faculty = a.Student?.Faculty, CityName = a.DormitoryCity?.Name,
-            StudentType = a.StudentType, Status = a.Status,
+            StudentName = a.Student?.FullName ?? "",
+            NationalID = a.Student?.NationalID ?? "",
+            Faculty = a.Student?.Faculty,
+            CityName = a.DormitoryCity?.Name,
+            StudentType = a.StudentType,
+            Status = a.Status,
             StatusDisplay = MapStatus(a.Status),
             CreatedAt = a.CreatedAt ?? DateTime.Now
         }).ToList();
@@ -417,6 +389,9 @@ public class ApplicationsCenterController : Controller
         return File(data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Applications.xlsx");
     }
 
+    // =====================================================================
+    // EXPORT PDF
+    // =====================================================================
     [HttpGet]
     [RequirePermission("Applications.View", "CanView")]
     public async Task<IActionResult> ExportPdf(string? status = null, int? cityId = null, string? faculty = null)
@@ -435,45 +410,120 @@ public class ApplicationsCenterController : Controller
         return File(pdf, "application/pdf", "Applications.pdf");
     }
 
-    [HttpGet]
-    [RequirePermission("Applications.View", "CanView")]
-    public async Task<IActionResult> ReportAccepted()
+    // =====================================================================
+    // PRIVATE HELPERS
+    // =====================================================================
+
+    /// <summary>بناء الـ ViewModel المشترك بين Details و Print</summary>
+    private ApplicationDetailViewModel BuildDetailViewModel(Application app)
     {
-        return await BuildReport("Accepted", "الطلاب المقبولون");
+        return new ApplicationDetailViewModel
+        {
+            ID = app.ID,
+            Status = app.Status,
+            StudentType = app.StudentType,
+            HousingType = app.HousingType,
+            AcademicYear = app.AcademicYear,
+            MealSubscription = app.MealSubscription,
+            HasSpecialNeeds = app.HasSpecialNeeds,
+            SpecialNeedsDescription = app.SpecialNeedsDescription,
+            RejectionReason = app.RejectionReason,
+            AdminNotes = app.AdminNotes,
+            CoordinationScore = app.CoordinationScore,
+            CoordinationRank = app.CoordinationRank,
+            ServerVerificationStatus = app.ServerVerificationStatus,
+            ServerVerificationAt = app.ServerVerificationAt,
+            CreatedAt = app.CreatedAt,
+            LastUpdatedAt = app.LastUpdatedAt,
+            Student = app.Student != null ? new StudentInfoViewModel
+            {
+                ID = app.Student.ID,
+                FullName = app.Student.FullName,
+                NationalID = app.Student.NationalID,
+                StudentCode = app.Student.StudentCode,
+                Gender = app.Student.Gender,
+                Faculty = app.Student.Faculty,
+                Department = app.Student.Department,
+                Phone = app.Student.Phone,
+                Email = app.Student.Email,
+                Governorate = app.Student.Governorate,
+                City = app.Student.City,
+                DistanceFromUniv = app.Student.DistanceFromUniv,
+                GradePercentage = app.Student.GradePercentage,
+                HasDisability = app.Student.HasDisability,
+                IsOrphan = app.Student.IsOrphan,
+                IsLowIncome = app.Student.IsLowIncome,
+                HasFamilyAbroad = app.Student.HasFamilyAbroad,
+                HasMedicalCondition = app.Student.HasMedicalCondition,
+                IsForeign = app.Student.IsForeign
+            } : new StudentInfoViewModel(),
+            DormitoryCity = new CityInfoViewModel { ID = app.DormitoryCity.ID, Name = app.DormitoryCity.Name },
+            ReviewedBy = app.ReviewedByNavigation != null ? new ReviewInfoViewModel
+            {
+                Name = app.ReviewedByNavigation.Name,
+                ReviewedAt = app.ReviewedAt
+            } : null,
+            Allocation = app.Allocation != null ? new AllocationInfoViewModel
+            {
+                ID = app.Allocation.ID,
+                BuildingName = app.Allocation.CityRoom?.CityBuilding?.BuildingName,
+                RoomNumber = app.Allocation.CityRoom?.RoomNumber,
+                BedNumber = app.Allocation.BedNumber,
+                Status = app.Allocation.Status
+            } : null,
+            Documents = app.Documents.Select(d => new DocumentInfoViewModel
+            {
+                ID = d.ID,
+                DocumentType = d.DocumentType,
+                FileName = d.FileName,
+                IsVerified = d.IsVerified,
+                UploadedAt = d.UploadedAt
+            }).ToList(),
+            Guardians = app.Student?.Guardians.Select(g => new GuardianInfoViewModel
+            {
+                FullName = g.FullName,
+                GuardianType = g.GuardianType,
+                Phone = g.Phone,
+                Job = g.Job
+            }).ToList() ?? new()
+        };
     }
 
-    [HttpGet]
-    [RequirePermission("Applications.View", "CanView")]
-    public async Task<IActionResult> ReportRejected()
+    /// <summary>بناء Report مع دعم فلترة اختيارية</summary>
+    private async Task<IActionResult> BuildReport(string? status, string? faculty, int? cityId, string title)
     {
-        return await BuildReport("Rejected", "الطلاب المرفوضون");
-    }
-
-    [HttpGet]
-    [RequirePermission("Applications.View", "CanView")]
-    public async Task<IActionResult> ReportPending()
-    {
-        return await BuildReport("Pending", "الطلبات المعلقة");
-    }
-
-    private async Task<IActionResult> BuildReport(string status, string title)
-    {
-        var apps = await _db.Applications
+        var query = _db.Applications
             .Include(a => a.Student).Include(a => a.DormitoryCity)
-            .Where(a => a.Status == status)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(status))
+            query = query.Where(a => a.Status == status);
+        if (!string.IsNullOrEmpty(faculty))
+            query = query.Where(a => a.Student!.Faculty == faculty);
+        if (cityId.HasValue)
+            query = query.Where(a => a.DormitoryCityID == cityId.Value);
+
+        var apps = await query
             .OrderByDescending(a => a.CreatedAt)
             .Select(a => new ApplicationRowViewModel
             {
-                ID = a.ID, StudentName = a.Student!.FullName, NationalID = a.Student.NationalID,
-                Faculty = a.Student.Faculty, CityName = a.DormitoryCity.Name,
-                StudentType = a.StudentType, Status = a.Status,
-                StatusDisplay = MapStatus(a.Status), CreatedAt = a.CreatedAt!.Value
+                ID = a.ID,
+                StudentName = a.Student!.FullName,
+                NationalID = a.Student.NationalID,
+                Faculty = a.Student.Faculty,
+                CityName = a.DormitoryCity.Name,
+                StudentType = a.StudentType,
+                Status = a.Status,
+                StatusDisplay = MapStatus(a.Status),
+                CreatedAt = a.CreatedAt!.Value
             })
             .ToListAsync();
 
         var vm = new ApplicationReportViewModel
         {
-            Applications = apps, ReportTitle = title, TotalCount = apps.Count
+            Applications = apps,
+            ReportTitle = title,
+            TotalCount = apps.Count
         };
         return View("Report", vm);
     }

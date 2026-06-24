@@ -1,45 +1,596 @@
 @model List<UniStay.Models.Announcement>
 @{
-    ViewData["Title"] = "الإعلانات";
+    ViewData["Title"] = "UniStay - الإعلانات";
+    Layout = null;
 }
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>UniStay — الإعلانات</title>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --red: #e63946;
+            --red-dark: #b52530;
+            --red-dim: rgba(230,57,70,.15);
+            --black: #080b10;
+            --black-2: #0f1319;
+            --black-3: #161c26;
+            --black-4: #1e2736;
+            --border: #1e2736;
+            --text: #e8eaf0;
+            --muted: #6b7a99;
+        }
 
-<h2 class="mb-4">الإعلانات</h2>
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-@if (!Model.Any())
-{
-    <div class="alert alert-info">لا توجد إعلانات حالياً</div>
-}
+        html {
+            scroll-behavior: smooth;
+        }
 
-<div class="row">
-    @foreach (var ann in Model)
-    {
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title">@ann.Title</h5>
-                    <p class="card-text">@ann.Body</p>
-                    <span class="badge bg-info">@ann.AnnouncementType</span>
-                    @if (!string.IsNullOrEmpty(ann.TargetAudience))
-                    {
-                        <span class="badge bg-warning">@ann.TargetAudience</span>
-                    }
-                    <small class="text-muted d-block mt-2">@ann.PublishedAt?.ToString("yyyy-MM-dd")</small>
+        body {
+            font-family: 'Tajawal',sans-serif;
+            background: var(--black);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--black);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--red-dark);
+            border-radius: 3px;
+        }
+
+        .navbar {
+            background: rgba(8,11,16,.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(230,57,70,.12);
+            padding: .9rem 0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            transition: all .3s;
+        }
+
+            .navbar.scrolled {
+                background: rgba(8,11,16,.97);
+                box-shadow: 0 4px 30px rgba(0,0,0,.5);
+            }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-link {
+            color: var(--muted) !important;
+            font-weight: 500;
+            font-size: .9rem;
+            transition: color .2s;
+            padding: .4rem .9rem !important;
+        }
+
+            .nav-link:hover {
+                color: #fff !important;
+            }
+
+        .btn-nav-login {
+            background: transparent;
+            border: 1px solid var(--red);
+            color: var(--red) !important;
+            border-radius: 8px;
+            padding: .35rem 1.1rem !important;
+            font-size: .88rem;
+            font-weight: 600;
+            transition: all .25s;
+        }
+
+            .btn-nav-login:hover {
+                background: var(--red);
+                color: #fff !important;
+            }
+
+        .btn-nav-reg {
+            background: var(--red);
+            border: 1px solid var(--red);
+            color: #fff !important;
+            border-radius: 8px;
+            padding: .35rem 1.1rem !important;
+            font-size: .88rem;
+            font-weight: 600;
+            transition: all .25s;
+            margin-right: .4rem;
+        }
+
+            .btn-nav-reg:hover {
+                background: var(--red-dark);
+                border-color: var(--red-dark);
+            }
+
+        .page-hero {
+            padding: 9rem 0 4rem;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(180deg,var(--black) 0%,var(--black-2) 100%);
+        }
+
+            .page-hero::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background-image: linear-gradient(rgba(230,57,70,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(230,57,70,.04) 1px,transparent 1px);
+                background-size: 55px 55px;
+            }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            pointer-events: none;
+        }
+
+        .o1 {
+            width: 500px;
+            height: 500px;
+            background: rgba(230,57,70,.07);
+            top: -150px;
+            left: -100px;
+        }
+
+        .o2 {
+            width: 350px;
+            height: 350px;
+            background: rgba(10,20,50,.4);
+            bottom: -50px;
+            right: -80px;
+        }
+
+        .page-hero-inner {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .section-tag {
+            display: inline-block;
+            background: var(--red-dim);
+            border: 1px solid rgba(230,57,70,.2);
+            color: var(--red);
+            border-radius: 50px;
+            padding: .3rem .9rem;
+            font-size: .78rem;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .page-title {
+            font-size: clamp(2rem,5vw,3.2rem);
+            font-weight: 900;
+            margin-bottom: .8rem;
+        }
+
+            .page-title .red {
+                background: linear-gradient(135deg,#ff6b7a,var(--red));
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+        .page-sub {
+            color: var(--muted);
+            font-size: 1rem;
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        @@keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-up {
+            animation: fadeUp .7s both;
+        }
+
+        .fade-up-2 {
+            animation: fadeUp .7s .15s both;
+        }
+
+        .fade-up-3 {
+            animation: fadeUp .7s .3s both;
+        }
+
+        .content-section {
+            padding: 5rem 0;
+        }
+
+        /* FILTER BAR */
+        .filter-bar {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: 8px;
+            padding: .35rem .9rem;
+            font-family: 'Tajawal',sans-serif;
+            font-size: .82rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all .25s;
+        }
+
+            .filter-badge:hover, .filter-badge.active {
+                background: var(--red-dim);
+                border-color: rgba(230,57,70,.3);
+                color: var(--red);
+            }
+
+        .filter-count {
+            color: var(--muted);
+            font-size: .82rem;
+            margin-right: auto;
+        }
+
+        /* ANN CARD */
+        .ann-card {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 1.75rem;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            transition: transform .3s,border-color .3s,box-shadow .3s;
+        }
+
+            .ann-card::before {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(135deg,rgba(230,57,70,.04),transparent);
+                opacity: 0;
+                transition: opacity .3s;
+            }
+
+            .ann-card:hover {
+                transform: translateY(-6px);
+                border-color: rgba(230,57,70,.3);
+                box-shadow: 0 20px 50px rgba(0,0,0,.4);
+            }
+
+                .ann-card:hover::before {
+                    opacity: 1;
+                }
+
+        .ann-type-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--red);
+            display: inline-block;
+            margin-left: .5rem;
+            flex-shrink: 0;
+        }
+
+        .ann-meta {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .ann-badge {
+            display: inline-block;
+            background: var(--red-dim);
+            border: 1px solid rgba(230,57,70,.2);
+            color: var(--red);
+            border-radius: 50px;
+            padding: .2rem .75rem;
+            font-size: .75rem;
+            font-weight: 600;
+        }
+
+        .ann-badge-secondary {
+            display: inline-block;
+            background: rgba(255,255,255,.04);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: 50px;
+            padding: .2rem .75rem;
+            font-size: .75rem;
+            font-weight: 500;
+        }
+
+        .ann-card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: .75rem;
+            line-height: 1.5;
+        }
+
+        .ann-card-body {
+            color: var(--muted);
+            font-size: .87rem;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .ann-date {
+            color: var(--muted);
+            font-size: .75rem;
+            display: flex;
+            align-items: center;
+            gap: .3rem;
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 5rem 2rem;
+            background: var(--black-2);
+            border: 1px dashed var(--border);
+            border-radius: 20px;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            color: var(--border);
+            margin-bottom: 1rem;
+        }
+
+        .empty-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: .5rem;
+        }
+
+        .empty-text {
+            color: var(--muted);
+            font-size: .9rem;
+        }
+
+        /* PAGINATION */
+        .pag {
+            display: flex;
+            justify-content: center;
+            gap: .5rem;
+            margin-top: 3rem;
+        }
+
+            .pag a, .pag span {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 38px;
+                height: 38px;
+                border-radius: 9px;
+                font-size: .88rem;
+                font-weight: 600;
+                text-decoration: none;
+                transition: all .2s;
+            }
+
+            .pag a {
+                background: var(--black-2);
+                border: 1px solid var(--border);
+                color: var(--muted);
+            }
+
+                .pag a:hover {
+                    border-color: rgba(230,57,70,.3);
+                    color: var(--red);
+                }
+
+            .pag span {
+                background: var(--red);
+                border: 1px solid var(--red);
+                color: #fff;
+            }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity .7s,transform .7s;
+        }
+
+            .reveal.visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+        footer {
+            background: var(--black-2);
+            border-top: 1px solid var(--border);
+            padding: 2.5rem 0;
+            text-align: center;
+        }
+
+        .footer-brand {
+            font-size: 1.1rem;
+            font-weight: 900;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: .4rem;
+        }
+
+        .footer-text {
+            color: var(--muted);
+            font-size: .82rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/"><img src="~/images/Unistay_logo.png" alt="UniStay" style="height:48px;filter:drop-shadow(0 2px 8px rgba(230,57,70,.3))"></a>
+            <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav mx-auto gap-1">
+                    <li class="nav-item"><a class="nav-link active" href="/Home/Announcements" style="color:#fff!important">الإعلانات</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Home/Cities">المدن الجامعية</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/#features">المميزات</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/#how">كيف يعمل</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Home/About">عن النظام</a></li>
+                </ul>
+                <div class="d-flex gap-2 mt-2 mt-lg-0">
+                    <a href="/Home/Dates" class="nav-link btn-nav-login">مواعيد التقدم</a>
+                    <a href="/Home/Accept" class="nav-link btn-nav-reg">استعلام عن القبول</a>
                 </div>
             </div>
         </div>
-    }
-</div>
-
-@if (ViewBag.TotalPages > 1)
-{
-    <nav class="mt-3">
-        <ul class="pagination justify-content-center">
-            @for (int i = 1; i <= ViewBag.TotalPages; i++)
-            {
-                <li class="page-item @(i == ViewBag.Page ? "active" : "")">
-                    <a class="page-link" asp-action="Announcements" asp-route-page="@i">@i</a>
-                </li>
-            }
-        </ul>
     </nav>
-}
+
+    <!-- PAGE HERO -->
+    <div class="page-hero">
+        <div class="orb o1"></div>
+        <div class="orb o2"></div>
+        <div class="container">
+            <div class="page-hero-inner">
+                <div class="section-tag fade-up"><i class="fa-solid fa-megaphone" style="margin-left:.4rem"></i>الإعلانات</div>
+                <h1 class="page-title fade-up-2">آخر <span class="red">الأخبار</span> والإعلانات</h1>
+                <p class="page-sub fade-up-3">تابع كل المستجدات والإعلانات الصادرة عن إدارة المدينة الجامعية</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENT -->
+    <section class="content-section">
+        <div class="container">
+
+            @if (Model != null && Model.Any())
+            {
+                <!-- Filter Bar -->
+                <div class="filter-bar reveal">
+                    <span class="filter-count">
+                        <i class="fa-solid fa-layer-group" style="color:var(--red);margin-left:.4rem"></i>
+                        إجمالي الإعلانات: <strong style="color:var(--text)">@Model.Count</strong>
+                    </span>
+                    <a href="?type=" class="filter-badge active">الكل</a>
+                    @foreach (var type in Model.Select(a => a.AnnouncementType).Distinct())
+                    {
+                        <a href="?type=@type" class="filter-badge">@type</a>
+                    }
+                </div>
+
+                <div class="row g-4">
+                    @foreach (var ann in Model)
+                    {
+                        <div class="col-md-6 col-lg-4 reveal">
+                            <div class="ann-card">
+                                <div class="ann-meta">
+                                    <span class="ann-badge">@ann.AnnouncementType</span>
+                                    @if (!string.IsNullOrEmpty(ann.TargetAudience))
+                                    {
+                                        <span class="ann-badge-secondary">@ann.TargetAudience</span>
+                                    }
+                                </div>
+                                <div class="ann-card-title">@ann.Title</div>
+                                <div class="ann-card-body">
+                                    @(ann.Body?.Length > 180 ? ann.Body[..180] + "…" : ann.Body)
+                                </div>
+                                <div class="ann-date">
+                                    <i class="fa-regular fa-clock"></i>
+                                    @ann.PublishedAt?.ToString("yyyy-MM-dd")
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (ViewBag.TotalPages > 1)
+                {
+                    <div class="pag">
+                        @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                        {
+                            if (i == ViewBag.Page)
+                            {
+                                <span>@i</span>
+                            }
+                            else
+                            {
+                                <a asp-action="Announcements" asp-route-page="@i">@i</a>
+                            }
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state reveal">
+                    <div class="empty-icon"><i class="fa-solid fa-megaphone"></i></div>
+                    <div class="empty-title">لا توجد إعلانات حالياً</div>
+                    <div class="empty-text">سيتم نشر الإعلانات هنا فور صدورها من إدارة المدينة الجامعية</div>
+                </div>
+            }
+
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-brand">UniStay</div>
+            <div class="footer-text">
+                <span>نظام إدارة السكن الجامعي</span> &nbsp;·&nbsp; جميع الحقوق محفوظة &nbsp;·&nbsp; &copy; 2026
+            </div>
+        </div>
+    </footer>
+
+    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.addEventListener('scroll', () => {
+            document.querySelector('.navbar').classList.toggle('scrolled', scrollY > 40);
+        });
+        const ro = new IntersectionObserver(entries => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); ro.unobserve(e.target); } });
+        }, { threshold: .12 });
+        document.querySelectorAll('.reveal').forEach((el, i) => { el.style.transitionDelay = (i % 4) * .08 + 's'; ro.observe(el); });
+    </script>
+</body>
+</html>
