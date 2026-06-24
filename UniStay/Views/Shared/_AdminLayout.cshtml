@@ -913,6 +913,18 @@
                 });
             });
 
+            // Fix dropdown clipping inside table-responsive (all pages)
+            document.querySelectorAll('.table-responsive .dropdown-toggle[data-bs-toggle="dropdown"]').forEach(function(btn) {
+                btn.addEventListener('show.bs.dropdown', function () {
+                    var wrapper = this.closest('.table-responsive');
+                    if (wrapper) wrapper.style.overflow = 'visible';
+                });
+                btn.addEventListener('hidden.bs.dropdown', function () {
+                    var wrapper = this.closest('.table-responsive');
+                    if (wrapper) wrapper.style.overflow = '';
+                });
+            });
+
             // Toast auto-dismiss
             var toasts = document.querySelectorAll('.toast');
             toasts.forEach(function (t) {

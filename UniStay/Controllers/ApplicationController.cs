@@ -43,6 +43,25 @@ namespace UniStay.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
+            // التحقق من رفع الصورة الشخصية
+            if (model.Photo == null || model.Photo.Length == 0)
+            {
+                ModelState.AddModelError("Photo", "الصورة الشخصية مطلوبة");
+                return View(model);
+            }
+            if (model.Photo.Length > 2 * 1024 * 1024)
+            {
+                ModelState.AddModelError("Photo", "حجم الصورة يجب ألا يتجاوز 2 ميغابايت");
+                return View(model);
+            }
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
+            var ext = Path.GetExtension(model.Photo.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+            {
+                ModelState.AddModelError("Photo", "الصورة يجب أن تكون بصيغة JPG أو PNG");
+                return View(model);
+            }
+
             // FIX 1: التحقق من تطابق كلمتي المرور (احتياطي إضافي فوق [Compare])
             if (model.Password != model.ConfirmPassword)
             {
@@ -97,6 +116,17 @@ namespace UniStay.Controllers
                 _context.Students.Add(student);
                 await _context.SaveChangesAsync();
             }
+
+            // حفظ الصورة الشخصية
+            var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "student-photos");
+            Directory.CreateDirectory(uploadsDir);
+            var fileName = $"{student.ID}_{DateTime.Now:yyyyMMddHHmmss}{ext}";
+            var filePath = Path.Combine(uploadsDir, fileName);
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await model.Photo!.CopyToAsync(stream);
+            }
+            student.Photo = $"/uploads/student-photos/{fileName}";
 
             // FIX 2: التحقق من وجود طلب مسبق لنفس العام الدراسي (تفادي UNIQUE constraint violation)
             string currentAcademicYear = $"{DateTime.Now.Year}-{DateTime.Now.Year + 1}";
@@ -163,6 +193,7 @@ namespace UniStay.Controllers
                 HousingType = model.HousingType,
                 HasSpecialNeeds = model.HasMedicalCondition,
                 SpecialNeedsDescription = model.MedicalDescription,
+                MealSubscription = model.MealSubscription,
                 Status = "Pending",
                 CreatedAt = DateTime.UtcNow
             };

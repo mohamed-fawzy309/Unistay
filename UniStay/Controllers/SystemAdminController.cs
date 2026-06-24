@@ -35,6 +35,116 @@ public class SystemAdminController : Controller
     private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
 
     // ══════════════════════════════════════════════════════════════
+    // Student Operations - Advanced (5 operations)
+    // ══════════════════════════════════════════════════════════════
+
+    [HttpPost("CorrectNationalId")]
+    [ValidateAntiForgeryToken]
+    [RequirePermission("Students.Manage", "CanEdit")]
+    public async Task<IActionResult> CorrectNationalId(CorrectNationalIdViewModel model)
+    {
+        var student = await _db.Students.FindAsync(model.StudentID);
+        if (student == null) return Json(new { success = false, message = "الطالب غير موجود" });
+
+        var oldValue = student.NationalID;
+        var exists = await _db.Students.AnyAsync(s => s.NationalID == model.NewNationalID && s.ID != model.StudentID);
+        if (exists) return Json(new { success = false, message = "الرقم القومي مستخدم من قبل طالب آخر" });
+
+        student.NationalID = model.NewNationalID;
+        student.LastUpdatedAt = DateTime.UtcNow;
+        student.LastUpdatedBy = CurrentUserId;
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync(CurrentUserId, "Staff", "Student.CorrectNationalID", "Student", model.StudentID,
+            new { NationalID = oldValue }, new { NationalID = model.NewNationalID, Reason = model.Reason });
+
+        return Json(new { success = true, message = "تم تصحيح الرقم القومي" });
+    }
+
+    [HttpPost("ChangeStudentNumber")]
+    [ValidateAntiForgeryToken]
+    [RequirePermission("Students.Manage", "CanEdit")]
+    public async Task<IActionResult> ChangeStudentNumber(ChangeStudentNumberViewModel model)
+    {
+        var student = await _db.Students.FindAsync(model.StudentID);
+        if (student == null) return Json(new { success = false, message = "الطالب غير موجود" });
+
+        var oldValue = student.StudentCode;
+        student.StudentCode = model.NewStudentCode;
+        student.LastUpdatedAt = DateTime.UtcNow;
+        student.LastUpdatedBy = CurrentUserId;
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync(CurrentUserId, "Staff", "Student.ChangeNumber", "Student", model.StudentID,
+            new { StudentCode = oldValue }, new { StudentCode = model.NewStudentCode, Reason = model.Reason });
+
+        return Json(new { success = true, message = "تم تغيير رقم الطالب" });
+    }
+
+    [HttpPost("ReverseAcceptance")]
+    [ValidateAntiForgeryToken]
+    [RequirePermission("Coordination.Manage", "CanEdit")]
+    public async Task<IActionResult> ReverseAcceptance(ReverseAcceptanceViewModel model)
+    {
+        var app = await _db.Applications
+            .FirstOrDefaultAsync(a => a.StudentID == model.StudentID && a.Status == "Accepted");
+        if (app == null) return Json(new { success = false, message = "لا يوجد قبول نشط لهذا الطالب" });
+
+        var oldStatus = app.Status;
+        app.Status = "Pending";
+        app.RejectionReason = model.Reason;
+        app.LastUpdatedAt = DateTime.UtcNow;
+        app.LastUpdatedBy = CurrentUserId;
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync(CurrentUserId, "Staff", "Application.ReverseAcceptance", "Application", app.ID,
+            new { Status = oldStatus }, new { Status = "Pending", Reason = model.Reason });
+
+        return Json(new { success = true, message = "تم إلغاء القبول" });
+    }
+
+    [HttpPost("TransferUniversity")]
+    [ValidateAntiForgeryToken]
+    [RequirePermission("Students.Manage", "CanEdit")]
+    public async Task<IActionResult> TransferUniversity(TransferUniversityViewModel model)
+    {
+        var student = await _db.Students.FindAsync(model.StudentID);
+        if (student == null) return Json(new { success = false, message = "الطالب غير موجود" });
+
+        var oldUniv = student.Faculty;
+        var newUniv = await _db.Universities.FindAsync(model.NewUniversityID);
+        if (newUniv == null) return Json(new { success = false, message = "الجامعة غير موجودة" });
+
+        student.Faculty = newUniv.Name;
+        student.LastUpdatedAt = DateTime.UtcNow;
+        student.LastUpdatedBy = CurrentUserId;
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync(CurrentUserId, "Staff", "Student.TransferUniversity", "Student", model.StudentID,
+            new { Faculty = oldUniv }, new { Faculty = newUniv.Name, Reason = model.Reason });
+
+        return Json(new { success = true, message = "تم تحويل الطالب" });
+    }
+
+    [HttpPost("ResetStudentPassword")]
+    [ValidateAntiForgeryToken]
+    [RequirePermission("Students.Manage", "CanEdit")]
+    public async Task<IActionResult> ResetStudentPassword(int studentId)
+    {
+        var login = await _db.StudentLogins.FirstOrDefaultAsync(l => l.StudentID == studentId);
+        if (login == null) return Json(new { success = false, message = "لا يوجد حساب للطالب" });
+
+        login.PasswordHash = _passwordService.HashPassword(login.Username);
+        login.MustChangePassword = true;
+        await _db.SaveChangesAsync();
+
+        await _audit.LogAsync(CurrentUserId, "Staff", "Student.ResetPassword", "StudentLogin", studentId,
+            null, new { ResetTo = "Username" });
+
+        return Json(new { success = true, message = "تم إعادة تعيين كلمة المرور للرقم الجامعي" });
+    }
+
+    // ══════════════════════════════════════════════════════════════
     // Application Types
     // ══════════════════════════════════════════════════════════════
 

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace UniStay.ViewModels.Application
 {
@@ -154,6 +155,17 @@ namespace UniStay.ViewModels.Application
         [StringLength(500, ErrorMessage = "وصف الحالة المرضية يجب ألا يتجاوز 500 حرف")]
         [Display(Name = "وصف الحالة المرضية")]
         public string? MedicalDescription { get; set; }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // قسم 4ب: الوجبات والصورة
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        [Display(Name = "الاشتراك في خدمة الوجبات")]
+        public bool MealSubscription { get; set; }
+
+        [DataType(DataType.Upload)]
+        [Display(Name = "الصورة الشخصية")]
+        public IFormFile? Photo { get; set; }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // قسم 5: بيانات الحساب
