@@ -818,7 +818,7 @@ public class StatisticsController : Controller
     private static string GetCurrentAcademicYear()
     {
         var year = DateTime.Now.Year;
-        return DateTime.Now.Month >= 9 ? $"{year}-{year + 1}" : $"{year - 1}-{year}";
+        return DateTime.Now.Month >= 6 ? $"{year}-{year + 1}" : $"{year - 1}-{year}";
     }
 
     private class ExportRow

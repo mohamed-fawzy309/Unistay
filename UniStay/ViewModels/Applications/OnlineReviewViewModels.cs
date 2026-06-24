@@ -8,16 +8,12 @@ public class OnlineReviewIndexViewModel
     public int Page { get; set; }
     public int TotalPages { get; set; }
     public int PendingReview { get; set; }
-    public int DocumentsVerified { get; set; }
-    public int DocumentsRejected { get; set; }
-    public int MissingDocuments { get; set; }
 }
 
 public class OnlineReviewFilterViewModel
 {
     public string? Search { get; set; }
     public int? CityID { get; set; }
-    public string? DocumentStatus { get; set; }
 }
 
 public class OnlineReviewRowViewModel
@@ -29,12 +25,6 @@ public class OnlineReviewRowViewModel
     public string? CityName { get; set; }
     public string Status { get; set; } = "";
     public DateTime? SubmittedAt { get; set; }
-    public int TotalDocs { get; set; }
-    public int VerifiedDocs { get; set; }
-    public int RejectedDocs { get; set; }
-    public int PendingDocs { get; set; }
-    public bool AllDocumentsVerified => TotalDocs > 0 && VerifiedDocs == TotalDocs;
-    public bool HasMissingDocs => TotalDocs == 0;
 }
 
 public class OnlineReviewDetailViewModel
@@ -46,18 +36,6 @@ public class OnlineReviewDetailViewModel
     public string? CityName { get; set; }
     public string Status { get; set; } = "";
     public string? AdminNotes { get; set; }
-    public List<DocumentReviewViewModel> Documents { get; set; } = new();
-}
-
-public class DocumentReviewViewModel
-{
-    public int DocumentID { get; set; }
-    public string DocumentType { get; set; } = "";
-    public string? FileName { get; set; }
-    public string? FilePath { get; set; }
-    public bool? IsVerified { get; set; }
-    public DateTime? UploadedAt { get; set; }
-    public string StatusBadge => IsVerified == true ? "verified" : IsVerified == false ? "rejected" : "pending";
 }
 
 public class CoordinationCenterViewModel

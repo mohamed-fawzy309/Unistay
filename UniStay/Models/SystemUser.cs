@@ -71,8 +71,6 @@ public partial class SystemUser
 
     public virtual SystemUser? CreatedByNavigation { get; set; }
 
-    public virtual ICollection<Document> Documents { get; set; } = new List<Document>();
-
     public virtual ICollection<DormitoryCity> DormitoryCityCreatedByNavigations { get; set; } = new List<DormitoryCity>();
 
     public virtual ICollection<DormitoryCity> DormitoryCityLastUpdatedByNavigations { get; set; } = new List<DormitoryCity>();

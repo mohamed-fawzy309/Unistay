@@ -53,8 +53,6 @@ public partial class Application
 
     public virtual ICollection<CoordinationResult> CoordinationResults { get; set; } = new List<CoordinationResult>();
 
-    public virtual ICollection<Document> Documents { get; set; } = new List<Document>();
-
     public virtual DormitoryCity DormitoryCity { get; set; } = null!;
 
     public virtual SystemUser? LastUpdatedByNavigation { get; set; }

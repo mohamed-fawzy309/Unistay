@@ -46,8 +46,6 @@ public partial class AssuitDbContext : DbContext
 
     public virtual DbSet<DataScope> DataScopes { get; set; }
 
-    public virtual DbSet<Document> Documents { get; set; }
-
     public virtual DbSet<DormitoryBlock> DormitoryBlocks { get; set; }
 
     public virtual DbSet<DormitoryCity> DormitoryCities { get; set; }
@@ -55,8 +53,6 @@ public partial class AssuitDbContext : DbContext
     public virtual DbSet<EmailLog> EmailLogs { get; set; }
 
     public virtual DbSet<EvictionNotice> EvictionNotices { get; set; }
-
-    public virtual DbSet<FacultyQuotum> FacultyQuota { get; set; }
 
     public virtual DbSet<Guardian> Guardians { get; set; }
 
@@ -654,38 +650,6 @@ public partial class AssuitDbContext : DbContext
             entity.Property(e => e.ScopeValue).HasMaxLength(200);
         });
 
-        modelBuilder.Entity<Document>(entity =>
-        {
-            entity.HasKey(e => e.ID).HasName("PK__Document__3214EC273EA5E377");
-
-            entity.ToTable("Document");
-
-            entity.HasIndex(e => e.StudentID, "IX_Document_StudentID");
-
-            entity.HasIndex(e => e.ApplicationID, "IX_Document_ApplicationID");
-
-            entity.Property(e => e.DocumentType)
-                .HasMaxLength(30)
-                .IsUnicode(false);
-            entity.Property(e => e.FileName).HasMaxLength(200);
-            entity.Property(e => e.FilePath).HasMaxLength(500);
-            entity.Property(e => e.IsVerified).HasDefaultValue(false);
-            entity.Property(e => e.UploadedAt).HasDefaultValueSql("(getdate())");
-
-            entity.HasOne(d => d.Application).WithMany(p => p.Documents)
-                .HasForeignKey(d => d.ApplicationID)
-                .HasConstraintName("FK_Document_Application");
-
-            entity.HasOne(d => d.Student).WithMany(p => p.Documents)
-                .HasForeignKey(d => d.StudentID)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Document_Student");
-
-            entity.HasOne(d => d.VerifiedByNavigation).WithMany(p => p.Documents)
-                .HasForeignKey(d => d.VerifiedBy)
-                .HasConstraintName("FK_Document_VerifiedBy");
-        });
-
         modelBuilder.Entity<DormitoryBlock>(entity =>
         {
             entity.HasKey(e => e.ID).HasName("PK__Dormitor__3214EC27860406F6");
@@ -796,19 +760,6 @@ public partial class AssuitDbContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(200);
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
-        });
-
-        modelBuilder.Entity<FacultyQuotum>(entity =>
-        {
-            entity.HasKey(e => e.ID).HasName("PK__FacultyQ__3214EC2724A3F6E5");
-
-            entity.Property(e => e.AcademicYear).HasMaxLength(10);
-            entity.Property(e => e.Faculty).HasMaxLength(100);
-
-            entity.HasOne(d => d.DormitoryCity).WithMany(p => p.FacultyQuota)
-                .HasForeignKey(d => d.DormitoryCityID)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_FacultyQuota_DormitoryCity");
         });
 
         modelBuilder.Entity<Guardian>(entity =>

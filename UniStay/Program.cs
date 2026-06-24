@@ -29,7 +29,6 @@ builder.Services.AddHttpContextAccessor();
 // ===== AntiForgery =====
 builder.Services.AddAntiforgery(options =>
 {
-    options.HeaderName = "X-CSRF-TOKEN";
     options.Cookie.Name = ".UniStay.Antiforgery";
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
@@ -139,6 +138,8 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapControllers();
 
 app.MapControllerRoute(
     name: "default",

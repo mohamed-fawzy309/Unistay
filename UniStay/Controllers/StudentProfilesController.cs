@@ -113,7 +113,6 @@ public class StudentProfilesController : Controller
     {
         var student = await _db.Students
             .Include(s => s.Guardians)
-            .Include(s => s.Documents)
             .Include(s => s.Allocations).ThenInclude(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
             .FirstOrDefaultAsync(s => s.ID == id);
 
@@ -172,14 +171,6 @@ public class StudentProfilesController : Controller
                 Job = g.Job,
                 Address = g.Address,
                 IsDeceased = g.IsDeceased ?? false
-            }),
-            Documents = student.Documents.Select(d => new StudentDocumentInfo
-            {
-                DocumentId = d.ID,
-                DocumentType = d.DocumentType,
-                FilePath = d.FilePath,
-                IsVerified = d.IsVerified ?? false,
-                UploadDate = d.UploadedAt ?? d.UploadedAt
             })
         };
 
@@ -196,7 +187,6 @@ public class StudentProfilesController : Controller
             .Include(s => s.Violations)
             .Include(s => s.Absences)
             .Include(s => s.MealConsumptions).ThenInclude(mc => mc.Meal)
-            .Include(s => s.Documents)
             .FirstOrDefaultAsync(s => s.ID == id);
 
         if (student == null) return NotFound();
@@ -257,21 +247,12 @@ public class StudentProfilesController : Controller
                 MealDate = mc.MealDate
             }),
 
-            Documents = student.Documents.Select(d => new DocumentInfo
-            {
-                DocumentId = d.ID,
-                DocumentType = d.DocumentType,
-                IsVerified = d.IsVerified ?? false,
-                UploadDate = d.UploadedAt
-            }),
-
             TotalAllocations = student.Allocations.Count,
             TotalPayments = student.Payments.Count,
             TotalPaid = student.Payments.Where(p => p.Status == "Completed").Sum(p => p.PaidAmount),
             TotalViolations = student.Violations.Count,
             TotalAbsences = student.Absences.Count,
-            TotalMeals = student.MealConsumptions.Count,
-            TotalDocuments = student.Documents.Count
+            TotalMeals = student.MealConsumptions.Count
         };
 
         await _audit.LogAsync(CurrentUserId, "Staff", "StudentProfiles.Status", "Student", student.ID);
@@ -485,7 +466,6 @@ public class StudentProfilesController : Controller
     {
         var student = await _db.Students
             .Include(s => s.Guardians)
-            .Include(s => s.Documents)
             .Include(s => s.Allocations).ThenInclude(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
             .FirstOrDefaultAsync(s => s.ID == id);
 
@@ -545,14 +525,6 @@ public class StudentProfilesController : Controller
                 Job = g.Job,
                 Address = g.Address,
                 IsDeceased = g.IsDeceased ?? false
-            }),
-            Documents = student.Documents.Select(d => new StudentDocumentInfo
-            {
-                DocumentId = d.ID,
-                DocumentType = d.DocumentType,
-                FilePath = d.FilePath,
-                IsVerified = d.IsVerified ?? false,
-                UploadDate = d.UploadedAt
             }),
             PrintedAt = DateTime.Now.ToString("yyyy/MM/dd HH:mm")
         };
