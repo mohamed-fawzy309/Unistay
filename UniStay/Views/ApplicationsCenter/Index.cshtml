@@ -54,12 +54,11 @@
                         <th>النوع</th>
                         <th>الحالة</th>
                         <th>التاريخ</th>
-                        <th>المستندات</th>
                         <th>إجراءات</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @if (!Model.Applications.Any()) { <tr><td colspan="10" class="text-center text-muted py-4">لا توجد تطبيقات</td></tr> }
+                    @if (!Model.Applications.Any()) { <tr><td colspan="9" class="text-center text-muted py-4">لا توجد تطبيقات</td></tr> }
                     @foreach (var app in Model.Applications)
                     {
                         <tr>
@@ -71,7 +70,6 @@
                             <td>@app.StudentType</td>
                             <td><span class="badge @(app.Status switch { "Accepted" => "bg-success", "Rejected" => "bg-danger", "Pending" => "bg-warning text-dark", "UnderReview" => "bg-info text-dark", "Waitlist" => "bg-secondary", "Returned" => "bg-dark", _ => "bg-light text-dark" })">@app.StatusDisplay</span></td>
                             <td>@app.CreatedAt.ToString("yyyy/MM/dd")</td>
-                            <td><small>@app.VerifiedDocCount/@app.DocumentCount</small></td>
                             <td>
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown"><i class="bi bi-gear"></i></button>

@@ -2,6 +2,29 @@ using System.ComponentModel.DataAnnotations;
 
 namespace UniStay.ViewModels.Coordination
 {
+    public static class CoordinationRuleTypes
+    {
+        public const string Distance = "Distance";
+        public const string Grade = "Grade";
+        public const string Age = "Age";
+        public const string Bonus = "Bonus";
+        public const string Special = "Special";
+        public const string Faculty = "Faculty";
+
+        public static readonly string[] All = { Distance, Grade, Age, Bonus, Special, Faculty };
+
+        public static string DisplayName(string type) => type switch
+        {
+            Distance => "المسافة",
+            Grade => "الدرجات",
+            Age => "العمر",
+            Bonus => "مكافأة",
+            Special => "حالة خاصة",
+            Faculty => "الكلية / المعهد",
+            _ => type
+        };
+    }
+
     public class CoordinationRulesViewModel
     {
         public int DormitoryCityID { get; set; }
@@ -19,24 +42,50 @@ namespace UniStay.ViewModels.Coordination
         public decimal Weight { get; set; }
         public bool IsActive { get; set; }
         public DateTime? CreatedAt { get; set; }
+        public string RuleTypeDisplay => CoordinationRuleTypes.DisplayName(RuleType);
     }
 
     public class CreateCoordinationRuleViewModel
     {
         [Required(ErrorMessage = "اسم القاعدة مطلوب")]
-        [StringLength(200)]
+        [StringLength(200, ErrorMessage = "اسم القاعدة لا يتجاوز 200 حرف")]
         public string RuleName { get; set; } = null!;
 
         [Required(ErrorMessage = "نوع القاعدة مطلوب")]
         public string RuleType { get; set; } = null!;
 
-        [Range(1, 255)]
+        [Required(ErrorMessage = "الأولوية مطلوبة")]
+        [Range(1, 255, ErrorMessage = "الأولوية من 1 إلى 255")]
         public byte Priority { get; set; } = 1;
 
-        [Range(0, 100)]
+        [Required(ErrorMessage = "الوزن مطلوب")]
+        [Range(0.01, 100, ErrorMessage = "الوزن يجب أن يكون أكبر من 0 وأقل من 100")]
         public decimal Weight { get; set; } = 1;
 
         public bool IsActive { get; set; } = true;
+    }
+
+    public class EditCoordinationRuleViewModel
+    {
+        [Required]
+        public int ID { get; set; }
+
+        [Required(ErrorMessage = "اسم القاعدة مطلوب")]
+        [StringLength(200, ErrorMessage = "اسم القاعدة لا يتجاوز 200 حرف")]
+        public string RuleName { get; set; } = null!;
+
+        [Required(ErrorMessage = "نوع القاعدة مطلوب")]
+        public string RuleType { get; set; } = null!;
+
+        [Required(ErrorMessage = "الأولوية مطلوبة")]
+        [Range(1, 255, ErrorMessage = "الأولوية من 1 إلى 255")]
+        public byte Priority { get; set; }
+
+        [Required(ErrorMessage = "الوزن مطلوب")]
+        [Range(0.01, 100, ErrorMessage = "الوزن يجب أن يكون أكبر من 0 وأقل من 100")]
+        public decimal Weight { get; set; }
+
+        public bool IsActive { get; set; }
     }
 
     public class CoordinationPreviewViewModel
@@ -150,25 +199,6 @@ namespace UniStay.ViewModels.Coordination
         public int? Rank { get; set; }
     }
 
-    public class FacultyQuotasViewModel
-    {
-        public int DormitoryCityID { get; set; }
-        public string CityName { get; set; } = null!;
-        public string AcademicYear { get; set; } = null!;
-        public List<FacultyQuotaRowViewModel> Quotas { get; set; } = new();
-        public AddFacultyQuotaViewModel NewQuota { get; set; } = new();
-    }
-
-    public class FacultyQuotaRowViewModel
-    {
-        public int ID { get; set; }
-        public string Faculty { get; set; } = null!;
-        public int MaxQuota { get; set; }
-        public int MinQuota { get; set; }
-        public int CurrentCount { get; set; }
-        public bool IsFull => CurrentCount >= MaxQuota;
-    }
-
     public class ManualOverrideViewModel
     {
         public int ID { get; set; }
@@ -201,16 +231,13 @@ namespace UniStay.ViewModels.Coordination
         public decimal? SpecialBonus { get; set; }
     }
 
-    public class AddFacultyQuotaViewModel
+    public class ScoreComponents
     {
-        [Required(ErrorMessage = "الكلية مطلوبة")]
-        public string Faculty { get; set; } = null!;
-
-        [Required]
-        [Range(1, 10000)]
-        public int MaxQuota { get; set; }
-
-        [Range(0, 10000)]
-        public int MinQuota { get; set; }
+        public decimal DistanceScore { get; set; }
+        public decimal GradeScore { get; set; }
+        public decimal AgeScore { get; set; }
+        public decimal BonusScore { get; set; }
+        public decimal Total => DistanceScore + GradeScore + AgeScore + BonusScore;
     }
+
 }

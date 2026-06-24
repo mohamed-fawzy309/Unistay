@@ -93,9 +93,7 @@ public class ApplicationsCenterController : Controller
                 ServerVerificationStatus = a.ServerVerificationStatus,
                 CoordinationScore = a.CoordinationScore,
                 CoordinationRank = a.CoordinationRank,
-                ReviewedByName = a.ReviewedByNavigation!.Name,
-                DocumentCount = a.Documents.Count,
-                VerifiedDocCount = a.Documents.Count(d => d.IsVerified == true)
+                ReviewedByName = a.ReviewedByNavigation!.Name
             })
             .ToListAsync();
 
@@ -129,7 +127,6 @@ public class ApplicationsCenterController : Controller
             .Include(a => a.DormitoryCity)
             .Include(a => a.ReviewedByNavigation)
             .Include(a => a.Allocation).ThenInclude(al => al!.CityRoom).ThenInclude(r => r.CityBuilding)
-            .Include(a => a.Documents)
             .FirstOrDefaultAsync(a => a.ID == id);
 
         if (app == null) return NotFound();
@@ -172,11 +169,6 @@ public class ApplicationsCenterController : Controller
                 RoomNumber = app.Allocation.CityRoom?.RoomNumber,
                 BedNumber = app.Allocation.BedNumber, Status = app.Allocation.Status
             } : null,
-            Documents = app.Documents.Select(d => new DocumentInfoViewModel
-            {
-                ID = d.ID, DocumentType = d.DocumentType, FileName = d.FileName,
-                IsVerified = d.IsVerified, UploadedAt = d.UploadedAt
-            }).ToList(),
             Guardians = app.Student?.Guardians.Select(g => new GuardianInfoViewModel
             {
                 FullName = g.FullName, GuardianType = g.GuardianType,
@@ -196,7 +188,6 @@ public class ApplicationsCenterController : Controller
             .Include(a => a.DormitoryCity)
             .Include(a => a.ReviewedByNavigation)
             .Include(a => a.Allocation).ThenInclude(al => al!.CityRoom).ThenInclude(r => r.CityBuilding)
-            .Include(a => a.Documents)
             .FirstOrDefaultAsync(a => a.ID == id);
 
         if (app == null) return NotFound();
@@ -239,11 +230,6 @@ public class ApplicationsCenterController : Controller
                 RoomNumber = app.Allocation.CityRoom?.RoomNumber,
                 BedNumber = app.Allocation.BedNumber, Status = app.Allocation.Status
             } : null,
-            Documents = app.Documents.Select(d => new DocumentInfoViewModel
-            {
-                ID = d.ID, DocumentType = d.DocumentType, FileName = d.FileName,
-                IsVerified = d.IsVerified, UploadedAt = d.UploadedAt
-            }).ToList(),
             Guardians = app.Student?.Guardians.Select(g => new GuardianInfoViewModel
             {
                 FullName = g.FullName, GuardianType = g.GuardianType,
