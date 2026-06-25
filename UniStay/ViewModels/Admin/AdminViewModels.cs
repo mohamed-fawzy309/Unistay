@@ -538,7 +538,7 @@ namespace UniStay.ViewModels.Admin
         [Required]
         [StringLength(200)]
         public string Name { get; set; } = null!;
-
+        public int DormitoryCityID { get; set; }
         public bool IsActive { get; set; }
     }
 
@@ -700,7 +700,9 @@ namespace UniStay.ViewModels.Admin
         [Required]
         [Range(0, 999999)]
         public decimal Amount { get; set; }
-
+        public int FeeTypeID { get; set; }
+        public string AcademicYear { get; set; } = string.Empty;
+        public int? DormitoryCityID { get; set; }
         public bool IsActive { get; set; }
     }
 
@@ -826,6 +828,8 @@ namespace UniStay.ViewModels.Admin
 
         [StringLength(500)]
         public string? Description { get; set; }
+        public string ConfigKey { get; set; } = null!;
+        public string Category { get; set; } = null!;
 
         public bool IsActive { get; set; }
     }

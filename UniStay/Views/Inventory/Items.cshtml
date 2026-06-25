@@ -40,7 +40,8 @@
                             <td>@item.AssignedCount</td>
                             <td>@(item.IsActive ? "نعم" : "لا")</td>
                             <td>
-                                <button class="btn btn-sm btn-success" onclick="showAssign(@item.ID, '@item.ItemName', @item.AvailableStock)">
+                                <button class="btn btn-sm btn-success"
+                                        onclick="showAssign(@item.ID, '@item.ItemName', @item.AvailableStock)">
                                     <i class="bi bi-person-plus"></i> توزيع
                                 </button>
                             </td>
@@ -51,23 +52,27 @@
 
             @if (Model.TotalPages > 1)
             {
-                <nav><ul class="pagination">
-                    @for (int i = 1; i <= Model.TotalPages; i++)
-                    {
-                        <li class="page-item @(i == Model.Page ? "active" : "")">
-                            <a class="page-link" href="@Url.Action("Items", new { page = i })">@i</a>
-                        </li>
-                    }
-                </ul></nav>
+                <nav>
+                    <ul class="pagination">
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.Page ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Items", new { page = i })">@i</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
             }
         </div>
     </div>
 </div>
 
+<!-- CREATE MODAL -->
 <div class="modal fade" id="createItemModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <form id="createItemForm">
+                @Html.AntiForgeryToken()
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">إضافة صنف جديد</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -75,22 +80,23 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">اسم الصنف</label>
-                        <input name="itemName" class="form-control" required />
+                        <input name="itemName" id="f_itemName" class="form-control" required />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">كود الصنف</label>
-                        <input name="itemCode" class="form-control" required />
+                        <input name="itemCode" id="f_itemCode" class="form-control" required />
                     </div>
                     <div class="row mb-3">
                         <div class="col-6">
                             <label class="form-label">القيمة</label>
-                            <input name="itemValue" class="form-control" type="number" step="0.01" required />
+                            <input name="itemValue" id="f_itemValue" class="form-control" type="number" step="0.01" required />
                         </div>
                         <div class="col-6">
                             <label class="form-label">إجمالي المخزون</label>
-                            <input name="totalStock" class="form-control" type="number" required />
+                            <input name="totalStock" id="f_totalStock" class="form-control" type="number" required />
                         </div>
                     </div>
+                    <div id="createError" class="alert alert-danger d-none"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary"><i class="bi bi-check"></i> إضافة</button>
@@ -100,6 +106,7 @@
     </div>
 </div>
 
+<!-- ASSIGN MODAL -->
 <div class="modal fade" id="assignItemModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -112,7 +119,7 @@
                     <input type="hidden" name="inventoryItemID" id="assignItemId" />
                     <div class="mb-3">
                         <label class="form-label">الصنف</label>
-                        <p id="assignItemName" class="form-control-plaintext"></p>
+                        <p id="assignItemName" class="form-control-plaintext fw-bold"></p>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">الكمية المتاحة</label>
@@ -120,14 +127,15 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">الطالب</label>
-                        <select name="studentID" class="form-select" required>
+                        <select name="studentID" id="studentSelect" class="form-select" required>
                             <option value="">-- اختر الطالب --</option>
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">الكمية</label>
-                        <input name="quantity" class="form-control" type="number" min="1" required />
+                        <input name="quantity" id="f_quantity" class="form-control" type="number" min="1" required />
                     </div>
+                    <div id="assignError" class="alert alert-danger d-none"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success"><i class="bi bi-check"></i> توزيع</button>
@@ -139,25 +147,101 @@
 
 @section Scripts {
     <script>
-        $('#createItemForm').submit(function (e) {
-            e.preventDefault();
-            $.post('@Url.Action("CreateItem")', $(this).serialize(), function (res) {
-                if (res.success) { location.reload(); } else { alert(res.message); }
-            });
-        });
-
-        function showAssign(id, name, stock) {
-            $('#assignItemId').val(id);
-            $('#assignItemName').text(name);
-            $('#assignAvailableStock').text(stock);
-            $('#assignItemModal').modal('show');
+        // ── الدالة المساعدة لجلب الـ AntiForgery Token ──────────
+        function getToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                ?? document.querySelector('meta[name="RequestVerificationToken"]')?.content
+                ?? '';
         }
 
-        $('#assignItemForm').submit(function (e) {
+        // ── CREATE ITEM ──────────────────────────────────────────
+        document.getElementById('createItemForm').addEventListener('submit', async function (e) {
             e.preventDefault();
-            $.post('@Url.Action("Assign")', $(this).serialize(), function (res) {
-                if (res.success) { location.reload(); } else { alert(res.message); }
+
+            const params = new URLSearchParams({
+                ItemName:   document.getElementById('f_itemName').value,
+                ItemCode:   document.getElementById('f_itemCode').value,
+                ItemValue:  document.getElementById('f_itemValue').value,
+                TotalStock: document.getElementById('f_totalStock').value,
+                __RequestVerificationToken: getToken()
             });
+
+            try {
+                const res  = await fetch('@Url.Action("CreateItem")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
+                });
+                const data = await res.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    const err = document.getElementById('createError');
+                    err.textContent = data.message;
+                    err.classList.remove('d-none');
+                }
+            } catch {
+                alert('حدث خطأ، يرجى المحاولة مرة أخرى');
+            }
+        });
+
+        // ── SHOW ASSIGN MODAL ────────────────────────────────────
+        function showAssign(id, name, stock) {
+            document.getElementById('assignItemId').value       = id;
+            document.getElementById('assignItemName').textContent        = name;
+            document.getElementById('assignAvailableStock').textContent  = stock;
+            document.getElementById('f_quantity').max = stock;
+            document.getElementById('assignError').classList.add('d-none');
+
+            // Load students dynamically
+            const sel = document.getElementById('studentSelect');
+            sel.innerHTML = '<option value="">جاري التحميل...</option>';
+            fetch('@Url.Action("GetStudents")')
+                .then(r => r.json())
+                .then(students => {
+                    sel.innerHTML = '<option value="">-- اختر الطالب --</option>';
+                    students.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value       = s.id;
+                        opt.textContent = s.name + ' - ' + s.nationalId;
+                        sel.appendChild(opt);
+                    });
+                })
+                .catch(() => {
+                    sel.innerHTML = '<option value="">-- اختر الطالب --</option>';
+                });
+
+            new bootstrap.Modal(document.getElementById('assignItemModal')).show();
+        }
+
+        // ── ASSIGN ITEM ──────────────────────────────────────────
+        document.getElementById('assignItemForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const params = new URLSearchParams({
+                InventoryItemID:            document.getElementById('assignItemId').value,
+                StudentID:                  document.getElementById('studentSelect').value,
+                Quantity:                   document.getElementById('f_quantity').value,
+                __RequestVerificationToken: getToken()
+            });
+
+            try {
+                const res  = await fetch('@Url.Action("Assign")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
+                });
+                const data = await res.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    const err = document.getElementById('assignError');
+                    err.textContent = data.message;
+                    err.classList.remove('d-none');
+                }
+            } catch {
+                alert('حدث خطأ، يرجى المحاولة مرة أخرى');
+            }
         });
     </script>
 }

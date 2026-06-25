@@ -1,0 +1,102 @@
+@model UniStay.ViewModels.Attendance.StudentAttendanceHistoryViewModel
+@{
+    ViewData["Title"] = "سجل الحضور";
+}
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="page-title">سجل الحضور</h2>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body text-center py-4">
+            @if (Model.IsPresentToday)
+            {
+                <div class="display-6 text-success mb-2">✔</div>
+                <h5 class="text-success">تم تسجيل حضورك اليوم الساعة @Model.TodayRecognitionTime?.ToString("HH:mm")</h5>
+            }
+            else
+            {
+                <div class="display-6 text-danger mb-2">✘</div>
+                <h5 class="text-danger">لم يتم تسجيل حضورك اليوم</h5>
+            }
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <div class="text-primary mb-2"><i class="bi bi-check-circle fs-2"></i></div>
+                    <h6 class="text-muted small">أيام الحضور هذا الشهر</h6>
+                    <h3 class="fw-bold text-primary mb-0">@Model.PresentDaysThisMonth</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <div class="text-warning mb-2"><i class="bi bi-calendar-event fs-2"></i></div>
+                    <h6 class="text-muted small">أيام الجلسات هذا الشهر</h6>
+                    <h3 class="fw-bold text-warning mb-0">@Model.TotalSessionDaysThisMonth</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm text-center">
+                <div class="card-body">
+                    <div class="text-success mb-2"><i class="bi bi-graph-up fs-2"></i></div>
+                    <h6 class="text-muted small">نسبة الحضور</h6>
+                    <h3 class="fw-bold text-success mb-0">@Model.AttendancePercentage%</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+            <span class="fw-bold">آخر 30 يوم</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>الحالة</th>
+                            <th>وقت التسجيل</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.HistoryItems)
+                        {
+                            <tr>
+                                <td>@item.Date.ToString("yyyy/MM/dd")</td>
+                                <td>
+                                    @if (item.Status == "حاضر")
+                                    {
+                                        <span class="badge bg-success">حاضر</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">غائب</span>
+                                    }
+                                </td>
+                                <td>@(item.RecognitionTime?.ToString("HH:mm:ss") ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

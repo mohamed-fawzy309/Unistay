@@ -169,6 +169,7 @@
     </div>
 </div>
 
+@Html.AntiForgeryToken()
 @section Scripts {
     <script>
         $(function () {
@@ -188,25 +189,36 @@
             });
 
             $('#btnConfirmAssign').click(function () {
-                var requestId = $('#assignRequestId').val();
-                var staffUserId = $('#assignStaffUserId').val();
+            var requestId = $('#assignRequestId').val();
+            var staffUserId = $('#assignStaffUserId').val();
 
-                if (!staffUserId) { alert('يرجى اختيار فريق الصيانة'); return; }
+            var token = $('input[name="__RequestVerificationToken"]').val();
 
-                $.ajax({
-                    url: '@Url.Action("Assign", "Maintenance")',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ requestID: parseInt(requestId), staffUserID: parseInt(staffUserId) }),
-                    success: function (res) {
-                        if (res.success) {
-                            location.reload();
-                        } else {
-                            alert(res.message);
-                        }
+            if (!staffUserId) {
+                alert('يرجى اختيار فريق الصيانة');
+                return;
+            }
+
+            $.ajax({
+                url: '@Url.Action("Assign", "Maintenance")',
+                type: 'POST',
+                contentType: 'application/json',
+                headers: {
+                    'X-CSRF-TOKEN': token
+                },
+                data: JSON.stringify({
+                    requestID: parseInt(requestId),
+                    staffUserID: parseInt(staffUserId)
+                }),
+                success: function (res) {
+                    if (res.success) {
+                        location.reload();
+                    } else {
+                        alert(res.message);
                     }
-                });
+                }
             });
+        });
 
             $('.btn-complete').click(function () {
                 var id = $(this).data('id');

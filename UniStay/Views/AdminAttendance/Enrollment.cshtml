@@ -1,0 +1,587 @@
+@model UniStay.ViewModels.Attendance.EnrollmentViewModel
+@{
+    ViewData["Title"] = "تسجيل الوجوه";
+    var cities = ViewBag.Cities as List<UniStay.Models.DormitoryCity>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">تسجيل الوجوه</h2>
+    <a asp-action="Index" class="btn btn-outline-primary btn-sm"><i class="bi bi-arrow-right"></i> العودة للوحة الحضور</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-primary-subtle text-primary rounded-circle mx-auto mb-2">
+                    <i class="bi bi-building fs-4"></i>
+                </div>
+                <h6 class="text-muted small">إجمالي المقيمين</h6>
+                <h3 class="mb-0 fw-bold text-primary" id="totalAccommodated">@Model.TotalAccommodated</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-success-subtle text-success rounded-circle mx-auto mb-2">
+                    <i class="bi bi-person-check fs-4"></i>
+                </div>
+                <h6 class="text-muted small">مسجلون</h6>
+                <h3 class="mb-0 fw-bold text-success" id="registeredCount">0</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-danger-subtle text-danger rounded-circle mx-auto mb-2">
+                    <i class="bi bi-person-x fs-4"></i>
+                </div>
+                <h6 class="text-muted small">غير مسجلين</h6>
+                <h3 class="mb-0 fw-bold text-danger" id="notRegisteredCount">0</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-info-subtle text-info rounded-circle mx-auto mb-2">
+                    <i class="bi bi-graph-up fs-4"></i>
+                </div>
+                <h6 class="text-muted small">نسبة التسجيل</h6>
+                <h3 class="mb-0 fw-bold text-info" id="enrollmentPercentage">0%</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <input type="text" id="searchInput" class="form-control" placeholder="بحث باسم الطالب أو المعرف أو الرقم القومي...">
+            </div>
+            <div class="col-md-2">
+                <select id="filterCity" class="form-select" onchange="loadBuildings()">
+                    <option value="">كل المدن</option>
+                    @if (cities != null)
+                    {
+                        foreach (var c in cities)
+                        {
+                            <option value="@c.ID">@c.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select id="filterBuilding" class="form-select">
+                    <option value="">كل المباني</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select id="filterFloor" class="form-select">
+                    <option value="">كل الأدوار</option>
+                    @for (int f = 1; f <= 15; f++)
+                    {
+                        <option value="@f">الدور @f</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select id="filterStatus" class="form-select">
+                    <option value="all">الكل</option>
+                    <option value="registered">مسجل</option>
+                    <option value="notregistered">غير مسجل</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="studentTable">
+                <thead>
+                    <tr>
+                        <th>المعرف</th>
+                        <th>الاسم</th>
+                        <th>الرقم القومي</th>
+                        <th>المدينة</th>
+                        <th>المبنى</th>
+                        <th>الغرفة</th>
+                        <th>السرير</th>
+                        <th>الصورة</th>
+                        <th>حالة الوجه</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="studentTableBody">
+                    @foreach (var student in Model.Students)
+                    {
+                        <tr data-student-id="@student.StudentID" data-student-name="@student.FullName"
+                            data-national-id="@student.NationalID" data-city="@student.DormitoryCity"
+                            data-building="@student.Building" data-room="@student.RoomNumber" data-floor="@student.Floor">
+                            <td>@student.StudentID</td>
+                            <td>@student.FullName</td>
+                            <td class="text-muted small">@student.NationalID</td>
+                            <td>@student.DormitoryCity</td>
+                            <td>@student.Building</td>
+                            <td>@student.RoomNumber</td>
+                            <td>@student.Bed</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(student.Photo))
+                                {
+                                    <img src="@student.Photo" alt="صورة" class="rounded" style="width:48px;height:48px;object-fit:cover;">
+                                }
+                                else
+                                {
+                                    <div class="rounded bg-secondary-subtle d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                                        <i class="bi bi-person text-secondary"></i>
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary status-badge">جاري التحميل...</span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1 action-buttons" style="display:none;">
+                                    <button class="btn btn-success btn-sm btn-register" onclick="openCamera(@student.StudentID, '@student.FullName', 'register')">
+                                        <i class="bi bi-camera"></i> تسجيل
+                                    </button>
+                                    <button class="btn btn-warning btn-sm btn-update" onclick="openCamera(@student.StudentID, '@student.FullName', 'update')" style="display:none;">
+                                        <i class="bi bi-arrow-clockwise"></i> تحديث
+                                    </button>
+                                    <button class="btn btn-danger btn-sm btn-delete" onclick="deleteFace(@student.StudentID, '@student.FullName')" style="display:none;">
+                                        <i class="bi bi-trash"></i> حذف
+                                    </button>
+                                    <button class="btn btn-info btn-sm btn-test" onclick="testFace(@student.StudentID, '@student.FullName')" style="display:none;">
+                                        <i class="bi bi-search"></i> اختبار
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (Model.Students.Count == 0)
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-people fs-1 d-block mb-2"></i>
+                لا يوجد طلاب مقيمين حالياً
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Camera Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cameraModalTitle">تسجيل وجه الطالب</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="position-relative" style="background:#000;border-radius:8px;overflow:hidden;">
+                    <video id="videoPreview" width="100%" height="auto" autoplay playsinline style="max-height:400px;object-fit:cover;"></video>
+                    <div id="captureOverlay" class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" style="background:rgba(0,0,0,0.5);display:none;">
+                        <div class="text-center text-white">
+                            <div class="spinner-border mb-2" role="status"></div>
+                            <div id="captureStatus" class="fw-bold">يتم التقاط الصور...</div>
+                            <div id="captureProgress" class="mt-2">
+                                <div class="progress" style="height:6px;max-width:300px;margin:auto;">
+                                    <div id="captureProgressBar" class="progress-bar" style="width:0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="cameraPrompt" class="mt-3 text-muted small"></div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between" id="cameraFooter">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button class="btn btn-primary" id="btnStartCapture" onclick="startCapture()">
+                    <i class="bi bi-camera"></i> بدء التسجيل
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Result Modal -->
+<div class="modal fade" id="testModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">نتيجة اختبار التعرف</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center" id="testResultBody">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p>جاري اختبار التعرف...</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let enrolledSet = new Set();
+        let cameraStream = null;
+        let captureInterval = null;
+        let capturedFrames = [];
+        let currentStudentID = null;
+        let currentStudentName = '';
+        let currentMode = 'register';
+        let totalFrames = 15;
+
+        async function loadBuildings() {
+            const cityId = document.getElementById('filterCity').value;
+            const sel = document.getElementById('filterBuilding');
+            sel.innerHTML = '<option value="">كل المباني</option>';
+            if (!cityId) return;
+            try {
+                const resp = await fetch('/AdminAttendance/GetBuildingsByCity?cityId=' + cityId);
+                const buildings = await resp.json();
+                buildings.forEach(function (b) {
+                    const opt = document.createElement('option');
+                    opt.value = b.buildingName;
+                    opt.textContent = b.buildingName;
+                    sel.appendChild(opt);
+                });
+            } catch {}
+        }
+
+        async function refreshEnrolledList() {
+            try {
+                const resp = await fetch('/AdminAttendance/GetEnrolledList');
+                const data = await resp.json();
+                const ids = data.enrolledStudents || [];
+                enrolledSet = new Set(ids);
+                updateTable();
+            } catch {
+                enrolledSet = new Set();
+                updateTable();
+            }
+        }
+
+        function updateTable() {
+            const rows = document.querySelectorAll('#studentTableBody tr');
+            let registered = 0;
+            let notRegistered = 0;
+
+            rows.forEach(function (row) {
+                const sid = row.getAttribute('data-student-id');
+                const isRegistered = enrolledSet.has(sid);
+                const badge = row.querySelector('.status-badge');
+                const actions = row.querySelector('.action-buttons');
+                const btnRegister = row.querySelector('.btn-register');
+                const btnUpdate = row.querySelector('.btn-update');
+                const btnDelete = row.querySelector('.btn-delete');
+                const btnTest = row.querySelector('.btn-test');
+
+                actions.style.display = '';
+                if (isRegistered) {
+                    badge.className = 'badge bg-success status-badge';
+                    badge.textContent = '🟢 مسجل';
+                    btnRegister.style.display = 'none';
+                    btnUpdate.style.display = '';
+                    btnDelete.style.display = '';
+                    btnTest.style.display = '';
+                    registered++;
+                } else {
+                    badge.className = 'badge bg-danger status-badge';
+                    badge.textContent = '🔴 غير مسجل';
+                    btnRegister.style.display = '';
+                    btnUpdate.style.display = 'none';
+                    btnDelete.style.display = 'none';
+                    btnTest.style.display = 'none';
+                    notRegistered++;
+                }
+            });
+
+            const total = registered + notRegistered;
+            document.getElementById('registeredCount').textContent = registered;
+            document.getElementById('notRegisteredCount').textContent = notRegistered;
+            document.getElementById('enrollmentPercentage').textContent =
+                total > 0 ? Math.round(registered / total * 100) + '%' : '0%';
+
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+            const filterStatus = document.getElementById('filterStatus').value;
+            const filterCity = document.getElementById('filterCity').value;
+            const filterBuilding = document.getElementById('filterBuilding').value;
+            const filterFloor = document.getElementById('filterFloor').value;
+
+            const rows = document.querySelectorAll('#studentTableBody tr');
+
+            rows.forEach(function (row) {
+                const sid = row.getAttribute('data-student-id');
+                const name = row.getAttribute('data-student-name').toLowerCase();
+                const nationalId = (row.getAttribute('data-national-id') || '').toLowerCase();
+                const city = (row.getAttribute('data-city') || '').toLowerCase();
+                const building = (row.getAttribute('data-building') || '').toLowerCase();
+                const room = (row.getAttribute('data-room') || '').toLowerCase();
+                const floor = row.getAttribute('data-floor');
+                const isRegistered = enrolledSet.has(sid);
+
+                const matchesSearch = !query ||
+                    name.includes(query) ||
+                    sid.includes(query) ||
+                    nationalId.includes(query) ||
+                    room.includes(query) ||
+                    building.includes(query) ||
+                    city.includes(query);
+
+                const matchesStatus = filterStatus === 'all' ||
+                    (filterStatus === 'registered' && isRegistered) ||
+                    (filterStatus === 'notregistered' && !isRegistered);
+
+                const matchesCity = !filterCity || city === document.getElementById('filterCity').selectedOptions[0].text.toLowerCase();
+                const matchesBuilding = !filterBuilding || building === filterBuilding.toLowerCase();
+                const matchesFloor = !filterFloor || floor === filterFloor;
+
+                row.style.display = matchesSearch && matchesStatus && matchesCity && matchesBuilding && matchesFloor ? '' : 'none';
+            });
+        }
+
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('filterStatus').addEventListener('change', applyFilters);
+        document.getElementById('filterCity').addEventListener('change', applyFilters);
+        document.getElementById('filterBuilding').addEventListener('change', applyFilters);
+        document.getElementById('filterFloor').addEventListener('change', applyFilters);
+
+        function openCamera(studentID, studentName, mode) {
+            currentStudentID = studentID;
+            currentStudentName = studentName;
+            currentMode = mode;
+
+            const title = mode === 'register' ? 'تسجيل وجه الطالب' : 'تحديث وجه الطالب';
+            document.getElementById('cameraModalTitle').textContent = title + ' - ' + studentName;
+            document.getElementById('cameraPrompt').textContent = '';
+
+            const modal = new bootstrap.Modal(document.getElementById('cameraModal'));
+            modal.show();
+
+            document.getElementById('captureOverlay').style.display = 'none';
+            document.getElementById('btnStartCapture').style.display = '';
+            document.getElementById('btnStartCapture').disabled = false;
+
+            startCamera();
+        }
+
+        async function startCamera() {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480, facingMode: 'user' },
+                    audio: false
+                });
+                const video = document.getElementById('videoPreview');
+                video.srcObject = cameraStream;
+            } catch {
+                alert('تعذر الوصول إلى الكاميرا. يرجى السماح باستخدام الكاميرا.');
+            }
+        }
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(function (t) { t.stop(); });
+                cameraStream = null;
+            }
+            if (captureInterval) {
+                clearInterval(captureInterval);
+                captureInterval = null;
+            }
+            capturedFrames = [];
+            document.getElementById('videoPreview').srcObject = null;
+        }
+
+        function startCapture() {
+            capturedFrames = [];
+            const prompts = [
+                { start: 0, end: 5, text: 'انظر للأمام' },
+                { start: 5, end: 10, text: 'التفت قليلاً لليسار' },
+                { start: 10, end: 15, text: 'التفت قليلاً لليمين' }
+            ];
+            let frameIndex = 0;
+            const captureCount = totalFrames;
+
+            document.getElementById('btnStartCapture').style.display = 'none';
+            document.getElementById('captureOverlay').style.display = '';
+            document.getElementById('captureStatus').textContent = 'يتم التقاط الصور...';
+
+            const video = document.getElementById('videoPreview');
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
+
+            captureInterval = setInterval(function () {
+                if (frameIndex >= captureCount) {
+                    clearInterval(captureInterval);
+                    captureInterval = null;
+                    document.getElementById('captureStatus').textContent = 'جاري معالجة الصور...';
+                    sendFrames();
+                    return;
+                }
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, 640, 480);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                capturedFrames.push(dataUrl);
+
+                frameIndex++;
+                const pct = Math.round(frameIndex / captureCount * 100);
+                document.getElementById('captureProgressBar').style.width = pct + '%';
+
+                for (const p of prompts) {
+                    if (frameIndex > p.start && frameIndex <= p.end) {
+                        document.getElementById('cameraPrompt').textContent = p.text;
+                        break;
+                    }
+                }
+            }, 300);
+        }
+
+        async function sendFrames() {
+            try {
+                const resp = await fetch('/AdminAttendance/RegisterFace', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        studentID: String(currentStudentID),
+                        images: capturedFrames
+                    })
+                });
+
+                const data = await resp.json();
+
+                if (resp.ok) {
+                    document.getElementById('captureStatus').textContent = '✅ ' + (data.message || 'تم تسجيل الوجه بنجاح');
+                    stopCamera();
+                    setTimeout(function () {
+                        bootstrap.Modal.getInstance(document.getElementById('cameraModal')).hide();
+                        refreshEnrolledList();
+                    }, 1500);
+                } else {
+                    const errMsg = data.error || data.message || 'حدث خطأ أثناء التسجيل';
+                    document.getElementById('captureStatus').textContent = '❌ ' + errMsg;
+                    document.getElementById('captureOverlay').style.display = 'none';
+                    document.getElementById('btnStartCapture').style.display = '';
+                    alert(errMsg);
+                }
+            } catch {
+                document.getElementById('captureStatus').textContent = '❌ فشل الاتصال بالخادم';
+                document.getElementById('captureOverlay').style.display = 'none';
+                document.getElementById('btnStartCapture').style.display = '';
+                alert('فشل الاتصال بنظام التعرف');
+            }
+        }
+
+        async function deleteFace(studentID, studentName) {
+            if (!confirm('هل أنت متأكد من حذف وجه الطالب "' + studentName + '"؟')) return;
+            if (!confirm('سيتم حذف بيانات الوجه نهائياً. هل تريد المتابعة؟')) return;
+
+            try {
+                const resp = await fetch('/AdminAttendance/DeleteFace', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ studentID: String(studentID) })
+                });
+
+                const data = await resp.json();
+
+                if (resp.ok) {
+                    alert('✅ ' + (data.message || 'تم حذف الوجه بنجاح'));
+                    refreshEnrolledList();
+                } else {
+                    alert('❌ ' + (data.error || data.message || 'حدث خطأ أثناء الحذف'));
+                }
+            } catch {
+                alert('❌ فشل الاتصال بنظام التعرف');
+            }
+        }
+
+        async function testFace(studentID, studentName) {
+            const testModal = new bootstrap.Modal(document.getElementById('testModal'));
+            document.getElementById('testResultBody').innerHTML =
+                '<div class="spinner-border text-primary mb-3" role="status"></div><p>جاري فتح الكاميرا...</p>';
+            testModal.show();
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: 640, height: 480, facingMode: 'user' },
+                    audio: false
+                });
+
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.autoplay = true;
+                video.playsInline = true;
+                video.width = 640;
+                video.height = 480;
+
+                await new Promise(function (resolve) {
+                    video.onloadedmetadata = function () {
+                        video.play();
+                        setTimeout(resolve, 500);
+                    };
+                });
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 640;
+                canvas.height = 480;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0, 640, 480);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+                stream.getTracks().forEach(function (t) { t.stop(); });
+
+                document.getElementById('testResultBody').innerHTML =
+                    '<div class="spinner-border text-primary mb-3" role="status"></div><p>جاري تحليل الصورة...</p>';
+
+                const resp = await fetch('/AdminAttendance/TestFace', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: dataUrl })
+                });
+
+                const data = await resp.json();
+
+                if (data.match) {
+                    const conf = (data.confidence * 100).toFixed(1);
+                    const matchedName = data.studentID || 'طالب';
+                    document.getElementById('testResultBody').innerHTML =
+                        '<div class="display-1 text-success mb-3">✅</div>' +
+                        '<h4 class="text-success">تم التعرف</h4>' +
+                        '<p class="mb-1"><strong>الطالب:</strong> ' + matchedName + '</p>' +
+                        '<p><strong>نسبة الثقة:</strong> ' + conf + '%</p>' +
+                        '<p class="small text-muted">' + (data.message || '') + '</p>';
+                } else {
+                    document.getElementById('testResultBody').innerHTML =
+                        '<div class="display-1 text-danger mb-3">❌</div>' +
+                        '<h4 class="text-danger">لم يتم التعرف</h4>' +
+                        '<p>' + (data.message || 'لا يوجد تطابق') + '</p>';
+                }
+            } catch {
+                document.getElementById('testResultBody').innerHTML =
+                    '<div class="display-1 text-danger mb-3">⚠️</div>' +
+                    '<h4 class="text-danger">خطأ</h4><p>تعذر الوصول إلى الكاميرا أو فشل الاتصال</p>';
+            }
+        }
+
+        document.getElementById('cameraModal').addEventListener('hidden.bs.modal', function () {
+            stopCamera();
+        });
+
+        refreshEnrolledList();
+    </script>
+}

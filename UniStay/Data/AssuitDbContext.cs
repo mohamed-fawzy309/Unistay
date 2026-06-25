@@ -134,6 +134,14 @@ public partial class AssuitDbContext : DbContext
 
     public virtual DbSet<UserRole> UserRoles { get; set; }
 
+    public virtual DbSet<AttendanceSession> AttendanceSessions { get; set; }
+
+    public virtual DbSet<AttendanceLog> AttendanceLogs { get; set; }
+
+    public virtual DbSet<AttendanceSetting> AttendanceSettings { get; set; }
+
+    public virtual DbSet<AttendanceApiLog> AttendanceApiLogs { get; set; }
+
     
    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -1760,6 +1768,83 @@ public partial class AssuitDbContext : DbContext
             entity.HasOne(d => d.AssignedByNavigation).WithMany(p => p.UserRoleAssignedByNavigations)
                 .HasForeignKey(d => d.AssignedBy)
                 .HasConstraintName("FK_UserRole_AssignedBy");
+        });
+
+        modelBuilder.Entity<AttendanceSession>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__AttendanceSession__3214EC27");
+
+            entity.ToTable("AttendanceSession");
+
+            entity.Property(e => e.SessionName).HasMaxLength(200);
+            entity.Property(e => e.StartedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+            entity.HasIndex(e => e.StartedAt, "IX_AttendanceSession_StartedAt");
+        });
+
+        modelBuilder.Entity<AttendanceLog>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__AttendanceLog__3214EC27");
+
+            entity.ToTable("AttendanceLog");
+
+            entity.HasIndex(e => new { e.StudentID, e.SessionID }, "UQ_AttendanceLog_StudentSession").IsUnique();
+
+            entity.HasIndex(e => e.RecognizedAt, "IX_AttendanceLog_RecognizedAt");
+
+            entity.Property(e => e.Confidence).HasColumnType("decimal(5, 4)");
+            entity.Property(e => e.RecognizedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.AttendanceSession).WithMany(p => p.AttendanceLogs)
+                .HasForeignKey(d => d.SessionID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AttendanceLog_AttendanceSession");
+
+            entity.HasOne(d => d.Student).WithMany()
+                .HasForeignKey(d => d.StudentID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AttendanceLog_Student");
+        });
+
+        modelBuilder.Entity<AttendanceSetting>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__AttendanceSetting__3214EC27");
+
+            entity.ToTable("AttendanceSetting");
+
+            entity.Property(e => e.StartTime).HasColumnType("time");
+            entity.Property(e => e.EndTime).HasColumnType("time");
+            entity.Property(e => e.ConfidenceThreshold).HasColumnType("decimal(5, 4)");
+            entity.Property(e => e.IsEnabled).HasDefaultValue(true);
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasData(new AttendanceSetting
+            {
+                ID = 1,
+                StartTime = new TimeOnly(23, 0),
+                EndTime = new TimeOnly(4, 0),
+                ConfidenceThreshold = 0.85m,
+                IsEnabled = true,
+                UpdatedAt = null
+            });
+        });
+
+        modelBuilder.Entity<AttendanceApiLog>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__AttendanceApiLog__3214EC27");
+
+            entity.ToTable("AttendanceApiLog");
+
+            entity.Property(e => e.Status).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.Message).HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasIndex(e => e.CreatedAt, "IX_AttendanceApiLog_CreatedAt");
+
+            entity.HasOne(d => d.Student).WithMany()
+                .HasForeignKey(d => d.StudentID)
+                .HasConstraintName("FK_AttendanceApiLog_Student");
         });
 
         OnModelCreatingPartial(modelBuilder);
