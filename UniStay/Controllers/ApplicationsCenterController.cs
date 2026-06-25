@@ -467,14 +467,6 @@ public class ApplicationsCenterController : Controller
                 BedNumber = app.Allocation.BedNumber,
                 Status = app.Allocation.Status
             } : null,
-            Documents = app.Documents.Select(d => new DocumentInfoViewModel
-            {
-                ID = d.ID,
-                DocumentType = d.DocumentType,
-                FileName = d.FileName,
-                IsVerified = d.IsVerified,
-                UploadedAt = d.UploadedAt
-            }).ToList(),
             Guardians = app.Student?.Guardians.Select(g => new GuardianInfoViewModel
             {
                 FullName = g.FullName,
