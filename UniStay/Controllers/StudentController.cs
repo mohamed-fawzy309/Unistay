@@ -7,6 +7,7 @@ using UniStay.Helpers;
 using UniStay.Models;
 using UniStay.Services.Interfaces;
 using UniStay.ViewModels.Application;
+using UniStay.ViewModels.Attendance;
 
 namespace UniStay.Controllers
 {
@@ -631,6 +632,80 @@ namespace UniStay.Controllers
 
             ViewBag.Absences = absences;
             return View(announcements);
+        }
+
+        // GET: /Student/Attendance
+        [HttpGet]
+        public async Task<IActionResult> AttendanceHistory()
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
+
+            var now = DateTime.Now;
+            var today = now.Date;
+            var startOfMonth = new DateTime(now.Year, now.Month, 1);
+            var thirtyDaysAgo = now.AddDays(-30).Date;
+
+            var todayLog = await _context.AttendanceLogs
+                .Where(l => l.StudentID == studentId.Value
+                    && l.RecognizedAt.HasValue
+                    && l.RecognizedAt.Value.Date == today)
+                .OrderByDescending(l => l.RecognizedAt)
+                .FirstOrDefaultAsync();
+
+            var presentDaysThisMonth = await _context.AttendanceLogs
+                .Where(l => l.StudentID == studentId.Value
+                    && l.RecognizedAt.HasValue
+                    && l.RecognizedAt.Value.Date >= startOfMonth
+                    && l.RecognizedAt.Value.Date <= today)
+                .Select(l => l.RecognizedAt!.Value.Date)
+                .Distinct()
+                .CountAsync();
+
+            var totalSessionDaysThisMonth = await _context.AttendanceSessions
+                .Where(s => s.StartedAt.HasValue
+                    && s.StartedAt.Value.Date >= startOfMonth
+                    && s.StartedAt.Value.Date <= today)
+                .Select(s => s.StartedAt!.Value.Date)
+                .Distinct()
+                .CountAsync();
+
+            var logs30 = await _context.AttendanceLogs
+                .Where(l => l.StudentID == studentId.Value
+                    && l.RecognizedAt.HasValue
+                    && l.RecognizedAt.Value.Date >= thirtyDaysAgo)
+                .Select(l => new { l.RecognizedAt!.Value.Date, l.RecognizedAt!.Value })
+                .ToListAsync();
+
+            var logMap = logs30
+                .GroupBy(x => x.Date)
+                .ToDictionary(g => g.Key, g => g.First().Value);
+
+            var historyItems = new List<AttendanceHistoryItemViewModel>();
+            for (var date = thirtyDaysAgo; date <= today; date = date.AddDays(1))
+            {
+                var hasLog = logMap.TryGetValue(date, out var time);
+                historyItems.Add(new AttendanceHistoryItemViewModel
+                {
+                    Date = date,
+                    Status = hasLog ? "حاضر" : "غائب",
+                    RecognitionTime = hasLog ? time : null
+                });
+            }
+
+            var vm = new StudentAttendanceHistoryViewModel
+            {
+                IsPresentToday = todayLog != null,
+                TodayRecognitionTime = todayLog?.RecognizedAt,
+                PresentDaysThisMonth = presentDaysThisMonth,
+                TotalSessionDaysThisMonth = totalSessionDaysThisMonth,
+                AttendancePercentage = totalSessionDaysThisMonth > 0
+                    ? Math.Round((decimal)presentDaysThisMonth / totalSessionDaysThisMonth * 100, 1)
+                    : 0,
+                HistoryItems = historyItems.OrderByDescending(h => h.Date).ToList()
+            };
+
+            return View(vm);
         }
 
         private async Task EnsureMonthlyFees(Allocation alloc)

@@ -132,3 +132,11 @@ wwwroot/reports/
 
 ## Optional compiled Tailwind
 wwwroot/css/output.css
+
+
+# =========================
+# Python / Face Recognition
+# =========================
+UniStay.FaceRecognition/.venv/
+UniStay.FaceRecognition/__pycache__/
+UniStay.FaceRecognition/*.pyc

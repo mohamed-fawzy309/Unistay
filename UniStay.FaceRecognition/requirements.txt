@@ -1,0 +1,6 @@
+numpy
+opencv-python
+Pillow
+flask
+requests
+tk    # on some systems tkinter is builtin; keep here for clarity

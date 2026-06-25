@@ -407,6 +407,42 @@
                     </div>
                 </li>
 
+                <!-- ===== نظام الحضور ===== -->
+                <li class="nav-item">
+                    <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuAttendance" role="button">
+                        <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> نظام الحضور
+                    </div>
+                    <div class="collapse" id="menuAttendance">
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="AdminAttendance" asp-action="Index">
+                                    <i class="bi bi-speedometer2"></i> لوحة الحضور
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="AdminAttendance" asp-action="Enrollment">
+                                    <i class="bi bi-person-badge"></i> تسجيل الوجوه
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="AdminAttendance" asp-action="DailyReport">
+                                    <i class="bi bi-file-earmark-text"></i> تقرير يومي
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="AdminAttendance" asp-action="MonthlyReport">
+                                    <i class="bi bi-file-earmark-bar-graph"></i> تقرير شهري
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="AdminAttendance" asp-action="Monitoring">
+                                    <i class="bi bi-activity"></i> مراقبة API
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+
                 <!-- ===== الجزاءات والغياب ===== -->
                 <li class="nav-item">
                     <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuDiscipline" role="button">
