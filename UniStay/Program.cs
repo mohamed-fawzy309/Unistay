@@ -34,6 +34,7 @@ builder.Services.AddAntiforgery(options =>
         ? Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest
         : Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
     options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+    options.HeaderName = "X-CSRF-TOKEN";
 });
 
 // ===== HttpClient =====

@@ -119,6 +119,23 @@ public class SocialCasesController : Controller
         return View(new SocialCaseCreateVM());
     }
 
+    [HttpGet]
+    public async Task<IActionResult> SearchStudents(string term)
+    {
+        if (string.IsNullOrWhiteSpace(term) || term.Length < 2)
+            return Json(new List<object>());
+
+        var results = await _db.Students
+            .Where(s => s.FullName.Contains(term) ||
+                        s.StudentCode.Contains(term) ||
+                        (s.NationalID != null && s.NationalID.Contains(term)))
+            .Take(10)
+            .Select(s => new { id = s.ID, name = s.FullName, code = s.StudentCode, nationalId = s.NationalID })
+            .ToListAsync();
+
+        return Json(results);
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(SocialCaseCreateVM vm)

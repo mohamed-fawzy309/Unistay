@@ -10,6 +10,7 @@ using UniStay.ViewModels.Permissions;
 namespace UniStay.Controllers
 {
     [Route("Permissions")]
+    [IgnoreAntiforgeryToken]
     [AdminAuthorize]
     public class PermissionsController : Controller
     {
@@ -31,6 +32,13 @@ namespace UniStay.Controllers
             _emailService = emailService;
             _auditService = auditService;
             _permissionService = permissionService;
+        }
+
+        [HttpGet("")]
+        [HttpGet("Index")]
+        public IActionResult Index()
+        {
+            return RedirectToAction(nameof(Users));
         }
 
         private int CurrentUserID()
@@ -140,7 +148,6 @@ namespace UniStay.Controllers
         }
 
         [HttpPost("Users")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanCreate")]
         public async Task<IActionResult> Users(CreateUserViewModel model)
         {
@@ -261,7 +268,6 @@ namespace UniStay.Controllers
 
         // AJAX — تفعيل/تعطيل
         [HttpPost("ToggleActive")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> ToggleActive(int id)
         {
@@ -293,7 +299,6 @@ namespace UniStay.Controllers
 
         // AJAX — إعادة تعيين كلمة المرور
         [HttpPost("ResetPassword")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> ResetPassword(int id)
         {
@@ -325,7 +330,6 @@ namespace UniStay.Controllers
 
         // AJAX — حذف ناعم
         [HttpPost("DeleteUser")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanDelete")]
         public async Task<IActionResult> DeleteUser(int id)
         {
@@ -378,7 +382,6 @@ namespace UniStay.Controllers
         }
 
         [HttpPost("CreateRole")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("Roles.Manage", "CanCreate")]
         public async Task<IActionResult> CreateRole(CreateRoleViewModel model)
         {
@@ -413,7 +416,6 @@ namespace UniStay.Controllers
         }
 
         [HttpPost("EditRole")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("Roles.Manage", "CanEdit")]
         public async Task<IActionResult> EditRole(EditRoleViewModel model)
         {
@@ -445,7 +447,6 @@ namespace UniStay.Controllers
         }
 
         [HttpPost("DeleteRole")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("Roles.Manage", "CanDelete")]
         public async Task<IActionResult> DeleteRole(int id)
         {
@@ -514,7 +515,6 @@ namespace UniStay.Controllers
         }
 
         [HttpPost("RolePermissions")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("Roles.Manage", "CanEdit")]
         public async Task<IActionResult> RolePermissions([FromBody] SaveRolePermissionsRequest request)
         {
@@ -679,7 +679,6 @@ namespace UniStay.Controllers
         }
 
         [HttpPost("Edit")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> Edit(EditUserViewModel model)
         {
@@ -934,7 +933,6 @@ namespace UniStay.Controllers
 
         // حفظ الصلاحيات — AJAX/JSON body
         [HttpPost("Assign")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("Permissions.Manage", "CanCreate")]
         public async Task<IActionResult> Assign([FromBody] SavePermissionsRequest request)
         {
@@ -1002,7 +1000,6 @@ namespace UniStay.Controllers
 
         // تعيين دور في مدينة
         [HttpPost("AssignCityRole")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> AssignCityRole(AssignCityRoleViewModel model)
         {
@@ -1060,7 +1057,6 @@ namespace UniStay.Controllers
 
         // إزالة دور من مدينة — AJAX
         [HttpPost("RemoveCityRole")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> RemoveCityRole(int cityStaffId, int userId)
         {
@@ -1137,7 +1133,6 @@ namespace UniStay.Controllers
         }
 
         [HttpPost("DataScopes")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> DataScopes(AddDataScopeViewModel model)
         {
@@ -1195,7 +1190,6 @@ namespace UniStay.Controllers
 
         // إزالة نطاق — AJAX
         [HttpPost("RemoveDataScope")]
-        [ValidateAntiForgeryToken]
         [RequirePermission("SystemUsers.Manage", "CanEdit")]
         public async Task<IActionResult> RemoveDataScope(int dataScopeId, int userId)
         {

@@ -6,30 +6,211 @@
 <div class="container-fluid" dir="rtl">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0"><i class="bi bi-card-list"></i> بيان حالة الطالب</h4>
-        <div>
-            <a asp-action="Print" asp-route-id="@Model.StudentId" class="btn btn-secondary btn-sm" target="_blank"><i class="bi bi-printer"></i> طباعة</a>
-            <a asp-action="Details" asp-route-id="@Model.StudentId" class="btn btn-outline-info btn-sm"><i class="bi bi-person-vcard"></i> بيانات أساسية</a>
-            <a asp-action="Index" class="btn btn-outline-dark btn-sm"><i class="bi bi-arrow-right"></i> عودة</a>
+        <div class="d-flex gap-2">
+            <a asp-action="Print" asp-route-id="@Model.StudentId" class="btn btn-secondary btn-sm" target="_blank">
+                <i class="bi bi-printer"></i> طباعة
+            </a>
+            <a asp-action="Details" asp-route-id="@Model.StudentId" class="btn btn-outline-info btn-sm">
+                <i class="bi bi-person-vcard"></i> بيانات أساسية
+            </a>
+            <a asp-action="Index" class="btn btn-outline-dark btn-sm">
+                <i class="bi bi-arrow-right"></i> عودة
+            </a>
         </div>
+    </div>
+
+    @* ═══ بطاقة الطالب ═══ *@
+    <div class="card shadow-sm mb-4 border-0" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);color:white">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center fw-bold fs-3"
+                         style="width:60px;height:60px">
+                        @(Model.StudentName?.FirstOrDefault() ?? '؟')
+                    </div>
+                </div>
+                <div class="col">
+                    <h5 class="mb-1 fw-bold">@Model.StudentName</h5>
+                    <small class="opacity-75">@Model.StudentCode</small>
+                    <span class="badge ms-2 @(Model.IsActive ? "bg-success" : "bg-danger")">
+                        @(Model.IsActive ? "نشط" : "غير نشط")
+                    </span>
+                </div>
+                <div class="col-auto d-flex gap-3 text-center">
+                    <div><div class="fs-4 fw-bold">@Model.TotalAllocations</div><small class="opacity-75">سكن</small></div>
+                    <div><div class="fs-4 fw-bold">@Model.TotalPayments</div><small class="opacity-75">مدفوعات</small></div>
+                    <div><div class="fs-4 fw-bold">@Model.TotalViolations</div><small class="opacity-75">مخالفات</small></div>
+                    <div><div class="fs-4 fw-bold">@Model.TotalAbsences</div><small class="opacity-75">غيابات</small></div>
+                    <div><div class="fs-4 fw-bold">@Model.TotalMeals</div><small class="opacity-75">وجبات</small></div>
+                </div>
             </div>
-            <div class="tab-pane fade" id="meal" role="tabpanel">
-            <div class="card shadow-sm">
+        </div>
+    </div>
+
+    @* ═══ Tabs ═══ *@
+    <ul class="nav nav-tabs mb-3" id="statusTabs">
+        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#allocations"><i class="bi bi-house-door me-1"></i>السكن (@Model.TotalAllocations)</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#payments"><i class="bi bi-credit-card me-1"></i>المدفوعات (@Model.TotalPayments)</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#violations"><i class="bi bi-exclamation-triangle me-1"></i>المخالفات (@Model.TotalViolations)</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#absences"><i class="bi bi-calendar-x me-1"></i>الغيابات (@Model.TotalAbsences)</a></li>
+        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#meals"><i class="bi bi-egg-fried me-1"></i>الوجبات (@Model.TotalMeals)</a></li>
+    </ul>
+
+    <div class="tab-content">
+
+        @* ── السكن ── *@
+        <div class="tab-pane fade show active" id="allocations">
+            <div class="card shadow-sm border-0">
                 <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
-                        <thead>
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr><th>المبنى</th><th>الغرفة</th><th>السرير</th><th>السنة</th><th>من</th><th>إلى</th><th>الحالة</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in Model.Allocations)
+                            {
+                                <tr>
+                                    <td>@(a.BuildingName ?? "—")</td>
+                                    <td>@(a.RoomNumber ?? "—")</td>
+                                    <td>@(a.BedNumber > 0 ? a.BedNumber.ToString() : "—")</td>
+                                    <td>@(a.AcademicYear ?? "—")</td>
+                                    <td>@(a.StartDate.HasValue? a.StartDate.Value.ToString("yyyy/MM/dd") : "—")</td>
+                                    <td>@(a.EndDate.HasValue? a.EndDate.Value.ToString("yyyy/MM/dd") : "—")</td>
+                                    <td><span class="badge @(a.Status == "Active" ? "bg-success" : "bg-secondary")">@(a.Status ?? "—")</span></td>
+                                </tr>
+                            }
+                            @if (!Model.Allocations.Any())
+                            {
+                                <tr><td colspan="7" class="text-center text-muted py-3">لا توجد سجلات سكن</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        @* ── المدفوعات ── *@
+        <div class="tab-pane fade" id="payments">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr><th>النوع</th><th>المبلغ</th><th>المدفوع</th><th>التاريخ</th><th>الحالة</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in Model.Payments)
+                            {
+                                <tr>
+                                    <td>@(p.PaymentType ?? "—")</td>
+                                    <td>@p.Amount.ToString("N0") ج.م</td>
+                                    <td>@p.PaidAmount.ToString("N0") ج.م</td>
+                                    <td>@(p.PaymentDate.HasValue? p.PaymentDate.Value.ToString("yyyy/MM/dd") : "—")</td>
+                                    <td><span class="badge @(p.Status == "Completed" ? "bg-success" : p.Status == "Pending" ? "bg-warning text-dark" : "bg-secondary")">@(p.Status ?? "—")</span></td>
+                                </tr>
+                            }
+                            @if (!Model.Payments.Any())
+                            {
+                                <tr><td colspan="5" class="text-center text-muted py-3">لا توجد مدفوعات</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (Model.Payments.Any())
+                {
+                    <div class="card-footer text-muted text-end">
+                        إجمالي المدفوع: <strong class="text-success">@Model.TotalPaid.ToString("N0") ج.م</strong>
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* ── المخالفات ── *@
+        <div class="tab-pane fade" id="violations">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr><th>النوع</th><th>الوصف</th><th>الخطورة</th><th>التاريخ</th><th>الحالة</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var v in Model.Violations)
+                            {
+                                <tr>
+                                    <td>@(v.ViolationType ?? "—")</td>
+                                    <td>@(v.Description ?? "—")</td>
+                                    <td>
+                                        <span class="badge @(v.Severity == "High" ? "bg-danger" : v.Severity == "Medium" ? "bg-warning text-dark" : "bg-info")">
+                                            @(v.Severity ?? "—")
+                                        </span>
+                                    </td>
+                                    <td>@(v.ViolationDate.HasValue? v.ViolationDate.Value.ToString("yyyy/MM/dd") : "—")</td>
+                                    <td><span class="badge bg-secondary">@(v.Status ?? "—")</span></td>
+                                </tr>
+                            }
+                            @if (!Model.Violations.Any())
+                            {
+                                <tr><td colspan="5" class="text-center text-muted py-3">لا توجد مخالفات</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        @* ── الغيابات ── *@
+        <div class="tab-pane fade" id="absences">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr><th>النوع</th><th>من</th><th>إلى</th><th>السبب</th><th>الحالة</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in Model.Absences)
+                            {
+                                <tr>
+                                    <td>@(a.AbsenceType ?? "—")</td>
+                                    <td>@a.AbsenceDate.ToString("yyyy/MM/dd")</td>
+                                    <td>@(a.ToDate.HasValue? a.ToDate.Value.ToString("yyyy/MM/dd") : "—")</td>
+                                    <td>@(a.Reason ?? "—")</td>
+                                    <td><span class="badge bg-secondary">@(a.Status ?? "—")</span></td>
+                                </tr>
+                            }
+                            @if (!Model.Absences.Any())
+                            {
+                                <tr><td colspan="5" class="text-center text-muted py-3">لا توجد غيابات</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        @* ── الوجبات ── *@
+        <div class="tab-pane fade" id="meals">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
                             <tr><th>النوع</th><th>التاريخ</th></tr>
                         </thead>
                         <tbody>
                             @foreach (var m in Model.Meals)
                             {
                                 <tr>
-                                    <td>@m.MealType</td><td>@m.MealDate.ToString("yyyy/MM/dd")</td>
+                                    <td>@m.MealType</td>
+                                    <td>@m.MealDate.ToString("yyyy/MM/dd")</td>
                                 </tr>
                             }
-                            @if (!Model.Meals.Any()) { <tr><td colspan="2" class="text-center text-muted">لا توجد سجلات</td></tr> }
+                            @if (!Model.Meals.Any())
+                            {
+                                <tr><td colspan="2" class="text-center text-muted py-3">لا توجد سجلات وجبات</td></tr>
+                            }
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
+
+    </div>
 </div>
