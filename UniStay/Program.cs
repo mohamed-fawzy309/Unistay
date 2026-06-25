@@ -37,6 +37,7 @@ builder.Services.AddAntiforgery(options =>
 });
 
 // ===== HttpClient =====
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<IUniversityApiService, UniversityApiService>();
 
 // ===== QuestPDF License =====

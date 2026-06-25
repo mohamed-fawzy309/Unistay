@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UniStay.Data;
 
@@ -11,9 +12,11 @@ using UniStay.Data;
 namespace UniStay.Migrations
 {
     [DbContext(typeof(AssuitDbContext))]
-    partial class AssuitDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624130653_addtables")]
+    partial class addtables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -510,153 +513,6 @@ namespace UniStay.Migrations
                     b.HasKey("ID");
 
                     b.ToTable("ApplicationTypes");
-                });
-
-            modelBuilder.Entity("UniStay.Models.AttendanceApiLog", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.Property<string>("Message")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Status")
-                        .HasMaxLength(50)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<int?>("StudentID")
-                        .HasColumnType("int");
-
-                    b.HasKey("ID")
-                        .HasName("PK__AttendanceApiLog__3214EC27");
-
-                    b.HasIndex("StudentID");
-
-                    b.HasIndex(new[] { "CreatedAt" }, "IX_AttendanceApiLog_CreatedAt");
-
-                    b.ToTable("AttendanceApiLog", (string)null);
-                });
-
-            modelBuilder.Entity("UniStay.Models.AttendanceLog", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<decimal?>("Confidence")
-                        .HasColumnType("decimal(5, 4)");
-
-                    b.Property<DateTime?>("RecognizedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.Property<int>("SessionID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StudentID")
-                        .HasColumnType("int");
-
-                    b.HasKey("ID")
-                        .HasName("PK__AttendanceLog__3214EC27");
-
-                    b.HasIndex("SessionID");
-
-                    b.HasIndex(new[] { "RecognizedAt" }, "IX_AttendanceLog_RecognizedAt");
-
-                    b.HasIndex(new[] { "StudentID", "SessionID" }, "UQ_AttendanceLog_StudentSession")
-                        .IsUnique();
-
-                    b.ToTable("AttendanceLog", (string)null);
-                });
-
-            modelBuilder.Entity("UniStay.Models.AttendanceSession", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<DateTime?>("EndedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool?>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("SessionName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("StartedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.HasKey("ID")
-                        .HasName("PK__AttendanceSession__3214EC27");
-
-                    b.HasIndex(new[] { "StartedAt" }, "IX_AttendanceSession_StartedAt");
-
-                    b.ToTable("AttendanceSession", (string)null);
-                });
-
-            modelBuilder.Entity("UniStay.Models.AttendanceSetting", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<decimal?>("ConfidenceThreshold")
-                        .HasColumnType("decimal(5, 4)");
-
-                    b.Property<TimeOnly>("EndTime")
-                        .HasColumnType("time");
-
-                    b.Property<bool?>("IsEnabled")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<TimeOnly>("StartTime")
-                        .HasColumnType("time");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.HasKey("ID")
-                        .HasName("PK__AttendanceSetting__3214EC27");
-
-                    b.ToTable("AttendanceSetting", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            ID = 1,
-                            ConfidenceThreshold = 0.85m,
-                            EndTime = new TimeOnly(4, 0, 0),
-                            IsEnabled = true,
-                            StartTime = new TimeOnly(23, 0, 0)
-                        });
                 });
 
             modelBuilder.Entity("UniStay.Models.AuditLog", b =>
@@ -3789,35 +3645,6 @@ namespace UniStay.Migrations
                     b.Navigation("DormitoryCity");
                 });
 
-            modelBuilder.Entity("UniStay.Models.AttendanceApiLog", b =>
-                {
-                    b.HasOne("UniStay.Models.Student", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentID")
-                        .HasConstraintName("FK_AttendanceApiLog_Student");
-
-                    b.Navigation("Student");
-                });
-
-            modelBuilder.Entity("UniStay.Models.AttendanceLog", b =>
-                {
-                    b.HasOne("UniStay.Models.AttendanceSession", "AttendanceSession")
-                        .WithMany("AttendanceLogs")
-                        .HasForeignKey("SessionID")
-                        .IsRequired()
-                        .HasConstraintName("FK_AttendanceLog_AttendanceSession");
-
-                    b.HasOne("UniStay.Models.Student", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentID")
-                        .IsRequired()
-                        .HasConstraintName("FK_AttendanceLog_Student");
-
-                    b.Navigation("AttendanceSession");
-
-                    b.Navigation("Student");
-                });
-
             modelBuilder.Entity("UniStay.Models.BulkOperationLog", b =>
                 {
                     b.HasOne("UniStay.Models.SystemUser", "CreatedByNavigation")
@@ -4762,11 +4589,6 @@ namespace UniStay.Migrations
                     b.Navigation("Payments");
 
                     b.Navigation("SpecialCases");
-                });
-
-            modelBuilder.Entity("UniStay.Models.AttendanceSession", b =>
-                {
-                    b.Navigation("AttendanceLogs");
                 });
 
             modelBuilder.Entity("UniStay.Models.CityBuilding", b =>

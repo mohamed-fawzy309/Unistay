@@ -1,0 +1,280 @@
+@model UniStay.ViewModels.Attendance.AttendanceDashboardViewModel
+@{
+    ViewData["Title"] = "إدارة الحضور";
+    var setting = ViewBag.Setting as UniStay.Models.AttendanceSetting;
+    var dashStats = ViewBag.DashboardStats as UniStay.ViewModels.Attendance.AttendanceDashboardStatsViewModel;
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">إدارة الحضور</h2>
+    <div class="d-flex gap-2">
+        <a asp-action="DailyReport" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-earmark-text"></i> تقرير يومي</a>
+        <a asp-action="MonthlyReport" class="btn btn-outline-primary btn-sm"><i class="bi bi-file-earmark-bar-graph"></i> تقرير شهري</a>
+        <a asp-action="Monitoring" class="btn btn-outline-info btn-sm"><i class="bi bi-activity"></i> مراقبة API</a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-primary-subtle text-primary rounded-circle mx-auto mb-2">
+                    <i class="bi bi-person-check fs-4"></i>
+                </div>
+                <h6 class="text-muted small">الحاضرون</h6>
+                <h3 class="mb-0 fw-bold text-primary">@Model.PresentCount</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-danger-subtle text-danger rounded-circle mx-auto mb-2">
+                    <i class="bi bi-person-x fs-4"></i>
+                </div>
+                <h6 class="text-muted small">الغائبون</h6>
+                <h3 class="mb-0 fw-bold text-danger">@Model.AbsentCount</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-success-subtle text-success rounded-circle mx-auto mb-2">
+                    <i class="bi bi-graph-up fs-4"></i>
+                </div>
+                <h6 class="text-muted small">نسبة الحضور</h6>
+                <h3 class="mb-0 fw-bold text-success">@Model.AttendancePercentage%</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm stat-card">
+            <div class="card-body text-center">
+                <div class="stat-icon bg-warning-subtle text-warning rounded-circle mx-auto mb-2">
+                    <i class="bi bi-play-circle fs-4"></i>
+                </div>
+                <h6 class="text-muted small">الجلسة النشطة</h6>
+                <h3 class="mb-0 fw-bold text-warning" id="activeSessionText">@(Model.ActiveSession ?? "لا توجد")</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (dashStats != null)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-4 col-6">
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body text-center py-2">
+                    <small class="text-muted">تعرف ناجح (API)</small>
+                    <h5 class="mb-0 fw-bold text-success">@dashStats.RecognitionSuccessCount</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-6">
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body text-center py-2">
+                    <small class="text-muted">محاولات مكررة</small>
+                    <h5 class="mb-0 fw-bold text-warning">@dashStats.DuplicateAttemptsCount</h5>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-6">
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body text-center py-2">
+                    <small class="text-muted">فشل API</small>
+                    <h5 class="mb-0 fw-bold text-danger">@dashStats.ApiFailuresCount</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <span class="fw-bold">التحكم في الجلسة</span>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2">
+                    <button id="btnStartSession" class="btn btn-success">
+                        <i class="bi bi-play-fill"></i> بدء الجلسة
+                    </button>
+                    <button id="btnStopSession" class="btn btn-danger">
+                        <i class="bi bi-stop-fill"></i> إيقاف الجلسة
+                    </button>
+                </div>
+                <div id="sessionMessage" class="mt-2 small"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <span class="fw-bold">إعدادات الحضور</span>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="UpdateSettings">
+                    @Html.AntiForgeryToken()
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small">وقت البداية</label>
+                            <input type="time" name="startTime" class="form-control" value="@(setting?.StartTime.ToString("HH:mm") ?? "23:00")">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">وقت النهاية</label>
+                            <input type="time" name="endTime" class="form-control" value="@(setting?.EndTime.ToString("HH:mm") ?? "04:00")">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">حد الثقة</label>
+                            <input type="number" name="confidenceThreshold" class="form-control" step="0.01" min="0" max="1" value="@(setting?.ConfidenceThreshold ?? 0.85m)">
+                        </div>
+                        <div class="col-md-12 mt-2">
+                            <div class="form-check">
+                                <input type="checkbox" name="isEnabled" class="form-check-input" value="true" checked="@(setting?.IsEnabled ?? true)">
+                                <label class="form-check-label">تفعيل نظام الحضور</label>
+                            </div>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> حفظ الإعدادات</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+        <span class="fw-bold">سجل الحضور</span>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-3">
+                <label class="form-label small">التاريخ</label>
+                <input type="date" name="date" class="form-control" value="@ViewBag.FilterDate.ToString("yyyy-MM-dd")" onchange="this.form.submit()">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">اسم الطالب</label>
+                <input type="text" name="studentName" class="form-control" value="@ViewBag.FilterStudentName" placeholder="بحث بالاسم">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> بحث</button>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <a asp-action="Index" class="btn btn-secondary w-100">إعادة تعيين</a>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>الطالب</th>
+                        <th>رقم الغرفة</th>
+                        <th>وقت التسجيل</th>
+                        <th>نسبة الثقة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.TodayRecords.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">لا توجد سجلات حضور لهذا اليوم</td>
+                        </tr>
+                    }
+                    @foreach (var item in Model.TodayRecords.Select((record, index) => new { record, index }))
+                    {
+                        <tr>
+                            <td>@(item.index + 1)</td>
+                            <td>@item.record.StudentName</td>
+                            <td>@item.record.RoomNumber</td>
+                            <td>@item.record.RecognizedAt.ToString("HH:mm:ss")</td>
+                            <td>
+                                <span class="badge @(item.record.Confidence >= 0.8m ? "bg-success" : item.record.Confidence >= 0.6m ? "bg-warning text-dark" : "bg-danger")">
+                                    @(item.record.Confidence?.ToString("P1") ?? "N/A")
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function showSessionMessage(text, type) {
+            const el = document.getElementById('sessionMessage');
+            el.textContent = text;
+            el.className = 'mt-2 small text-' + type;
+        }
+
+        document.getElementById('btnStartSession').addEventListener('click', function () {
+            const btn = this;
+            btn.disabled = true;
+            const now = new Date();
+            const sessionName = 'جلسة - ' + now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0') + ' ' +
+                String(now.getHours()).padStart(2, '0') + ':' +
+                String(now.getMinutes()).padStart(2, '0');
+
+            fetch('/AdminAttendance/StartSessionAjax', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionName: sessionName })
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.message) {
+                    showSessionMessage(data.message, 'success');
+                    document.getElementById('activeSessionText').textContent = sessionName;
+                }
+            })
+            .catch(function () {
+                showSessionMessage('فشل الاتصال بالخادم', 'danger');
+            })
+            .finally(function () {
+                btn.disabled = false;
+            });
+        });
+
+        document.getElementById('btnStopSession').addEventListener('click', function () {
+            const btn = this;
+            btn.disabled = true;
+
+            fetch('/AdminAttendance/StopSessionAjax', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.message) {
+                    showSessionMessage(data.message, 'success');
+                    document.getElementById('activeSessionText').textContent = 'لا توجد';
+                }
+            })
+            .catch(function () {
+                showSessionMessage('فشل الاتصال بالخادم', 'danger');
+            })
+            .finally(function () {
+                btn.disabled = false;
+            });
+        });
+    </script>
+}

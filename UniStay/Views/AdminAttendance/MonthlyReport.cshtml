@@ -1,0 +1,99 @@
+@model UniStay.ViewModels.Attendance.MonthlyReportViewModel
+@{
+    ViewData["Title"] = "التقرير الشهري";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">التقرير الشهري</h2>
+    <div class="d-flex gap-2">
+        <a asp-action="MonthlyReportExportExcel" asp-route-month="@Model.FilterMonth" asp-route-year="@Model.FilterYear" asp-route-studentName="@Model.FilterStudentName" class="btn btn-success btn-sm"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+        <a asp-action="MonthlyReportExportPdf" asp-route-month="@Model.FilterMonth" asp-route-year="@Model.FilterYear" asp-route-studentName="@Model.FilterStudentName" class="btn btn-danger btn-sm"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+        <a asp-action="Index" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-right"></i> العودة</a>
+    </div>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-info bg-opacity-10 text-center py-2">
+            <small class="text-muted">إجمالي أيام الجلسات</small>
+            <h5 class="mb-0 fw-bold text-info">@Model.TotalSessionDays</h5>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm bg-success bg-opacity-10 text-center py-2">
+            <small class="text-muted">متوسط نسبة الحضور</small>
+            <h5 class="mb-0 fw-bold text-success">@Model.AverageAttendancePercentage%</h5>
+        </div>
+    </div>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2">
+        <label class="form-label small">الشهر</label>
+        <select name="month" class="form-select">
+            @foreach (var m in ViewBag.Months)
+            {
+                <option value="@m.Value" selected="@(Model.FilterMonth == m.Value)">@m.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small">السنة</label>
+        <select name="year" class="form-select">
+            @foreach (var y in ViewBag.Years)
+            {
+                <option value="@y" selected="@(Model.FilterYear == y)">@y</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small">اسم الطالب</label>
+        <input type="text" name="studentName" class="form-control" value="@Model.FilterStudentName" placeholder="بحث بالاسم">
+    </div>
+    <div class="col-md-2 d-flex align-items-end gap-1">
+        <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> بحث</button>
+        <a asp-action="MonthlyReport" class="btn btn-secondary w-100">إعادة</a>
+    </div>
+</form>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>الطالب</th>
+                        <th>رقم الغرفة</th>
+                        <th>أيام الحضور</th>
+                        <th>إجمالي الأيام</th>
+                        <th>النسبة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Rows.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">لا توجد بيانات</td>
+                        </tr>
+                    }
+                    @foreach (var item in Model.Rows.Select((r, i) => new { r, i }))
+                    {
+                        <tr class="@(item.r.Percentage < 50 ? "table-danger" : item.r.Percentage < 75 ? "table-warning" : "")">
+                            <td>@(item.i + 1)</td>
+                            <td>@item.r.StudentName</td>
+                            <td>@item.r.RoomNumber</td>
+                            <td>@item.r.PresentDays</td>
+                            <td>@item.r.TotalDays</td>
+                            <td>
+                                <span class="badge @(item.r.Percentage >= 75 ? "bg-success" : item.r.Percentage >= 50 ? "bg-warning text-dark" : "bg-danger")">
+                                    @item.r.Percentage%
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

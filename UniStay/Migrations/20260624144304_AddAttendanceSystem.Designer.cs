@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UniStay.Data;
 
@@ -11,9 +12,11 @@ using UniStay.Data;
 namespace UniStay.Migrations
 {
     [DbContext(typeof(AssuitDbContext))]
-    partial class AssuitDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260624144304_AddAttendanceSystem")]
+    partial class AddAttendanceSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -542,8 +545,6 @@ namespace UniStay.Migrations
 
                     b.HasIndex("StudentID");
 
-                    b.HasIndex(new[] { "CreatedAt" }, "IX_AttendanceApiLog_CreatedAt");
-
                     b.ToTable("AttendanceApiLog", (string)null);
                 });
 
@@ -573,8 +574,6 @@ namespace UniStay.Migrations
                         .HasName("PK__AttendanceLog__3214EC27");
 
                     b.HasIndex("SessionID");
-
-                    b.HasIndex(new[] { "RecognizedAt" }, "IX_AttendanceLog_RecognizedAt");
 
                     b.HasIndex(new[] { "StudentID", "SessionID" }, "UQ_AttendanceLog_StudentSession")
                         .IsUnique();
@@ -610,8 +609,6 @@ namespace UniStay.Migrations
 
                     b.HasKey("ID")
                         .HasName("PK__AttendanceSession__3214EC27");
-
-                    b.HasIndex(new[] { "StartedAt" }, "IX_AttendanceSession_StartedAt");
 
                     b.ToTable("AttendanceSession", (string)null);
                 });
