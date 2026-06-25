@@ -14,9 +14,20 @@ public class ScanBookingResultViewModel
     public string StudentName { get; set; } = null!;
     public string NationalID { get; set; } = null!;
     public string? CityName { get; set; }
+    public int DormitoryCityID { get; set; }
     public bool IsEligible { get; set; }
     public string? EligibilityMessage { get; set; }
     public string? RestrictionReason { get; set; }
+}
+
+public class CalendarDayViewModel
+{
+    public DateOnly Date { get; set; }
+    public int DayNumber { get; set; }
+    public bool IsBooked { get; set; }
+    public bool IsBlocked { get; set; }
+    public bool IsPast { get; set; }
+    public bool IsCurrentMonth { get; set; }
 }
 
 public class BookMealViewModel
@@ -27,10 +38,6 @@ public class BookMealViewModel
     [Required(ErrorMessage = "المدينة مطلوبة")]
     public int DormitoryCityID { get; set; }
 
-    [Required(ErrorMessage = "نوع الوجبة مطلوب")]
-    [Display(Name = "نوع الوجبة")]
-    public string MealType { get; set; } = null!;
-
     [Required(ErrorMessage = "تاريخ الوجبة مطلوب")]
     [Display(Name = "تاريخ الوجبة")]
     public DateOnly MealDate { get; set; }
@@ -38,29 +45,16 @@ public class BookMealViewModel
     public string? ScanMethod { get; set; }
 }
 
-public class BookingExcelImportViewModel
+public class BookDatesViewModel
 {
-    public IFormFile? ExcelFile { get; set; }
+    [Required]
+    public int StudentID { get; set; }
+
+    [Required]
     public int DormitoryCityID { get; set; }
-    public List<CityLookup> Cities { get; set; } = new();
+
+    public List<DateOnly> SelectedDates { get; set; } = new();
+    public string? ScanMethod { get; set; }
 }
 
-public class BookingExcelImportResultViewModel
-{
-    public int ImportedCount { get; set; }
-    public int FailedCount { get; set; }
-    public int DuplicateCount { get; set; }
-    public int TotalRows { get; set; }
-    public List<BookingExcelImportRowViewModel> Details { get; set; } = new();
-}
 
-public class BookingExcelImportRowViewModel
-{
-    public int RowNumber { get; set; }
-    public string? StudentIDStr { get; set; }
-    public string? NationalID { get; set; }
-    public string? MealDate { get; set; }
-    public string? MealType { get; set; }
-    public string Status { get; set; } = null!;
-    public string? Message { get; set; }
-}

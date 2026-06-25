@@ -18,28 +18,10 @@
     </div>
     <div class="card-body">
         <div class="row g-3 mb-4">
-            <div class="col-3">
+            <div class="col-6">
                 <div class="border rounded p-3 text-center">
-                    <div class="fs-3 text-success">@Model.BreakfastCount</div>
-                    <div class="small">فطور</div>
-                </div>
-            </div>
-            <div class="col-3">
-                <div class="border rounded p-3 text-center">
-                    <div class="fs-3 text-warning">@Model.LunchCount</div>
-                    <div class="small">غداء</div>
-                </div>
-            </div>
-            <div class="col-3">
-                <div class="border rounded p-3 text-center">
-                    <div class="fs-3 text-primary">@Model.DinnerCount</div>
-                    <div class="small">عشاء</div>
-                </div>
-            </div>
-            <div class="col-3">
-                <div class="border rounded p-3 text-center">
-                    <div class="fs-3 text-info">@Model.TotalCount</div>
-                    <div class="small">الإجمالي</div>
+                    <div class="fs-3 text-success">@Model.TotalCount</div>
+                    <div class="small">إجمالي الوجبات</div>
                 </div>
             </div>
         </div>
@@ -51,10 +33,7 @@
                         <th>المدينة</th>
                         <th>المبنى</th>
                         <th>الغرفة</th>
-                        <th>فطور</th>
-                        <th>غداء</th>
-                        <th>عشاء</th>
-                        <th>الإجمالي</th>
+                        <th>الوجبات</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -72,9 +51,6 @@
                                             <td>@city.CityName</td>
                                             <td>@bld.BuildingName</td>
                                             <td>@rm.RoomNumber</td>
-                                            <td>@rm.BreakfastCount</td>
-                                            <td>@rm.LunchCount</td>
-                                            <td>@rm.DinnerCount</td>
                                             <td>@rm.TotalCount</td>
                                         </tr>
                                     }
@@ -85,9 +61,6 @@
                                         <td>@city.CityName</td>
                                         <td>@bld.BuildingName</td>
                                         <td>-</td>
-                                        <td>@bld.BreakfastCount</td>
-                                        <td>@bld.LunchCount</td>
-                                        <td>@bld.DinnerCount</td>
                                         <td>@bld.TotalCount</td>
                                     </tr>
                                 }
@@ -99,9 +72,6 @@
                                 <td>@city.CityName</td>
                                 <td>-</td>
                                 <td>-</td>
-                                <td>@city.BreakfastCount</td>
-                                <td>@city.LunchCount</td>
-                                <td>@city.DinnerCount</td>
                                 <td>@city.TotalCount</td>
                             </tr>
                         }

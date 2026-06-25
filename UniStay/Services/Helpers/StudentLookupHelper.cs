@@ -25,17 +25,11 @@ public static class StudentLookupHelper
 
     public static async Task<(bool hasRestriction, MealBlock? restriction)> GetActiveRestrictionAsync(AssuitDbContext db, int studentId, DateOnly date)
     {
-        var hasRestriction = await db.MealBlocks.AnyAsync(b =>
+        var restriction = await db.MealBlocks.FirstOrDefaultAsync(b =>
             b.StudentID == studentId && b.IsActive == true &&
             date >= b.FromDate && date <= b.ToDate);
 
-        var restriction = hasRestriction
-            ? await db.MealBlocks.FirstOrDefaultAsync(b =>
-                b.StudentID == studentId && b.IsActive == true &&
-                date >= b.FromDate && date <= b.ToDate)
-            : null;
-
-        return (hasRestriction, restriction);
+        return (restriction != null, restriction);
     }
 
     public static async Task<Student?> FindStudentByIdOrNationalIdAsync(AssuitDbContext db, string? studentIdStr, string? nationalId)

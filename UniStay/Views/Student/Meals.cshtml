@@ -33,6 +33,7 @@
                             <th class="px-3 py-2">اليوم</th>
                             <th class="px-3 py-2">الوجبة</th>
                             <th class="px-3 py-2">السعر</th>
+                            <th class="px-3 py-2">الاستلام</th>
                             <th class="px-3 py-2">الحالة</th>
                             <th class="px-3 py-2"></th>
                         </tr>
@@ -55,10 +56,20 @@
                                 <td class="px-3 py-2" style="font-size:.85rem">@dayName</td>
                                 <td class="px-3 py-2" style="font-size:.85rem">
                                     <span class="badge" style="background:var(--red-dim);color:var(--red);border:1px solid rgba(230,57,70,.2)">
-                                        @(meal.MealType == "Lunch" ? "غداء" : meal.MealType == "Dinner" ? "عشاء" : meal.MealType)
+                                        وجبة يومية
                                     </span>
                                 </td>
                                 <td class="px-3 py-2" style="font-size:.85rem">@meal.Price.ToString("N2") ج.م</td>
+                                <td class="px-3 py-2" style="font-size:1.1rem">
+                                    @if (meal.MealDate < DateOnly.FromDateTime(DateTime.UtcNow))
+                                    {
+                                        @(meal.IsConsumed == true ? "✔️" : "❌")
+                                    }
+                                    else
+                                    {
+                                        <span style="color:var(--muted)">--</span>
+                                    }
+                                </td>
                                 <td class="px-3 py-2">
                                     @if (isPast)
                                     {

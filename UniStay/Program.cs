@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Hangfire;
+using Hangfire.SqlServer;
+using Microsoft.EntityFrameworkCore;
 using QuestPDF.Infrastructure;
 using UniStay.Data;
 using UniStay.Helpers;
@@ -19,10 +21,7 @@ builder.Services.AddDbContext<AssuitDbContext>(options =>
     ));
 
 // ===== MVC =====
-builder.Services.AddControllersWithViews(options =>
-{
-    options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
-});
+builder.Services.AddControllersWithViews();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -63,6 +62,12 @@ builder.Services.Configure<UniversityApiSettings>(
     builder.Configuration.GetSection("UniversityApi"));
 builder.Services.Configure<EmailSettings>(
     builder.Configuration.GetSection("EmailSettings"));
+
+// ===== Hangfire =====
+builder.Services.AddHangfire(config =>
+    config.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHangfireServer();
+builder.Services.AddTransient<MealConfirmationJob>();
 
 // ===== Filters =====
 builder.Services.AddScoped<StaffAuthFilter>();
@@ -140,6 +145,16 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireDashboardAuthorizationFilter() }
+});
+
+RecurringJob.AddOrUpdate<MealConfirmationJob>(
+    "meal-daily-confirmation",
+    job => job.ExecuteAsync(),
+    "0 1 * * *");
 
 app.MapControllerRoute(
     name: "default",

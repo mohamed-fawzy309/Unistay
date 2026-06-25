@@ -1,13 +1,18 @@
-@model ScanBookingResultViewModel
 @{
     ViewData["Title"] = "حجز الوجبات";
     var calendarDays = ViewBag.CalendarDays as List<CalendarDayViewModel> ?? new();
     var monthYear = ViewBag.MonthYear as string ?? "";
+    var cityId = (int)ViewBag.DormitoryCityID;
+    var studentName = ViewBag.StudentName as string ?? "";
+    var nationalId = ViewBag.StudentNationalID as string ?? "";
+    var cityName = ViewBag.CityName as string ?? "";
+    var today = DateOnly.FromDateTime(DateTime.Today);
+    var bookingStart = today.AddDays(1);
+    var bookingEnd = today.AddDays(4);
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="page-title"><i class="bi bi-calendar-check"></i> حجز الوجبات</h2>
-    <a asp-action="Index" class="btn btn-secondary"><i class="bi bi-arrow-right"></i> مسح جديد</a>
 </div>
 
 @if (TempData["Success"] != null)
@@ -24,16 +29,12 @@
         <div class="card">
             <div class="card-header bg-primary text-white"><h5 class="mb-0">معلومات الطالب</h5></div>
             <div class="card-body">
-                <h5>@Model.StudentName</h5>
-                <p class="text-muted mb-1">@Model.NationalID</p>
-                <p class="text-muted">@Model.CityName</p>
+                <h5>@studentName</h5>
+                <p class="text-muted mb-1">@nationalId</p>
+                <p class="text-muted">@cityName</p>
 
-                <div class="mt-3 p-3 rounded @(Model.IsEligible ? "bg-success-subtle" : "bg-danger-subtle")">
-                    <h5 class="@(Model.IsEligible ? "text-success" : "text-danger")">@Model.EligibilityMessage</h5>
-                    @if (!string.IsNullOrEmpty(Model.RestrictionReason))
-                    {
-                        <p class="text-muted mb-0">السبب: @Model.RestrictionReason</p>
-                    }
+                <div class="mt-3 p-3 rounded bg-success-subtle">
+                    <h5 class="text-success">الحجز متاح من @bookingStart.ToString("dd/MM") إلى @bookingEnd.ToString("dd/MM")</h5>
                 </div>
 
                 <hr />
@@ -54,9 +55,8 @@
             <div class="card-body">
                 <form asp-action="BookDates" method="post">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="StudentID" value="@Model.StudentID" />
-                    <input type="hidden" name="DormitoryCityID" value="@Model.DormitoryCityID" />
-                    <input type="hidden" name="ScanMethod" value="Calendar" />
+                    <input type="hidden" name="StudentID" value="@ViewBag.StudentID" />
+                    <input type="hidden" name="DormitoryCityID" value="@cityId" />
 
                     <div class="calendar-grid">
                         <div class="calendar-header">
@@ -66,7 +66,7 @@
                             @foreach (var day in calendarDays)
                             {
                                 <div class="calendar-day @(day.IsCurrentMonth ? "" : "other-month") @(day.IsPast ? "past" : "") @(day.IsBooked ? "booked" : "") @(day.IsBlocked ? "blocked" : "")">
-                                    @if (day.IsCurrentMonth && !day.IsPast && !day.IsBlocked)
+                                    @if (day.IsCurrentMonth && !day.IsPast && !day.IsBlocked && day.Date >= bookingStart && day.Date <= bookingEnd)
                                     {
                                         <label class="day-label">
                                             <input type="checkbox" name="SelectedDates" value="@day.Date.ToString("yyyy-MM-dd")"
@@ -88,7 +88,7 @@
                     </div>
 
                     <div class="mt-3 d-flex gap-3 align-items-center">
-                        <button type="submit" class="btn btn-success btn-lg" @(!Model.IsEligible ? "disabled" : "")>
+                        <button type="submit" class="btn btn-success btn-lg" id="bookBtn">
                             <i class="bi bi-check-circle"></i> حجز الأيام المحددة
                         </button>
                         <div class="d-flex gap-3 me-auto">
@@ -105,9 +105,7 @@
 
 @section Styles {
     <style>
-        .calendar-grid {
-            direction: ltr;
-        }
+        .calendar-grid { direction: ltr; }
         .calendar-header {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -132,18 +130,10 @@
             padding: 4px;
             position: relative;
         }
-        .calendar-day.other-month {
-            opacity: 0.3;
-        }
-        .calendar-day.past {
-            background: #f5f5f5;
-        }
-        .calendar-day.booked {
-            background: #d4edda;
-        }
-        .calendar-day.blocked {
-            background: #f8d7da;
-        }
+        .calendar-day.other-month { opacity: 0.3; }
+        .calendar-day.past { background: #f5f5f5; }
+        .calendar-day.booked { background: #d4edda; }
+        .calendar-day.blocked { background: #f8d7da; }
         .day-label {
             display: flex;
             flex-direction: column;
@@ -153,20 +143,31 @@
             height: 100%;
             justify-content: center;
         }
-        .day-checkbox {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-        .day-number {
-            font-size: 14px;
-            margin-top: 2px;
-            display: flex;
-            align-items: center;
-            gap: 2px;
-        }
-        .day-checkbox:disabled + .day-number {
-            opacity: 0.7;
-        }
+        .day-checkbox { width: 18px; height: 18px; cursor: pointer; }
+        .day-number { font-size: 14px; margin-top: 2px; display: flex; align-items: center; gap: 2px; }
+        .day-checkbox:disabled + .day-number { opacity: 0.7; }
     </style>
+}
+
+@section Scripts {
+    <script>
+        var submitting = false;
+        document.getElementById('bookBtn').addEventListener('click', function(e) {
+            if (submitting) { e.preventDefault(); return; }
+            var checked = document.querySelectorAll('.day-checkbox:checked:not(:disabled)');
+            if (checked.length === 0) {
+                e.preventDefault();
+                alert('اختر يوم واحد على الأقل');
+                return;
+            }
+            var bookedCount = document.querySelectorAll('.day-checkbox:disabled:checked').length;
+            if (bookedCount + checked.length > 4) {
+                e.preventDefault();
+                alert('لا يمكن حجز أكثر من 4 أيام إجمالاً');
+                return;
+            }
+            submitting = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري الحجز...';
+        });
+    </script>
 }

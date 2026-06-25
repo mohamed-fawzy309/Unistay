@@ -30,46 +30,13 @@
 </div>
 
 <div class="row g-3 mb-4">
-    <div class="col-md-3">
+    <div class="col-md-4">
         <div class="stat-card bg-white">
             <div class="d-flex align-items-center gap-3">
-                <div class="icon bg-success bg-opacity-10 text-success"><i class="bi bi-sunrise"></i></div>
-                <div>
-                    <div class="value">@Model.BreakfastCount</div>
-                    <div class="label">فطور</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card bg-white">
-            <div class="d-flex align-items-center gap-3">
-                <div class="icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-sun"></i></div>
-                <div>
-                    <div class="value">@Model.LunchCount</div>
-                    <div class="label">غداء</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card bg-white">
-            <div class="d-flex align-items-center gap-3">
-                <div class="icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-moon"></i></div>
-                <div>
-                    <div class="value">@Model.DinnerCount</div>
-                    <div class="label">عشاء</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card bg-white">
-            <div class="d-flex align-items-center gap-3">
-                <div class="icon bg-info bg-opacity-10 text-info"><i class="bi bi-cup-hot"></i></div>
+                <div class="icon bg-success bg-opacity-10 text-success"><i class="bi bi-cup-hot"></i></div>
                 <div>
                     <div class="value">@Model.TotalCount</div>
-                    <div class="label">الإجمالي</div>
+                    <div class="label">إجمالي الوجبات</div>
                 </div>
             </div>
         </div>
@@ -84,24 +51,20 @@
                 <thead class="table-dark">
                     <tr>
                         <th>المدينة</th>
-                        <th>فطور</th>
-                        <th>غداء</th>
-                        <th>عشاء</th>
+                        <th>الوجبات</th>
                         <th>الإجمالي</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (!Model.CityBreakdowns.Any())
                     {
-                        <tr><td colspan="5" class="text-center text-muted py-4">لا توجد وجبات لهذا اليوم</td></tr>
+                        <tr><td colspan="3" class="text-center text-muted py-4">لا توجد وجبات لهذا اليوم</td></tr>
                     }
                     @foreach (var city in Model.CityBreakdowns)
                     {
                         <tr>
                             <td><strong>@city.CityName</strong></td>
-                            <td>@city.BreakfastCount</td>
-                            <td>@city.LunchCount</td>
-                            <td>@city.DinnerCount</td>
+                            <td>@city.TotalCount</td>
                             <td><strong>@city.TotalCount</strong></td>
                         </tr>
                         @if (city.Buildings.Any())
@@ -110,9 +73,7 @@
                             {
                                 <tr class="table-light">
                                     <td class="ps-4">- @bld.BuildingName</td>
-                                    <td>@bld.BreakfastCount</td>
-                                    <td>@bld.LunchCount</td>
-                                    <td>@bld.DinnerCount</td>
+                                    <td>@bld.TotalCount</td>
                                     <td>@bld.TotalCount</td>
                                 </tr>
                                 @if (bld.Rooms.Any())
@@ -121,9 +82,7 @@
                                     {
                                         <tr>
                                             <td class="ps-5 text-muted">@rm.RoomNumber</td>
-                                            <td>@rm.BreakfastCount</td>
-                                            <td>@rm.LunchCount</td>
-                                            <td>@rm.DinnerCount</td>
+                                            <td>@rm.TotalCount</td>
                                             <td>@rm.TotalCount</td>
                                         </tr>
                                     }

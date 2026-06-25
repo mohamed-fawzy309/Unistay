@@ -76,15 +76,7 @@
             }
         </select>
     </div>
-    <div class="col-md-3">
-        <label class="form-label small">نوع الوجبة</label>
-        <select name="mealType" class="form-select" onchange="this.form.submit()">
-            <option value="">الكل</option>
-            <option value="Breakfast" selected="@(Model.Filter.MealType == "Breakfast")">فطار</option>
-            <option value="Lunch" selected="@(Model.Filter.MealType == "Lunch")">غداء</option>
-            <option value="Dinner" selected="@(Model.Filter.MealType == "Dinner")">عشاء</option>
-        </select>
-    </div>
+
     <div class="col-md-3">
         <label class="form-label small">من تاريخ</label>
         <input type="date" name="fromDate" class="form-control" value="@Model.Filter.FromDate?.ToString("yyyy-MM-dd")" onchange="this.form.submit()">
@@ -124,7 +116,7 @@
                     <td>@m.NationalID</td>
                     <td>@(m.CityName ?? "—")</td>
                     <td><small>@m.MealDate.ToString("yyyy/MM/dd")</small></td>
-                    <td>@(m.MealType switch { "Breakfast" => "فطار", "Lunch" => "غداء", "Dinner" => "عشاء", _ => m.MealType })</td>
+                    <td>وجبة يومية</td>
                     <td>@m.Price?.ToString("N2")</td>
                     <td>
                         <span class="badge bg-@(m.Status switch { "Consumed" => "success", "Cancelled" => "secondary", _ => "secondary" })">@m.StatusDisplay</span>
