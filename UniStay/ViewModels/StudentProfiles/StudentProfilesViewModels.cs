@@ -33,7 +33,6 @@ public class StudentDetailsVM
     public StudentAcademicInfo AcademicInfo { get; set; }
     public StudentHousingInfo HousingInfo { get; set; }
     public IEnumerable<GuardianInfo> Guardians { get; set; } = new List<GuardianInfo>();
-    public IEnumerable<StudentDocumentInfo> Documents { get; set; } = new List<StudentDocumentInfo>();
 }
 
 public class StudentBasicInfo
@@ -91,15 +90,6 @@ public class GuardianInfo
     public bool IsDeceased { get; set; }
 }
 
-public class StudentDocumentInfo
-{
-    public int DocumentId { get; set; }
-    public string DocumentType { get; set; }
-    public string FilePath { get; set; }
-    public bool IsVerified { get; set; }
-    public DateTime? UploadDate { get; set; }
-}
-
 public class StudentStatusVM
 {
     public int StudentId { get; set; }
@@ -112,7 +102,6 @@ public class StudentStatusVM
     public IEnumerable<ViolationInfo> Violations { get; set; } = new List<ViolationInfo>();
     public IEnumerable<AbsenceInfo> Absences { get; set; } = new List<AbsenceInfo>();
     public IEnumerable<MealInfo> Meals { get; set; } = new List<MealInfo>();
-    public IEnumerable<DocumentInfo> Documents { get; set; } = new List<DocumentInfo>();
 
     public int TotalAllocations { get; set; }
     public int TotalPayments { get; set; }
@@ -120,7 +109,6 @@ public class StudentStatusVM
     public int TotalViolations { get; set; }
     public int TotalAbsences { get; set; }
     public int TotalMeals { get; set; }
-    public int TotalDocuments { get; set; }
 }
 
 public class AllocationInfo
@@ -172,14 +160,6 @@ public class MealInfo
     public DateOnly MealDate { get; set; }
 }
 
-public class DocumentInfo
-{
-    public int DocumentId { get; set; }
-    public string DocumentType { get; set; }
-    public bool IsVerified { get; set; }
-    public DateTime? UploadDate { get; set; }
-}
-
 public class StudentSpecialCasesVM
 {
     public int StudentId { get; set; }
@@ -219,6 +199,5 @@ public class StudentProfilePrintVM
     public StudentAcademicInfo AcademicInfo { get; set; }
     public StudentHousingInfo HousingInfo { get; set; }
     public IEnumerable<GuardianInfo> Guardians { get; set; } = new List<GuardianInfo>();
-    public IEnumerable<StudentDocumentInfo> Documents { get; set; } = new List<StudentDocumentInfo>();
     public string PrintedAt { get; set; }
 }

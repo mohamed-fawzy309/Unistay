@@ -96,9 +96,7 @@ public class ApplicationsCenterController : Controller
                 ServerVerificationStatus = a.ServerVerificationStatus,
                 CoordinationScore = a.CoordinationScore,
                 CoordinationRank = a.CoordinationRank,
-                ReviewedByName = a.ReviewedByNavigation!.Name,
-                DocumentCount = a.Documents.Count,
-                VerifiedDocCount = a.Documents.Count(d => d.IsVerified == true)
+                ReviewedByName = a.ReviewedByNavigation!.Name
             })
             .ToListAsync();
 
@@ -143,7 +141,6 @@ public class ApplicationsCenterController : Controller
             .Include(a => a.DormitoryCity)
             .Include(a => a.ReviewedByNavigation)
             .Include(a => a.Allocation).ThenInclude(al => al!.CityRoom).ThenInclude(r => r.CityBuilding)
-            .Include(a => a.Documents)
             .FirstOrDefaultAsync(a => a.ID == id);
 
         if (app == null) return NotFound();
@@ -164,7 +161,6 @@ public class ApplicationsCenterController : Controller
             .Include(a => a.DormitoryCity)
             .Include(a => a.ReviewedByNavigation)
             .Include(a => a.Allocation).ThenInclude(al => al!.CityRoom).ThenInclude(r => r.CityBuilding)
-            .Include(a => a.Documents)
             .FirstOrDefaultAsync(a => a.ID == id);
 
         if (app == null) return NotFound();

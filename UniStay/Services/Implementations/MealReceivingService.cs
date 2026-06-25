@@ -181,6 +181,15 @@ public class MealReceivingService(AssuitDbContext db, IAuditService audit, IMeal
                     continue;
                 }
 
+                if (meal.DormitoryCityID != cityId)
+                {
+                    detail.Status = "فشل";
+                    detail.Message = "الوجبة لا تنتمي لهذه المدينة";
+                    result.FailedCount++;
+                    details.Add(detail);
+                    continue;
+                }
+
                 meal.IsConsumed = true;
                 db.MealConsumptions.Add(new MealConsumption
                 {

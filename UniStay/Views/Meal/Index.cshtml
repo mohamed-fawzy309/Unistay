@@ -16,31 +16,34 @@
     <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
 }
 
-<div class="filter-bar row g-3 align-items-end mb-4">
-    <div class="col-md-4">
-        <label class="form-label small">المدينة</label>
-        <select name="cityId" class="form-select" onchange="this.form.submit()">
-            <option value="">-- اختر المدينة --</option>
-            @foreach (var c in Model.Cities)
-            {
-                <option value="@c.ID" selected="@(c.ID == Model.DormitoryCityID)">@c.Name</option>
-            }
-        </select>
-    </div>
-    <div class="col-md-3">
-        <label class="form-label small">التاريخ</label>
-        <input name="date" type="date" class="form-control" value="@Model.SelectedDate?.ToString("yyyy-MM-dd")" onchange="this.form.submit()">
-    </div>
-    <div class="col-md-3 d-flex align-items-end">
-        @if (Model.DormitoryCityID > 0)
-        {
-            <form asp-action="GenerateMeals" method="post" class="d-inline">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="dormitoryCityId" value="@Model.DormitoryCityID" />
-                <button type="submit" class="btn btn-success"><i class="bi bi-plus-circle"></i> توليد الوجبات لليوم</button>
-            </form>
-        }
-    </div>
+<div class="filter-bar mb-4">
+    <form method="get" asp-action="Index" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label small">المدينة</label>
+            <select name="cityId" class="form-select" onchange="this.form.submit()">
+                <option value="">-- اختر المدينة --</option>
+                @foreach (var c in Model.Cities)
+                {
+                    <option value="@c.ID" selected="@(c.ID == Model.DormitoryCityID)">@c.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small">التاريخ</label>
+            <input name="date" type="date" class="form-control" value="@Model.SelectedDate?.ToString("yyyy-MM-dd")" onchange="this.form.submit()">
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> عرض</button>
+        </div>
+    </form>
+    @if (Model.DormitoryCityID > 0)
+    {
+        <form asp-action="GenerateMeals" method="post" class="mt-2">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="dormitoryCityId" value="@Model.DormitoryCityID" />
+            <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> تأكيد وجبات اليوم</button>
+        </form>
+    }
 </div>
 
 @if (Model.DormitoryCityID > 0)

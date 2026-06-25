@@ -1,12 +1,22 @@
 @model CoordinationRulesViewModel
 @{
     ViewData["Title"] = "قواعد التنسيق";
+    var ruleTypes = CoordinationRuleTypes.All;
 }
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-sliders"></i> قواعد التنسيق</h2>
     </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
 
     <form method="get" class="row mb-4">
         <div class="col-md-4">
@@ -22,30 +32,67 @@
     <div class="row">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header bg-primary text-white"><h5 class="mb-0">القواعد الحالية</h5></div>
-                <div class="card-body">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-list-check"></i> القواعد الحالية</h5>
+                    <span class="badge bg-light text-dark">@Model.Rules.Count قاعدة</span>
+                </div>
+                <div class="card-body p-0">
                     @if (!Model.Rules.Any())
                     {
-                        <div class="alert alert-info">لا توجد قواعد بعد</div>
+                        <div class="alert alert-info m-3">لا توجد قواعد بعد. أضف قاعدة جديدة من القائمة الجانبية.</div>
                     }
                     else
                     {
-                        <table class="table table-hover">
-                            <thead><tr><th>الاسم</th><th>النوع</th><th>الأولوية</th><th>الوزن</th><th>نشط</th><th>تاريخ الإضافة</th></tr></thead>
-                            <tbody>
-                                @foreach (var r in Model.Rules)
-                                {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
                                     <tr>
-                                        <td>@r.RuleName</td>
-                                        <td>@r.RuleType</td>
-                                        <td>@r.Priority</td>
-                                        <td>@r.Weight</td>
-                                        <td>@(r.IsActive ? "نعم" : "لا")</td>
-                                        <td>@r.CreatedAt?.ToString("yyyy/MM/dd")</td>
+                                        <th>#</th>
+                                        <th>الاسم</th>
+                                        <th>النوع</th>
+                                        <th>الأولوية</th>
+                                        <th>الوزن</th>
+                                        <th>الحالة</th>
+                                        <th>تاريخ الإضافة</th>
+                                        <th class="text-center">الإجراءات</th>
                                     </tr>
-                                }
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @foreach (var r in Model.Rules)
+                                    {
+                                        <tr class="@(!r.IsActive ? "table-secondary text-muted" : "")">
+                                            <td>@r.ID</td>
+                                            <td>@r.RuleName</td>
+                                            <td><span class="badge bg-info">@r.RuleTypeDisplay</span></td>
+                                            <td>@r.Priority</td>
+                                            <td>@r.Weight.ToString("0.##")</td>
+                                            <td>
+                                                @if (r.IsActive)
+                                                {
+                                                    <span class="badge bg-success">نشط</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">غير نشط</span>
+                                                }
+                                            </td>
+                                            <td>@r.CreatedAt?.ToString("yyyy/MM/dd")</td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="editRule(@r.ID)" title="تعديل">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm @(r.IsActive ? "btn-outline-warning" : "btn-outline-success")" onclick="toggleActive(@r.ID)" title="@(r.IsActive ? "إلغاء تفعيل" : "تفعيل")">
+                                                    <i class="bi @(r.IsActive ? "bi-pause-circle" : "bi-play-circle")"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteRule(@r.ID, '@r.RuleName')" title="حذف">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     }
                 </div>
             </div>
@@ -53,43 +100,275 @@
 
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header bg-success text-white"><h5 class="mb-0">إضافة قاعدة</h5></div>
+                <div class="card-header bg-success text-white"><h5 class="mb-0"><i class="bi bi-plus-circle"></i> إضافة قاعدة</h5></div>
                 <div class="card-body">
-                    <form asp-action="ConfigureRules" method="post">
+                    <form asp-action="ConfigureRules" method="post" id="addRuleForm">
                         @Html.AntiForgeryToken()
                         <input type="hidden" asp-for="DormitoryCityID" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
                         <div class="mb-3">
-                            <label class="form-label">اسم القاعدة</label>
-                            <input asp-for="NewRule.RuleName" class="form-control" required />
+                            <label asp-for="NewRule.RuleName" class="form-label">اسم القاعدة / الكلية</label>
+                            <input asp-for="NewRule.RuleName" id="ruleNameInput" class="form-control" placeholder="مثال: نسبة المسافة" required />
+                            <select id="ruleNameSelect" class="form-select d-none">
+                                <option value="">-- اختر الكلية --</option>
+                                @if (ViewBag.Faculties != null)
+                                {
+                                    @foreach (var f in (IEnumerable<UniStay.Models.Faculty>)ViewBag.Faculties)
+                                    {
+                                        <option value="@f.Name">@f.Name</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="NewRule.RuleName" class="text-danger small"></span>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">النوع</label>
+                            <label asp-for="NewRule.RuleType" class="form-label"></label>
                             <select asp-for="NewRule.RuleType" class="form-select">
-                                <option value="Distance">المسافة</option>
-                                <option value="Grade">الدرجات</option>
-                                <option value="Age">العمر</option>
-                                <option value="Bonus">مكافأة</option>
-                                <option value="Special">حالة خاصة</option>
+                                <option value="">-- اختر النوع --</option>
+                                @foreach (var t in ruleTypes)
+                                {
+                                    <option value="@t">@CoordinationRuleTypes.DisplayName(t)</option>
+                                }
                             </select>
+                            <span asp-validation-for="NewRule.RuleType" class="text-danger small"></span>
                         </div>
                         <div class="row mb-3">
                             <div class="col-6">
-                                <label class="form-label">الأولوية</label>
-                                <input asp-for="NewRule.Priority" class="form-control" type="number" min="1" />
+                                <label asp-for="NewRule.Priority" class="form-label"></label>
+                                <input asp-for="NewRule.Priority" class="form-control" type="number" min="1" max="255" />
+                                <span asp-validation-for="NewRule.Priority" class="text-danger small"></span>
                             </div>
                             <div class="col-6">
-                                <label class="form-label">الوزن</label>
-                                <input asp-for="NewRule.Weight" class="form-control" type="number" step="0.1" />
+                                <label asp-for="NewRule.Weight" class="form-label"></label>
+                                <input asp-for="NewRule.Weight" class="form-control" type="number" step="0.01" min="0.01" max="100" />
+                                <span asp-validation-for="NewRule.Weight" class="text-danger small"></span>
                             </div>
                         </div>
                         <div class="form-check mb-3">
                             <input asp-for="NewRule.IsActive" class="form-check-input" />
-                            <label class="form-check-label">نشط</label>
+                            <label asp-for="NewRule.IsActive" class="form-check-label">نشط</label>
                         </div>
-                        <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-circle"></i> إضافة</button>
+                        <button type="submit" class="btn btn-success w-100"><i class="bi bi-plus-circle"></i> إضافة القاعدة</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@* Edit Modal *@
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-pencil"></i> تعديل القاعدة</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editRuleForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="edit_Id" name="ID" />
+                <div class="modal-body">
+                    <div id="editError" class="alert alert-danger d-none"></div>
+                    <div class="mb-3">
+                        <label for="edit_RuleType" class="form-label">النوع</label>
+                        <select id="edit_RuleType" name="RuleType" class="form-select" required>
+                            @foreach (var t in ruleTypes)
+                            {
+                                <option value="@t">@CoordinationRuleTypes.DisplayName(t)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_RuleName" class="form-label">اسم القاعدة / الكلية</label>
+                        <input id="edit_RuleName" name="RuleName" class="form-control" required maxlength="200" />
+                        <select id="edit_RuleNameSelect" class="form-select d-none">
+                            <option value="">-- اختر الكلية --</option>
+                            @if (ViewBag.Faculties != null)
+                            {
+                                @foreach (var f in (IEnumerable<UniStay.Models.Faculty>)ViewBag.Faculties)
+                                {
+                                    <option value="@f.Name">@f.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="edit_Priority" class="form-label">الأولوية</label>
+                            <input id="edit_Priority" name="Priority" class="form-control" type="number" min="1" max="255" required />
+                        </div>
+                        <div class="col-6">
+                            <label for="edit_Weight" class="form-label">الوزن</label>
+                            <input id="edit_Weight" name="Weight" class="form-control" type="number" step="0.01" min="0.01" max="100" required />
+                        </div>
+                    </div>
+                    <div class="form-check">
+                        <input id="edit_IsActive" name="IsActive" class="form-check-input" type="checkbox" value="true" />
+                        <input type="hidden" name="IsActive" value="false" />
+                        <label for="edit_IsActive" class="form-check-label">نشط</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ التعديلات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function getToken() {
+            return document.querySelector('#addRuleForm input[name="__RequestVerificationToken"]')?.value;
+        }
+
+        // ============================================================
+        // Add Rule Form Toggle
+        // ============================================================
+        var ruleTypeEl = document.getElementById('NewRule_RuleType');
+        var ruleNameInput = document.getElementById('ruleNameInput');
+        var ruleNameSelect = document.getElementById('ruleNameSelect');
+
+        function toggleAddRuleType() {
+            if (ruleTypeEl.value === 'Faculty') {
+                ruleNameInput.classList.add('d-none');
+                ruleNameSelect.classList.remove('d-none');
+                ruleNameInput.value = ruleNameSelect.value;
+                ruleNameInput.required = false;
+                ruleNameSelect.required = true;
+            } else {
+                ruleNameInput.classList.remove('d-none');
+                ruleNameSelect.classList.add('d-none');
+                ruleNameInput.placeholder = "مثال: نسبة المسافة";
+                ruleNameInput.required = true;
+                ruleNameSelect.required = false;
+            }
+        }
+
+        if (ruleTypeEl) {
+            ruleTypeEl.addEventListener('change', toggleAddRuleType);
+            ruleNameSelect.addEventListener('change', function() {
+                ruleNameInput.value = this.value;
+            });
+            // Initial call
+            toggleAddRuleType();
+        }
+
+        // ============================================================
+        // Edit Rule Form Toggle
+        // ============================================================
+        var editRuleTypeEl = document.getElementById('edit_RuleType');
+        var editRuleNameEl = document.getElementById('edit_RuleName');
+        var editRuleNameSelectEl = document.getElementById('edit_RuleNameSelect');
+
+        function toggleEditRuleType() {
+            if (editRuleTypeEl.value === 'Faculty') {
+                editRuleNameEl.classList.add('d-none');
+                editRuleNameSelectEl.classList.remove('d-none');
+                editRuleNameSelectEl.value = editRuleNameEl.value;
+                editRuleNameEl.required = false;
+                editRuleNameSelectEl.required = true;
+            } else {
+                editRuleNameEl.classList.remove('d-none');
+                editRuleNameSelectEl.classList.add('d-none');
+                editRuleNameEl.required = true;
+                editRuleNameSelectEl.required = false;
+            }
+        }
+
+        if (editRuleTypeEl) {
+            editRuleTypeEl.addEventListener('change', toggleEditRuleType);
+            editRuleNameSelectEl.addEventListener('change', function() {
+                editRuleNameEl.value = this.value;
+            });
+        }
+
+        // ============================================================
+        // Edit Rule
+        // ============================================================
+        function editRule(id) {
+            fetch('@Url.Action("EditRule", "Coordination")?id=' + id)
+                .then(res => res.json())
+                .then(function (data) {
+                    if (!data.success) { alert(data.message); return; }
+                    var d = data.data;
+                    document.getElementById('edit_Id').value = d.id;
+                    document.getElementById('edit_RuleName').value = d.ruleName;
+                    document.getElementById('edit_RuleType').value = d.ruleType;
+                    document.getElementById('edit_Priority').value = d.priority;
+                    document.getElementById('edit_Weight').value = d.weight;
+                    document.getElementById('edit_IsActive').checked = d.isActive;
+                    document.getElementById('editError').classList.add('d-none');
+
+                    toggleEditRuleType();
+
+                    var modal = new bootstrap.Modal(document.getElementById('editModal'));
+                    modal.show();
+                })
+                .catch(function () { alert('حدث خطأ في تحميل بيانات القاعدة'); });
+        }
+
+        document.getElementById('editRuleForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+
+            fetch('@Url.Action("EditRule", "Coordination")', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRF-TOKEN': getToken() }
+            })
+            .then(res => res.json())
+            .then(function (data) {
+                if (data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+                    location.reload();
+                } else {
+                    var errEl = document.getElementById('editError');
+                    errEl.textContent = data.message;
+                    errEl.classList.remove('d-none');
+                }
+            })
+            .catch(function () { alert('حدث خطأ في حفظ التعديلات'); });
+        });
+
+        // ============================================================
+        // Toggle Active
+        // ============================================================
+        function toggleActive(id) {
+            var formData = new FormData();
+            formData.append('id', id);
+            fetch('@Url.Action("ToggleRuleActive", "Coordination")', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRF-TOKEN': getToken() }
+            })
+            .then(res => res.json())
+            .then(function (data) {
+                if (data.success) { location.reload(); }
+                else { alert(data.message); }
+            })
+            .catch(function () { alert('حدث خطأ أثناء تغيير حالة القاعدة'); });
+        }
+
+        // ============================================================
+        // Delete Rule
+        // ============================================================
+        function deleteRule(id, name) {
+            if (!confirm('هل أنت متأكد من حذف القاعدة "' + name + '"؟')) return;
+            var formData = new FormData();
+            formData.append('id', id);
+            fetch('@Url.Action("DeleteRule", "Coordination")', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRF-TOKEN': getToken() }
+            })
+            .then(res => res.json())
+            .then(function (data) {
+                if (data.success) { location.reload(); }
+                else { alert(data.message); }
+            })
+            .catch(function () { alert('حدث خطأ أثناء حذف القاعدة'); });
+        }
+    </script>
+}

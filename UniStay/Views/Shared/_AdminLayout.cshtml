@@ -211,6 +211,7 @@
 
         .page-title { font-size: 1.5rem; font-weight: 700; color: #1a2a6c; margin-bottom: 0; }
     </style>
+    @RenderSection("Styles", required: false)
 </head>
 <body>
 
@@ -490,21 +491,8 @@
                                     <i class="bi bi-hourglass-split"></i> قائمة الانتظار
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Coordination" asp-action="FacultyQuotas">
-                                    <i class="bi bi-building"></i> الحصص الدراسية
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Coordination" asp-action="ReportCoordinationResults">
-                                    <i class="bi bi-file-earmark-bar-graph"></i> تقارير التنسيق
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Document" asp-action="AdminIndex">
-                                    <i class="bi bi-file-earmark-check"></i> المستندات
-                                </a>
-                            </li>
+
+                            
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Reports" asp-action="StudentLists">
                                     <i class="bi bi-list-ul"></i> تقرير قوائم الطلاب
@@ -698,11 +686,6 @@
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="MealBooking" asp-action="Index">
                                     <i class="bi bi-calendar-check"></i> حجز الوجبات بالباركود
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="MealBooking" asp-action="Import">
-                                    <i class="bi bi-file-earmark-excel"></i> حجز الوجبات (إكسل)
                                 </a>
                             </li>
                             <li class="nav-item">

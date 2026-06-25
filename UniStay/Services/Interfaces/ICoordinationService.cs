@@ -1,4 +1,5 @@
 ﻿using UniStay.Models;
+using UniStay.ViewModels.Coordination;
 
 namespace UniStay.Services.Interfaces
 {
@@ -9,6 +10,6 @@ namespace UniStay.Services.Interfaces
     {
         Task<CoordinationPreview> PreviewAsync(int dormitoryCityId, string academicYear);
         Task<CoordinationRunResult> RunAsync(int dormitoryCityId, string academicYear, int userId);
-        decimal CalculateScore(Application app, Student student, CityConfiguration config);
+        ScoreComponents CalculateScore(Application app, Student student, CityConfiguration config, List<CoordinationRule> rules);
     }
 }

@@ -6,5 +6,6 @@ public interface IMealBookingService
 {
     Task<ScanBookingResultViewModel?> ScanStudentAsync(string searchTerm);
     Task<(bool success, string message)> BookMealAsync(BookMealViewModel model, int userId);
-    Task<BookingExcelImportResultViewModel> ImportFromExcelAsync(Stream excelStream, int cityId, int userId);
+    Task<(int successCount, List<string> errors)> BookDatesAsync(BookDatesViewModel model, int userId);
+    Task<List<DateOnly>> GetBookedDatesAsync(int studentId);
 }

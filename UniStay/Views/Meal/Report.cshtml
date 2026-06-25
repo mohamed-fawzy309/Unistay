@@ -37,8 +37,7 @@
                     <label class="form-label">نوع الوجبة</label>
                     <select name="mealType" class="form-select">
                         <option value="">الكل</option>
-                        <option value="Lunch" selected="@(Model.MealType == "Lunch")">غداء</option>
-                        <option value="Dinner" selected="@(Model.MealType == "Dinner")">عشاء</option>
+                        <option value="General" selected="@(Model.MealType == "General")">وجبة يومية</option>
                         <option value="Ramadan" selected="@(Model.MealType == "Ramadan")">رمضان</option>
                         <option value="Christian" selected="@(Model.MealType == "Christian")">مسيحيين</option>
                     </select>

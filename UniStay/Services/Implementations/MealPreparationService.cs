@@ -18,9 +18,7 @@ public class MealPreparationService(AssuitDbContext db, IReportExportService exp
         if (cityId.HasValue)
             mealsQuery = mealsQuery.Where(m => m.DormitoryCityID == cityId.Value);
 
-        var breakfastCount = await mealsQuery.CountAsync(m => m.MealType == "Breakfast");
-        var lunchCount = await mealsQuery.CountAsync(m => m.MealType == "Lunch");
-        var dinnerCount = await mealsQuery.CountAsync(m => m.MealType == "Dinner");
+        var totalCount = await mealsQuery.CountAsync();
 
         var cityBreakdowns = await (from m in mealsQuery
                                     join dc in db.DormitoryCities on m.DormitoryCityID equals dc.ID
@@ -37,45 +35,50 @@ public class MealPreparationService(AssuitDbContext db, IReportExportService exp
 
         if (cityId.HasValue)
         {
-            foreach (var cb in cityBreakdowns)
-            {
-                var buildings = await (from m in db.Meals
+            var breakdownData = await (from m in mealsQuery
                                        join a in db.Allocations on m.StudentID equals a.StudentID
                                        join cr in db.CityRooms on a.CityRoomID equals cr.ID
                                        join cbld in db.CityBuildings on cr.CityBuildingID equals cbld.ID
-                                       where m.MealDate == today && m.IsBooked == true && m.IsActive == true
-                                             && m.DormitoryCityID == cityId.Value && a.Status == "Active"
-                                       group m by new { cbld.ID, Name = cbld.BuildingName } into g
-                                       select new BuildingBreakdownViewModel
+                                       where a.Status == "Active"
+                                       group m by new { cbld.ID, BuildingName = cbld.BuildingName, cr.RoomNumber } into g
+                                       select new
                                        {
-                                           BuildingId = g.Key.ID,
-                                           BuildingName = g.Key.Name,
+                                           g.Key.ID,
+                                           g.Key.BuildingName,
+                                           g.Key.RoomNumber,
                                            BreakfastCount = g.Count(x => x.MealType == "Breakfast"),
                                            LunchCount = g.Count(x => x.MealType == "Lunch"),
                                            DinnerCount = g.Count(x => x.MealType == "Dinner"),
                                            TotalCount = g.Count()
                                        }).ToListAsync();
 
-                foreach (var bld in buildings)
+            var buildingGroups = breakdownData.GroupBy(x => new { x.ID, x.BuildingName });
+
+            foreach (var bg in buildingGroups)
+            {
+                var rooms = bg.Select(r => new RoomBreakdownViewModel
                 {
-                    var rooms = await (from m in db.Meals
-                                       join a in db.Allocations on m.StudentID equals a.StudentID
-                                       join cr in db.CityRooms on a.CityRoomID equals cr.ID
-                                       where m.MealDate == today && m.IsBooked == true && m.IsActive == true
-                                             && m.DormitoryCityID == cityId.Value && a.Status == "Active"
-                                             && cr.CityBuildingID == bld.BuildingId
-                                       group m by cr.RoomNumber into g
-                                       select new RoomBreakdownViewModel
-                                       {
-                                           RoomNumber = g.Key,
-                                           BreakfastCount = g.Count(x => x.MealType == "Breakfast"),
-                                           LunchCount = g.Count(x => x.MealType == "Lunch"),
-                                           DinnerCount = g.Count(x => x.MealType == "Dinner"),
-                                           TotalCount = g.Count()
-                                       }).ToListAsync();
-                    bld.Rooms = rooms;
-                }
-                cb.Buildings = buildings;
+                    RoomNumber = r.RoomNumber,
+                    BreakfastCount = r.BreakfastCount,
+                    LunchCount = r.LunchCount,
+                    DinnerCount = r.DinnerCount,
+                    TotalCount = r.TotalCount
+                }).ToList();
+
+                var bld = new BuildingBreakdownViewModel
+                {
+                    BuildingId = bg.Key.ID,
+                    BuildingName = bg.Key.BuildingName,
+                    BreakfastCount = rooms.Sum(r => r.BreakfastCount),
+                    LunchCount = rooms.Sum(r => r.LunchCount),
+                    DinnerCount = rooms.Sum(r => r.DinnerCount),
+                    TotalCount = rooms.Sum(r => r.TotalCount),
+                    Rooms = rooms
+                };
+
+                var cb = cityBreakdowns.FirstOrDefault(c => c.CityId == cityId.Value);
+                if (cb != null)
+                    cb.Buildings.Add(bld);
             }
         }
 
@@ -83,10 +86,7 @@ public class MealPreparationService(AssuitDbContext db, IReportExportService exp
         {
             SelectedDate = today,
             CityId = cityId,
-            BreakfastCount = breakfastCount,
-            LunchCount = lunchCount,
-            DinnerCount = dinnerCount,
-            TotalCount = breakfastCount + lunchCount + dinnerCount,
+            TotalCount = totalCount,
             Cities = cities,
             CityBreakdowns = cityBreakdowns
         };

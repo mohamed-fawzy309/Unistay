@@ -68,19 +68,6 @@
                     </table>
                 }
 
-                <h6 class="border-bottom pb-2 mt-3"><i class="bi bi-file-earmark"></i> المستندات</h6>
-                @if (Model.Documents.Any())
-                {
-                    @foreach (var d in Model.Documents)
-                    {
-                        <div class="border rounded p-1 mb-1 small">
-                            <span>@d.DocumentType</span>
-                            <span class="badge @(d.IsVerified == true ? "bg-success" : d.IsVerified == false ? "bg-danger" : "bg-warning text-dark")">@(d.IsVerified == true ? "موثق" : d.IsVerified == false ? "مرفوض" : "معلق")</span>
-                        </div>
-                    }
-                }
-                else { <p class="text-muted small">لا توجد مستندات</p> }
-
                 @if (Model.Status == "Rejected" && !string.IsNullOrEmpty(Model.RejectionReason))
                 {
                     <div class="alert alert-danger mt-3"><strong>سبب الرفض:</strong> @Model.RejectionReason</div>

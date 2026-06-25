@@ -65,6 +65,7 @@
     <div class="modal fade" id="editModal-@photo.ID" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form asp-action="Edit" method="post" enctype="multipart/form-data" class="modal-content">
+                @Html.AntiForgeryToken()
                 <input type="hidden" name="ID" value="@photo.ID">
                 <div class="modal-header">
                     <h5 class="modal-title fw-bold">تعديل الصورة</h5>
@@ -116,6 +117,7 @@
 <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <form asp-action="Create" method="post" enctype="multipart/form-data" class="modal-content">
+            @Html.AntiForgeryToken()
             <div class="modal-header">
                 <h4 class="modal-title fw-bold">إضافة صورة جديدة</h4>
                 <button type="button" class="btn-close m-0 ms-auto" data-bs-dismiss="modal"></button>

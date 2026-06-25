@@ -45,8 +45,6 @@ public class ApplicationRowViewModel
     public decimal? CoordinationScore { get; set; }
     public int? CoordinationRank { get; set; }
     public string? ReviewedByName { get; set; }
-    public int DocumentCount { get; set; }
-    public int VerifiedDocCount { get; set; }
 }
 
 public class ApplicationDetailViewModel
@@ -72,7 +70,6 @@ public class ApplicationDetailViewModel
     public CityInfoViewModel DormitoryCity { get; set; } = new();
     public ReviewInfoViewModel? ReviewedBy { get; set; }
     public AllocationInfoViewModel? Allocation { get; set; }
-    public List<DocumentInfoViewModel> Documents { get; set; } = new();
     public List<GuardianInfoViewModel> Guardians { get; set; } = new();
 }
 
@@ -118,15 +115,6 @@ public class AllocationInfoViewModel
     public string? RoomNumber { get; set; }
     public byte? BedNumber { get; set; }
     public string? Status { get; set; }
-}
-
-public class DocumentInfoViewModel
-{
-    public int ID { get; set; }
-    public string DocumentType { get; set; } = "";
-    public string? FileName { get; set; }
-    public bool? IsVerified { get; set; }
-    public DateTime? UploadedAt { get; set; }
 }
 
 public class GuardianInfoViewModel
