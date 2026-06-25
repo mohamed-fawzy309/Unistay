@@ -89,7 +89,7 @@ namespace UniStay.Controllers
             await _audit.LogAsync(CurrentUserId, "Staff", "Meal.Generate", "Meal",
                 null, null, new { dormitoryCityId, Date = DateTime.Today.ToString("yyyy-MM-dd") });
 
-            TempData["Success"] = "تم توليد الوجبات بنجاح";
+            TempData["Success"] = "تم تأكيد الوجبات بنجاح";
             return RedirectToAction("Index", new { cityId = dormitoryCityId });
         }
 

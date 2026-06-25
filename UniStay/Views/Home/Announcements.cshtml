@@ -1,45 +1,323 @@
 @model List<UniStay.Models.Announcement>
 @{
-    ViewData["Title"] = "الإعلانات";
+    ViewData["Title"] = "UniStay - الإعلانات";
+    Layout = null;
 }
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>UniStay — الإعلانات</title>
+    <link href="~/lib/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --red: #e63946;
+            --red-dark: #b52530;
+            --red-dim: rgba(230,57,70,.15);
+            --black: #080b10;
+            --black-2: #0f1319;
+            --black-3: #161c26;
+            --black-4: #1e2736;
+            --border: #1e2736;
+            --text: #e8eaf0;
+            --muted: #6b7a99;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--black); color: var(--text); overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--black); }
+        ::-webkit-scrollbar-thumb { background: var(--red-dark); border-radius: 3px; }
 
-<h2 class="mb-4">الإعلانات</h2>
+        .navbar {
+            background: rgba(8,11,16,.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(230,57,70,.12);
+            padding: .9rem 0;
+            position: fixed; top: 0; width: 100%; z-index: 1000;
+            transition: all .3s;
+        }
+        .navbar.scrolled { background: rgba(8,11,16,.97); box-shadow: 0 4px 30px rgba(0,0,0,.5); }
+        .navbar-brand {
+            font-size: 1.5rem; font-weight: 900;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .nav-link { color: var(--muted) !important; font-weight: 500; font-size: .9rem; transition: color .2s; padding: .4rem .9rem !important; }
+        .nav-link:hover { color: #fff !important; }
+        .btn-nav-login {
+            background: transparent; border: 1px solid var(--red);
+            color: var(--red) !important; border-radius: 8px;
+            padding: .35rem 1.1rem !important; font-size: .88rem; font-weight: 600;
+            transition: all .25s;
+        }
+        .btn-nav-login:hover { background: var(--red); color: #fff !important; }
+        .btn-nav-reg {
+            background: var(--red); border: 1px solid var(--red);
+            color: #fff !important; border-radius: 8px;
+            padding: .35rem 1.1rem !important; font-size: .88rem; font-weight: 600;
+            transition: all .25s; margin-right: .4rem;
+        }
+        .btn-nav-reg:hover { background: var(--red-dark); border-color: var(--red-dark); }
 
-@if (!Model.Any())
-{
-    <div class="alert alert-info">لا توجد إعلانات حالياً</div>
-}
+        .page-header {
+            padding: 8rem 0 3rem;
+            text-align: center;
+            position: relative;
+        }
+        .page-header::before {
+            content: ''; position: absolute; inset: 0;
+            background-image:
+                linear-gradient(rgba(230,57,70,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(230,57,70,.05) 1px, transparent 1px);
+            background-size: 55px 55px;
+            animation: gridMove 25s linear infinite;
+        }
+        @@keyframes gridMove { from { transform: translateY(0); } to { transform: translateY(55px); } }
+        .page-header-content { position: relative; z-index: 5; }
+        .page-badge {
+            display: inline-flex; align-items: center; gap: .5rem;
+            background: var(--red-dim); border: 1px solid rgba(230,57,70,.25);
+            color: var(--red); border-radius: 50px;
+            padding: .35rem 1rem; font-size: .8rem; font-weight: 600;
+            margin-bottom: 1.2rem;
+        }
+        .page-title {
+            font-size: clamp(2rem,5vw,3rem);
+            font-weight: 900;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
 
-<div class="row">
-    @foreach (var ann in Model)
-    {
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title">@ann.Title</h5>
-                    <p class="card-text">@ann.Body</p>
-                    <span class="badge bg-info">@ann.AnnouncementType</span>
-                    @if (!string.IsNullOrEmpty(ann.TargetAudience))
-                    {
-                        <span class="badge bg-warning">@ann.TargetAudience</span>
-                    }
-                    <small class="text-muted d-block mt-2">@ann.PublishedAt?.ToString("yyyy-MM-dd")</small>
+        .section { padding: 2rem 0 6rem; }
+        .filter-bar {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .filter-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: 8px;
+            padding: .35rem .9rem;
+            font-family: 'Tajawal',sans-serif;
+            font-size: .82rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all .25s;
+        }
+        .filter-badge:hover, .filter-badge.active { background: var(--red-dim); border-color: rgba(230,57,70,.3); color: var(--red); }
+        .filter-count { color: var(--muted); font-size: .82rem; margin-right: auto; }
+
+        .ann-card {
+            background: var(--black-2);
+            border: 1px solid var(--border);
+            border-radius: 18px; padding: 1.75rem;
+            height: 100%; position: relative; overflow: hidden;
+            transition: transform .3s, border-color .3s, box-shadow .3s;
+        }
+        .ann-card::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(230,57,70,.04), transparent);
+            opacity: 0; transition: opacity .3s;
+        }
+        .ann-card:hover { transform: translateY(-6px); border-color: rgba(230,57,70,.3); box-shadow: 0 20px 50px rgba(0,0,0,.4); }
+        .ann-card:hover::before { opacity: 1; }
+        .ann-card-title { font-size: 1rem; font-weight: 700; margin-bottom: .6rem; }
+        .ann-card-body { color: var(--muted); font-size: .87rem; line-height: 1.75; margin-bottom: 1rem; }
+        .ann-badge {
+            display: inline-block;
+            background: var(--red-dim); border: 1px solid rgba(230,57,70,.2);
+            color: var(--red); border-radius: 50px;
+            padding: .2rem .75rem; font-size: .75rem; font-weight: 600;
+        }
+        .ann-badge-audience {
+            display: inline-block;
+            background: rgba(255,255,255,.05); border: 1px solid var(--border);
+            color: var(--muted); border-radius: 50px;
+            padding: .2rem .75rem; font-size: .75rem; font-weight: 500;
+        }
+        .ann-date { color: var(--muted); font-size: .75rem; margin-top: .6rem; display: block; }
+
+        .pagination-custom {
+            display: flex; justify-content: center; gap: .4rem; margin-top: 3rem;
+        }
+        .pagination-custom a, .pagination-custom span {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 40px; height: 40px; border-radius: 10px;
+            background: var(--black-3); border: 1px solid var(--border);
+            color: var(--muted); font-size: .85rem; font-weight: 600; text-decoration: none;
+            transition: all .25s;
+        }
+        .pagination-custom a:hover { border-color: var(--red); color: var(--red); }
+        .pagination-custom .active { background: linear-gradient(135deg, var(--red), var(--red-dark)); border-color: transparent; color: #fff; }
+
+        .empty-state { text-align: center; padding: 4rem 1rem; }
+        .empty-state i { font-size: 3rem; color: var(--muted); margin-bottom: 1rem; }
+        .empty-state p { color: var(--muted); font-size: 1rem; }
+
+        footer {
+            background: var(--black-2);
+            border-top: 1px solid var(--border);
+            padding: 2.5rem 0; text-align: center;
+        }
+        .footer-brand {
+            font-size: 1.1rem; font-weight: 900;
+            background: linear-gradient(135deg,#ff6b7a,var(--red));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: .4rem;
+        }
+        .footer-text { color: var(--muted); font-size: .82rem; }
+        .footer-text span { color: var(--red); }
+
+        .reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s, transform .7s; }
+        .reveal.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/"><img src="~/images/Unistay_logo.png" alt="UniStay" style="height:48px;filter:drop-shadow(0 2px 8px rgba(230,57,70,.3))"></a>
+            <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav mx-auto gap-1">
+                    <li class="nav-item"><a class="nav-link" href="/Home/Announcements">الإعلانات</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Home/Cities">المدن الجامعية</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Home/About">عن UniStay</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Home/Dates">مواعيد التقدم</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/Home/Accept">استعلام عن القبول</a></li>
+                </ul>
+                <div class="d-flex gap-2 mt-2 mt-lg-0">
+                    <a href="/StudentAccount/Login" class="nav-link btn-nav-login">تسجيل الدخول</a>
+                    <a href="/Application/Apply" class="nav-link btn-nav-reg">تسجيل جديد</a>
                 </div>
             </div>
         </div>
-    }
-</div>
-
-@if (ViewBag.TotalPages > 1)
-{
-    <nav class="mt-3">
-        <ul class="pagination justify-content-center">
-            @for (int i = 1; i <= ViewBag.TotalPages; i++)
-            {
-                <li class="page-item @(i == ViewBag.Page ? "active" : "")">
-                    <a class="page-link" asp-action="Announcements" asp-route-page="@i">@i</a>
-                </li>
-            }
-        </ul>
     </nav>
-}
+
+    <div class="page-header">
+        <div class="container">
+            <div class="page-header-content">
+                <div class="page-badge">
+                    <i class="fa-solid fa-bullhorn"></i>
+                    آخر الأخبار
+                </div>
+                <h1 class="page-title">الإعلانات</h1>
+            </div>
+        </div>
+    </div>
+
+    <section class="section">
+        <div class="container">
+            @if (!Model.Any())
+            {
+                <div class="empty-state reveal">
+                    <i class="fa-regular fa-circle-check"></i>
+                    <p>لا توجد إعلانات حالياً</p>
+                </div>
+            }
+            else
+            {
+                <div class="filter-bar reveal">
+                    <span class="filter-count">
+                        <i class="fa-solid fa-layer-group" style="color:var(--red);margin-left:.4rem"></i>
+                        إجمالي الإعلانات: <strong style="color:var(--text)">@Model.Count</strong>
+                    </span>
+                    <a href="?type=" class="filter-badge active">الكل</a>
+                    @foreach (var type in Model.Select(a => a.AnnouncementType).Distinct())
+                    {
+                        <a href="?type=@type" class="filter-badge">@type</a>
+                    }
+                </div>
+
+                <div class="row g-4">
+                    @foreach (var ann in Model)
+                    {
+                        <div class="col-md-4 reveal">
+                            <div class="ann-card">
+                                <div class="ann-card-title">@ann.Title</div>
+                                <div class="ann-card-body">
+                                    @(ann.Body?.Length > 180 ? ann.Body[..180] + "…" : ann.Body)
+                                </div>
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <span class="ann-badge">@ann.AnnouncementType</span>
+                                    @if (!string.IsNullOrEmpty(ann.TargetAudience))
+                                    {
+                                        <span class="ann-badge-audience">
+                                            <i class="fa-regular fa-user" style="margin-left:.3rem"></i>
+                                            @ann.TargetAudience
+                                        </span>
+                                    }
+                                </div>
+                                <span class="ann-date">
+                                    <i class="fa-regular fa-clock" style="margin-left:.3rem"></i>
+                                    @ann.PublishedAt?.ToString("yyyy-MM-dd")
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                if (ViewBag.TotalPages > 1)
+                {
+                    <div class="pagination-custom">
+                        @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                        {
+                            if (i == ViewBag.Page)
+                            {
+                                <span class="active">@i</span>
+                            }
+                            else
+                            {
+                                <a asp-action="Announcements" asp-route-page="@i">@i</a>
+                            }
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-brand">UniStay</div>
+            <div class="footer-text">
+                <span>نظام إدارة السكن الجامعي</span> &nbsp;·&nbsp; جميع الحقوق محفوظة &nbsp;·&nbsp; &copy; 2026
+            </div>
+        </div>
+    </footer>
+
+    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.addEventListener('scroll', () => {
+            document.querySelector('.navbar').classList.toggle('scrolled', scrollY > 40);
+        });
+        const revealObserver = new IntersectionObserver(entries => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    e.target.classList.add('visible');
+                    revealObserver.unobserve(e.target);
+                }
+            });
+        }, { threshold: .12 });
+        document.querySelectorAll('.reveal').forEach((el, i) => {
+            el.style.transitionDelay = (i % 4) * .08 + 's';
+            revealObserver.observe(el);
+        });
+    </script>
+</body>
+</html>

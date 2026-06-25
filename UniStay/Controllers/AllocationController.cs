@@ -28,7 +28,7 @@ namespace UniStay.Controllers
         private string GetCurrentAcademicYear()
         {
             var year = DateTime.Now.Year;
-            return DateTime.Now.Month >= 9 ? $"{year}-{year + 1}" : $"{year - 1}-{year}";
+            return DateTime.Now.Month >= 6 ? $"{year}-{year + 1}" : $"{year - 1}-{year}";
         }
 
         [HttpGet]
@@ -201,6 +201,7 @@ namespace UniStay.Controllers
             return View(new AllocationBedViewModel
             {
                 ApplicationID = appId,
+                BuildingID = room.CityBuildingID,
                 RoomID = roomId,
                 RoomNumber = room.RoomNumber,
                 FloorNumber = room.FloorNumber,
@@ -211,7 +212,7 @@ namespace UniStay.Controllers
         }
 
         [HttpPost]
-        //[ValidateAntiForgeryToken]
+        [IgnoreAntiforgeryToken]
         public async Task<IActionResult> Confirm(ConfirmAllocationViewModel model)
         {
             if (!ModelState.IsValid) return Json(new { success = false, message = "بيانات غير صالحة" });

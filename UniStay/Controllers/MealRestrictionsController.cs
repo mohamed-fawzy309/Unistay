@@ -129,7 +129,11 @@ public class MealRestrictionsController : Controller
             return Json(new { success = false, message = "الطالب غير موجود" });
 
         var allocation = student.Allocations.FirstOrDefault();
-        var cityId = allocation?.CityRoom?.CityBuilding?.DormitoryCityID ?? 0;
+
+        if (allocation == null)
+            return Json(new { success = false, message = "الطالب غير مسكن، لا يمكن حجب وجباته" });
+
+        var cityId = allocation.CityRoom?.CityBuilding?.DormitoryCityID ?? 0;
 
         return Json(new
         {

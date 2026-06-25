@@ -165,41 +165,6 @@
                 </div>
             }
 
-            @if (Model.Documents.Any())
-            {
-                <div class="card shadow-sm mb-3">
-                    <div class="card-header"><i class="bi bi-file-earmark"></i> المستندات</div>
-                    <div class="card-body p-0">
-                        <table class="table table-sm mb-0">
-                            <thead>
-                                <tr>
-                                    <th>النوع</th>
-                                    <th>تاريخ الرفع</th>
-                                    <th>الحالة</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var d in Model.Documents)
-                                {
-                                    <tr>
-                                        <td>@d.DocumentType</td>
-                                        <td>@d.UploadDate?.ToString("yyyy/MM/dd")</td>
-                                        <td>
-                                            <span class="badge @(d.IsVerified ? "bg-success" : "bg-warning text-dark")">
-                                                @(d.IsVerified ? "موثق" : "غير موثق")
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <a href="~/uploads/@d.FilePath" class="btn btn-outline-primary btn-sm" target="_blank"><i class="bi bi-eye"></i></a>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            }
         </div>
     </div>
 </div>

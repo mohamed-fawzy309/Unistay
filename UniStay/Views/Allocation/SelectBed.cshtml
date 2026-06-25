@@ -68,12 +68,18 @@
                 method: 'POST',
                 body: formData
             })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message);
-                if (data.success) window.location.href = '@Url.Action("Index")';
+            .then(async res => {
+                const text = await res.text();
+                console.log('Status:', res.status, 'Response:', text);
+                try {
+                    const data = JSON.parse(text);
+                    alert(data.message);
+                    if (data.success) window.location.href = '@Url.Action("Index")';
+                } catch {
+                    alert('استجابة غير متوقعة من الخادم (الحالة ' + res.status + '):\n' + text.substring(0, 300));
+                }
             })
-            .catch(() => alert('حدث خطأ أثناء الاتصال بالخادم'));
+            .catch(err => alert('خطأ في الشبكة: ' + err.message));
         }
     </script>
 }

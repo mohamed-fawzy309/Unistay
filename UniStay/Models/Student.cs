@@ -83,8 +83,6 @@ public partial class Student
 
     public virtual ICollection<CoordinationResult> CoordinationResults { get; set; } = new List<CoordinationResult>();
 
-    public virtual ICollection<Document> Documents { get; set; } = new List<Document>();
-
     public virtual ICollection<EmailLog> EmailLogs { get; set; } = new List<EmailLog>();
 
     public virtual ICollection<EvictionNotice> EvictionNotices { get; set; } = new List<EvictionNotice>();

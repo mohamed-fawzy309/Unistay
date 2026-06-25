@@ -49,8 +49,6 @@ public partial class DormitoryCity
 
     public virtual SystemUser? CreatedByNavigation { get; set; }
 
-    public virtual ICollection<FacultyQuotum> FacultyQuota { get; set; } = new List<FacultyQuotum>();
-
     public virtual ICollection<HousingInstruction> HousingInstructions { get; set; } = new List<HousingInstruction>();
 
     public virtual SystemUser? LastUpdatedByNavigation { get; set; }

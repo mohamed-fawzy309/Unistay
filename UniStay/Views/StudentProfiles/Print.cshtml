@@ -94,16 +94,7 @@
         </table>
     }
 
-    @if (Model.Documents.Any())
-    {
-        <div class="section-title">المستندات</div>
-        <table class="table table-bordered table-sm">
-            <thead><tr><th>النوع</th><th>تاريخ الرفع</th><th>الحالة</th></tr></thead>
-            <tbody>
-                @foreach (var d in Model.Documents)
-                {
-                    <tr><td>@d.DocumentType</td><td>@d.UploadDate?.ToString("yyyy/MM/dd")</td><td>@(d.IsVerified ? "موثق" : "غير موثق")</td></tr>
-                }
+
             </tbody>
         </table>
     }

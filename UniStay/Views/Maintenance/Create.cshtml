@@ -16,7 +16,7 @@
             <div class="col-md-6">
                 <label class="form-label">الطالب <span class="text-danger">*</span></label>
                 <input type="text" id="studentSearch" class="form-control mb-2" placeholder="بحث بالاسم أو الرقم القومي...">
-                <select asp-for="StudentID" class="form-select" required>
+                <select asp-for="StudentID" class="form-select" id="studentSelect" required>
                     <option value="">-- اختر الطالب --</option>
                     @foreach (var s in (IEnumerable<UniStay.ViewModels.Maintenance.StudentLookupItem>)ViewBag.Students)
                     {
@@ -27,7 +27,7 @@
             </div>
             <div class="col-md-6">
                 <label class="form-label">المدينة الجامعية <span class="text-danger">*</span></label>
-                <select asp-for="DormitoryCityID" class="form-select" id="citySelect" required onchange="loadRooms(this.value)">
+                <select asp-for="DormitoryCityID" class="form-select" id="citySelect" required>
                     <option value="">-- اختر المدينة --</option>
                     @foreach (var c in (IEnumerable<UniStay.ViewModels.Maintenance.CityLookupItem>)ViewBag.Cities)
                     {
@@ -95,32 +95,64 @@
 
 @section Scripts {
     <script>
+        const getRoomsUrl    = '@Url.Action("GetRoomsByCity", "Maintenance")';
+        const getStudentsUrl = '@Url.Action("GetStudents", "Maintenance")';
+
+        // ── تحميل الغرف عند اختيار المدينة ─────────────────────
+        document.getElementById('citySelect').addEventListener('change', function () {
+            loadRooms(this.value);
+        });
+
         function loadRooms(cityId) {
+            const sel = document.getElementById('roomSelect');
             if (!cityId) {
-                $('#roomSelect').empty().append('<option value="">-- اختر المدينة أولاً --</option>');
+                sel.innerHTML = '<option value="">-- اختر المدينة أولاً --</option>';
                 return;
             }
-            $.get('@Url.Action("GetRoomsByCity", "Maintenance")', { cityId: cityId }, function (data) {
-                var sel = $('#roomSelect');
-                sel.empty().append('<option value="">-- اختر الغرفة --</option>');
-                data.forEach(function (r) {
-                    sel.append('<option value="' + r.id + '">' + r.buildingName + ' - دور ' + r.floorNumber + ' - غرفة ' + r.roomNumber + ' (' + (r.bedsCount - r.currentOccupancy) + ' متاح)</option>');
+
+            sel.innerHTML = '<option value="">جاري التحميل...</option>';
+
+            fetch(getRoomsUrl + '?cityId=' + cityId)
+                .then(r => r.json())
+                .then(data => {
+                    sel.innerHTML = '<option value="">-- اختر الغرفة --</option>';
+                    data.forEach(r => {
+                        const opt = document.createElement('option');
+                        opt.value = r.id;
+                        opt.textContent = r.buildingName + ' - دور ' + r.floorNumber +
+                                          ' - غرفة ' + r.roomNumber +
+                                          ' (' + (r.bedsCount - r.currentOccupancy) + ' متاح)';
+                        sel.appendChild(opt);
+                    });
+                })
+                .catch(() => {
+                    sel.innerHTML = '<option value="">-- حدث خطأ في التحميل --</option>';
                 });
-            });
         }
 
-        $(function () {
-            $('#studentSearch').on('input', function () {
-                var term = $(this).val();
-                if (term.length < 2) return;
-                $.get('@Url.Action("GetStudents", "Maintenance")', { term: term }, function (data) {
-                    var sel = $('[name="StudentID"]');
-                    sel.empty().append('<option value="">-- اختر الطالب --</option>');
-                    data.forEach(function (s) {
-                        sel.append('<option value="' + s.id + '">' + s.fullName + ' - ' + s.nationalID + '</option>');
-                    });
-                });
-            });
+        // ── بحث الطلاب ──────────────────────────────────────────
+        let searchTimer = null;
+        document.getElementById('studentSearch').addEventListener('input', function () {
+            const term = this.value.trim();
+            clearTimeout(searchTimer);
+
+            if (term.length < 2) return;
+
+            searchTimer = setTimeout(() => {
+                fetch(getStudentsUrl + '?term=' + encodeURIComponent(term))
+                    .then(r => r.json())
+                    .then(data => {
+                        const sel = document.getElementById('studentSelect');
+                        sel.innerHTML = '<option value="">-- اختر الطالب --</option>';
+                        data.forEach(s => {
+                            const opt = document.createElement('option');
+                            opt.value = s.id;
+                            opt.textContent = s.fullName + ' - ' + s.nationalID;
+                            sel.appendChild(opt);
+                        });
+                    })
+                    .catch(() => {});
+            }, 300);
         });
     </script>
 }
