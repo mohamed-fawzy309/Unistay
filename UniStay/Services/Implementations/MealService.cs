@@ -10,31 +10,35 @@ namespace UniStay.Services.Implementations
     {
         public async Task GenerateDailyMealsAsync(int cityId, DateTime date)
         {
-            var d = DateOnly.FromDateTime(date); // <-- الحل
+            var d = DateOnly.FromDateTime(date);
 
-            var students = await db.Allocations
-                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
-                .Where(a => a.Status == "Active" && a.CityRoom.CityBuilding.DormitoryCityID == cityId)
+            var bookedMeals = await db.Meals
+                .Where(m => m.DormitoryCityID == cityId
+                    && m.MealDate == d
+                    && m.IsBooked == true
+                    && m.IsActive == true)
                 .ToListAsync();
 
-            foreach (var alloc in students)
+            var blockedIds = await db.MealBlocks
+                .Where(b => (b.IsActive ?? false)
+                    && d >= b.FromDate && d <= b.ToDate)
+                .Select(b => b.StudentID)
+                .Distinct()
+                .ToListAsync();
+
+            var cancelledCount = 0;
+            foreach (var meal in bookedMeals)
             {
-                var hasBlock = await db.MealBlocks.AnyAsync(b =>
-                    b.StudentID == alloc.StudentID &&
-                    (b.IsActive ?? false) &&
-                    d >= b.FromDate && d <= b.ToDate);
-
-                if (hasBlock) continue;
-
-                if (!await db.Meals.AnyAsync(m => m.StudentID == alloc.StudentID && m.MealDate == d))
+                if (blockedIds.Contains(meal.StudentID))
                 {
-                    db.Meals.AddRange(
-                        new Meal { StudentID = alloc.StudentID, DormitoryCityID = cityId, MealDate = d, MealType = "Lunch", Price = 15, IsBooked = true, IsConsumed = false, IsActive = true },
-                        new Meal { StudentID = alloc.StudentID, DormitoryCityID = cityId, MealDate = d, MealType = "Dinner", Price = 10, IsBooked = true, IsConsumed = false, IsActive = true }
-                    );
+                    meal.IsActive = false;
+                    meal.CancelReason = "محظور";
+                    cancelledCount++;
                 }
             }
-            await db.SaveChangesAsync();
+
+            if (cancelledCount > 0)
+                await db.SaveChangesAsync();
         }
 
         public async Task CancelBulkMealsAsync(int cityId, DateTime from, DateTime to, string reason)
@@ -44,11 +48,12 @@ namespace UniStay.Services.Implementations
 
             db.MealCancellations.Add(new MealCancellation { DormitoryCityID = cityId, FromDate = fromD, ToDate = toD, CancellationType = "Bulk", CreatedAt = DateTime.Now });
 
-            var meals = await db.Meals
+            await db.Meals
                 .Where(m => m.DormitoryCityID == cityId && m.MealDate >= fromD && m.MealDate <= toD && !(m.IsConsumed ?? false))
-                .ToListAsync();
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(m => m.IsActive, false)
+                    .SetProperty(m => m.CancelReason, reason));
 
-            meals.ForEach(m => { m.IsActive = false; m.CancelReason = reason; });
             await db.SaveChangesAsync();
         }
 

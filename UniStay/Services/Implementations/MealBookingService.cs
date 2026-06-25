@@ -1,4 +1,3 @@
-using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using UniStay.Data;
 using UniStay.Models;
@@ -25,6 +24,7 @@ public class MealBookingService(AssuitDbContext db, IAuditService audit) : IMeal
             };
 
         var cityName = StudentLookupHelper.GetStudentCityName(student);
+        var cityId = student.Allocations.FirstOrDefault()?.CityRoom?.CityBuilding?.DormitoryCityID ?? 0;
 
         var today = DateOnly.FromDateTime(DateTime.Today);
         var (hasRestriction, restriction) = await StudentLookupHelper.GetActiveRestrictionAsync(db, student.ID, today);
@@ -35,6 +35,7 @@ public class MealBookingService(AssuitDbContext db, IAuditService audit) : IMeal
             StudentName = student.FullName,
             NationalID = student.NationalID,
             CityName = cityName,
+            DormitoryCityID = cityId,
             IsEligible = !hasRestriction,
             EligibilityMessage = hasRestriction ? "الطالب محظور من الوجبات" : "يمكن حجز الوجبات",
             RestrictionReason = restriction?.Reason
@@ -47,30 +48,36 @@ public class MealBookingService(AssuitDbContext db, IAuditService audit) : IMeal
         if (student == null)
             return (false, "الطالب غير موجود");
 
+        var allocation = await db.Allocations
+            .Include(a => a.Application)
+            .FirstOrDefaultAsync(a => a.StudentID == model.StudentID && a.Status == "Active");
+
+        if (allocation == null)
+            return (false, "الطالب غير مسكن");
+
+        if (allocation.Application.MealSubscription != true)
+            return (false, "الطالب غير مشترك في الوجبات");
+
         var hasRestriction = await db.MealBlocks.AnyAsync(b =>
             b.StudentID == model.StudentID && b.IsActive == true &&
-            model.MealDate >= b.FromDate && model.MealDate <= b.ToDate &&
-            (b.MealType == null || b.MealType == model.MealType));
+            model.MealDate >= b.FromDate && model.MealDate <= b.ToDate);
 
         if (hasRestriction)
-            return (false, "الطالب محظور من حجز هذه الوجبة");
+            return (false, "الطالب محظور من حجز الوجبات");
 
         var existing = await db.Meals.AnyAsync(m =>
-            m.StudentID == model.StudentID && m.MealDate == model.MealDate &&
-            m.MealType == model.MealType && m.IsBooked == true);
+            m.StudentID == model.StudentID && m.MealDate == model.MealDate && m.IsBooked == true);
 
         if (existing)
             return (false, "الوجبة محجوزة بالفعل لهذا اليوم");
-
-        var price = model.MealType == "Lunch" ? 15m : model.MealType == "Dinner" ? 10m : 12m;
 
         var meal = new Meal
         {
             StudentID = model.StudentID,
             DormitoryCityID = model.DormitoryCityID,
             MealDate = model.MealDate,
-            MealType = model.MealType,
-            Price = price,
+            MealType = "General",
+            Price = 25m,
             IsBooked = true,
             IsConsumed = false,
             IsActive = true
@@ -80,129 +87,94 @@ public class MealBookingService(AssuitDbContext db, IAuditService audit) : IMeal
         await db.SaveChangesAsync();
 
         await audit.LogAsync(userId, "Staff", "MealBooking.Create", "Meal",
-            meal.ID, null, new { model.StudentID, model.MealDate, model.MealType });
+            meal.ID, null, new { model.StudentID, model.MealDate });
 
         return (true, "تم حجز الوجبة بنجاح");
     }
 
-    public async Task<BookingExcelImportResultViewModel> ImportFromExcelAsync(Stream excelStream, int cityId, int userId)
+    public async Task<(int successCount, List<string> errors)> BookDatesAsync(BookDatesViewModel model, int userId)
     {
-        var result = new BookingExcelImportResultViewModel();
-        var details = new List<BookingExcelImportRowViewModel>();
+        var student = await db.Students.FindAsync(model.StudentID);
+        if (student == null)
+            return (0, new List<string> { "الطالب غير موجود" });
 
-        using var workbook = new XLWorkbook(excelStream);
-        var sheet = workbook.Worksheet(1);
-        var rows = sheet.RangeUsed()?.RowsUsed();
+        var allocation = await db.Allocations
+            .Include(a => a.Application)
+            .FirstOrDefaultAsync(a => a.StudentID == model.StudentID && a.Status == "Active");
 
-        if (rows == null)
+        if (allocation == null)
+            return (0, new List<string> { "الطالب غير مسكن" });
+
+        if (allocation.Application.MealSubscription != true)
+            return (0, new List<string> { "الطالب غير مشترك في الوجبات" });
+
+        var existingDates = await db.Meals
+            .Where(m => m.StudentID == model.StudentID && m.IsBooked == true)
+            .Select(m => m.MealDate)
+            .ToListAsync();
+
+        const int maxDays = 4;
+        if (existingDates.Count + model.SelectedDates.Count > maxDays)
         {
-            result.FailedCount = 1;
-            result.Details.Add(new BookingExcelImportRowViewModel { RowNumber = 0, Status = "فشل", Message = "الملف فارغ" });
-            return result;
+            return (0, new List<string> { $"لا يمكن حجز أكثر من {maxDays} أيام إجمالاً" });
         }
 
-        var rowList = rows.Skip(1).ToList();
-        result.TotalRows = rowList.Count;
+        var blockedDates = await db.MealBlocks
+            .Where(b => b.StudentID == model.StudentID && b.IsActive == true)
+            .Select(b => new { b.FromDate, b.ToDate })
+            .ToListAsync();
 
-        foreach (var row in rowList)
+        var errors = new List<string>();
+        var successCount = 0;
+        var mealsToAdd = new List<Meal>();
+
+        foreach (var date in model.SelectedDates)
         {
-            var rowNum = row.RowNumber();
-            var detail = new BookingExcelImportRowViewModel { RowNumber = rowNum };
-
-            try
+            if (existingDates.Contains(date))
             {
-                var studentIdStr = row.Cell(1).GetString().Trim();
-                var nationalId = row.Cell(2).GetString().Trim();
-                var mealDateStr = row.Cell(3).GetString().Trim();
-                var mealType = row.Cell(4).GetString().Trim();
-
-                detail.StudentIDStr = studentIdStr;
-                detail.NationalID = nationalId;
-                detail.MealDate = mealDateStr;
-                detail.MealType = mealType;
-
-                var student = await StudentLookupHelper.FindStudentByIdOrNationalIdAsync(db, studentIdStr, nationalId);
-
-                if (student == null)
-                {
-                    detail.Status = "فشل";
-                    detail.Message = "الطالب غير موجود";
-                    result.FailedCount++;
-                    details.Add(detail);
-                    continue;
-                }
-
-                if (!DateOnly.TryParse(mealDateStr, out var mealDate))
-                {
-                    detail.Status = "فشل";
-                    detail.Message = "تاريخ غير صالح";
-                    result.FailedCount++;
-                    details.Add(detail);
-                    continue;
-                }
-
-                var conflict = await db.Meals.AnyAsync(m =>
-                    m.StudentID == student.ID && m.MealDate == mealDate &&
-                    m.MealType == mealType && m.IsBooked == true);
-
-                if (conflict)
-                {
-                    detail.Status = "مكرر";
-                    detail.Message = "الوجبة محجوزة بالفعل";
-                    result.DuplicateCount++;
-                    details.Add(detail);
-                    continue;
-                }
-
-                var hasRestriction = await db.MealBlocks.AnyAsync(b =>
-                    b.StudentID == student.ID && b.IsActive == true &&
-                    mealDate >= b.FromDate && mealDate <= b.ToDate &&
-                    (b.MealType == null || b.MealType == mealType));
-
-                if (hasRestriction)
-                {
-                    detail.Status = "فشل";
-                    detail.Message = "الطالب محظور من الحجز";
-                    result.FailedCount++;
-                    details.Add(detail);
-                    continue;
-                }
-
-                var price = mealType == "Lunch" ? 15m : mealType == "Dinner" ? 10m : 12m;
-
-                db.Meals.Add(new Meal
-                {
-                    StudentID = student.ID,
-                    DormitoryCityID = cityId,
-                    MealDate = mealDate,
-                    MealType = mealType,
-                    Price = price,
-                    IsBooked = true,
-                    IsConsumed = false,
-                    IsActive = true
-                });
-
-                await db.SaveChangesAsync();
-
-                detail.Status = "تم";
-                detail.Message = "تم حجز الوجبة";
-                result.ImportedCount++;
-            }
-            catch (Exception ex)
-            {
-                detail.Status = "خطأ";
-                detail.Message = ex.Message;
-                result.FailedCount++;
+                errors.Add($"اليوم {date:yyyy-MM-dd}: محجوز بالفعل");
+                continue;
             }
 
-            details.Add(detail);
+            if (blockedDates.Any(b => date >= b.FromDate && date <= b.ToDate))
+            {
+                errors.Add($"اليوم {date:yyyy-MM-dd}: الطالب محظور");
+                continue;
+            }
+
+            mealsToAdd.Add(new Meal
+            {
+                StudentID = model.StudentID,
+                DormitoryCityID = model.DormitoryCityID,
+                MealDate = date,
+                MealType = "General",
+                Price = 25m,
+                IsBooked = true,
+                IsConsumed = false,
+                IsActive = true
+            });
+            successCount++;
         }
 
-        result.Details = details;
+        if (mealsToAdd.Count > 0)
+        {
+            db.Meals.AddRange(mealsToAdd);
+            await db.SaveChangesAsync();
+        }
 
-        await audit.LogAsync(userId, "Staff", "MealBooking.ExcelImport", "Meal",
-            null, null, new { cityId, Imported = result.ImportedCount, Failed = result.FailedCount, Duplicate = result.DuplicateCount });
+        await audit.LogAsync(userId, "Staff", "MealBooking.BookDates", "Meal",
+            null, null, new { model.StudentID, Count = successCount, Errors = errors.Count });
 
-        return result;
+        return (successCount, errors);
     }
+
+    public async Task<List<DateOnly>> GetBookedDatesAsync(int studentId)
+    {
+        return await db.Meals
+            .Where(m => m.StudentID == studentId && m.IsBooked == true && (m.IsActive ?? true))
+            .Select(m => m.MealDate)
+            .Distinct()
+            .ToListAsync();
+    }
+
 }

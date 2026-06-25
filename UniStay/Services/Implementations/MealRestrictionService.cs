@@ -80,6 +80,12 @@ public class MealRestrictionService(AssuitDbContext db, IAuditService audit) : I
         if (student == null)
             return (false, "الطالب غير موجود");
 
+        var hasAllocation = await db.Allocations.AnyAsync(a =>
+            a.StudentID == model.StudentID && a.Status == "Active");
+
+        if (!hasAllocation)
+            return (false, "الطالب غير مسكن، لا يمكن حجب وجباته");
+
         var toDate = model.ToDate ?? DateOnly.FromDateTime(DateTime.Today.AddYears(10));
 
         var block = new MealBlock
