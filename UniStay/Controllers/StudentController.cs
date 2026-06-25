@@ -9,6 +9,7 @@ using UniStay.Services.Interfaces;
 using UniStay.ViewModels.Application;
 using UniStay.ViewModels.Attendance;
 using UniStay.ViewModels.Meal;
+using UniStay.ViewModels.Meal;
 
 namespace UniStay.Controllers
 {
