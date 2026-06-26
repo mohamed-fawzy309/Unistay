@@ -8,8 +8,6 @@ using UniStay.Models;
 using UniStay.Services.Interfaces;
 using UniStay.ViewModels.Application;
 using UniStay.ViewModels.Attendance;
-using UniStay.ViewModels.Meal;
-using UniStay.ViewModels.Meal;
 
 namespace UniStay.Controllers
 {
@@ -19,14 +17,12 @@ namespace UniStay.Controllers
         private readonly AssuitDbContext _context;
         private readonly IAuditService _auditService;
         private readonly IEmailService _emailService;
-        private readonly IMealBookingService _mealBooking;
 
-        public StudentController(AssuitDbContext context, IAuditService auditService, IEmailService emailService, IMealBookingService mealBooking)
+        public StudentController(AssuitDbContext context, IAuditService auditService, IEmailService emailService)
         {
             _context = context;
             _auditService = auditService;
             _emailService = emailService;
-            _mealBooking = mealBooking;
         }
 
         // GET: /Student/Home
@@ -307,120 +303,6 @@ namespace UniStay.Controllers
             return Json(new { success = true, message = "تم حجز الغرفة. لديك 24 ساعة للدفع." });
         }
 
-        // GET: /Student/Payments
-        [HttpGet]
-        public async Task<IActionResult> Payments()
-        {
-            var studentId = GetCurrentStudentId();
-            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
-
-            var alloc = await _context.Allocations
-                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding).ThenInclude(b => b.DormitoryCity)
-                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
-            if (alloc == null)
-            {
-                TempData["Error"] = "أنت غير مسكن حالياً";
-                return RedirectToAction("Home");
-            }
-
-            await EnsureMonthlyFees(alloc);
-
-            var payments = await _context.Payments
-                .Where(p => p.StudentID == studentId && p.AcademicYear == alloc.AcademicYear)
-                .OrderByDescending(p => p.RecordedAt)
-                .ToListAsync();
-
-            var violations = await _context.Violations
-                .Where(v => v.StudentID == studentId && v.FineAmount.HasValue)
-                .OrderByDescending(v => v.RecordedAt)
-                .ToListAsync();
-
-            var totalDue = payments.Where(p => p.Status != "Completed").Sum(p => p.Amount);
-            var totalPaid = payments.Where(p => p.Status == "Completed").Sum(p => p.PaidAmount);
-            var monthlyFee = 500m;
-
-            ViewBag.Allocation = alloc;
-            ViewBag.TotalDue = totalDue + violations.Where(v => v.Status == "Active" && v.FineAmount.HasValue).Sum(v => v.FineAmount!.Value);
-            ViewBag.TotalPaid = totalPaid + violations.Where(v => v.FinePaid.HasValue).Sum(v => v.FinePaid!.Value);
-            ViewBag.MonthlyFee = monthlyFee;
-            ViewBag.Violations = violations;
-
-            var months = new[] { "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس" };
-            var now = DateTime.UtcNow;
-            ViewBag.CurrentMonthLabel = now.Day >= 20 ? months[now.Month - 1] : null;
-
-            return View(payments);
-        }
-
-        // GET: /Student/RequestAbsence
-        [HttpGet]
-        public async Task<IActionResult> RequestAbsence()
-        {
-            var studentId = GetCurrentStudentId();
-            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
-
-            var alloc = await _context.Allocations
-                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
-                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
-            if (alloc == null)
-            {
-                TempData["Error"] = "أنت غير مسكن حالياً";
-                return RedirectToAction("Home");
-            }
-
-            return View(new Absence());
-        }
-
-        // POST: /Student/RequestAbsence
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RequestAbsence(Absence model)
-        {
-            var studentId = GetCurrentStudentId();
-            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
-
-            if (!ModelState.IsValid) return View(model);
-
-            var alloc = await _context.Allocations
-                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
-                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
-            if (alloc == null)
-            {
-                TempData["Error"] = "أنت غير مسكن حالياً";
-                return RedirectToAction("Home");
-            }
-
-            var cityId = alloc.CityRoom?.CityBuilding?.DormitoryCityID ?? 0;
-            if (cityId == 0)
-            {
-                ModelState.AddModelError("", "لم يتم العثور على المدينة");
-                return View(model);
-            }
-
-            var absence = new Absence
-            {
-                StudentID = studentId.Value,
-                DormitoryCityID = cityId,
-                AbsenceDate = model.AbsenceDate,
-                ToDate = model.ToDate,
-                AbsenceType = model.AbsenceType,
-                Status = "Pending",
-                RequestedBy = "Student",
-                GuardianName = model.GuardianName,
-                GuardianRelation = model.GuardianRelation,
-                GuardianPhone = model.GuardianPhone,
-                Reason = model.Reason,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.Absences.Add(absence);
-            await _context.SaveChangesAsync();
-            await _auditService.LogAsync(studentId.Value, "Student", "Absence.Request", "Absence", absence.ID);
-
-            TempData["Success"] = "تم تقديم الطلب بنجاح";
-            return RedirectToAction("RequestAbsence");
-        }
-
         // GET: /Student/Payment
         [HttpGet]
         public async Task<IActionResult> Payment()
@@ -429,7 +311,158 @@ namespace UniStay.Controllers
             if (studentId == null) return RedirectToAction("Login", "StudentAccount");
 
             var alloc = await _context.Allocations
-                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding).ThenInclude(b => b.DormitoryCity)
+                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
+                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Reserved");
+            if (alloc == null)
+            {
+                TempData["Error"] = "لا يوجد حجز مؤقت";
+                return RedirectToAction("Home");
+            }
+
+            var payment = await _context.Payments
+                .FirstOrDefaultAsync(p => p.AllocationID == alloc.ID && p.Status == "Pending");
+
+            var deadline = alloc.AllocatedAt?.AddHours(24) ?? DateTime.UtcNow.AddHours(24);
+            deadline = DateTime.SpecifyKind(deadline, DateTimeKind.Utc);
+            var isExpired = DateTime.UtcNow > deadline;
+
+            if (isExpired)
+            {
+                await CancelReservationInternal(alloc, payment);
+                TempData["Error"] = "انتهت مهلة الـ 24 ساعة. تم إلغاء الحجز.";
+                return RedirectToAction("Home");
+            }
+
+            ViewBag.Deadline = deadline;
+            ViewBag.RemainingSeconds = (int)(deadline - DateTime.UtcNow).TotalSeconds;
+            ViewBag.Amount = payment?.Amount ?? 1000;
+            Console.WriteLine($"AllocatedAt = {alloc.AllocatedAt}");
+            Console.WriteLine($"UtcNow      = {DateTime.UtcNow}");
+            Console.WriteLine($"Now         = {DateTime.Now}");
+            Console.WriteLine($"Deadline    = {deadline}");
+            return View(alloc);
+        }
+
+        // POST: /Student/ProcessPayment
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> ProcessPayment()
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null) return Json(new { success = false, message = "غير مصرح" });
+
+            var alloc = await _context.Allocations
+                .Include(a => a.CityRoom)
+                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Reserved");
+            if (alloc == null)
+                return Json(new { success = false, message = "لا يوجد حجز مؤقت" });
+
+            var deadline = alloc.AllocatedAt.HasValue
+                ? new DateTime(alloc.AllocatedAt.Value.Ticks + TimeSpan.TicksPerHour * 24, DateTimeKind.Utc)
+                : DateTime.UtcNow;
+            if (DateTime.UtcNow > deadline)
+            {
+                await CancelReservationInternal(alloc, null);
+                return Json(new { success = false, message = "انتهت مهلة الـ 24 ساعة. تم إلغاء الحجز.", expired = true });
+            }
+
+            alloc.Status = "Active";
+
+            var payment = await _context.Payments
+                .FirstOrDefaultAsync(p => p.AllocationID == alloc.ID && p.Status == "Pending");
+            if (payment != null)
+            {
+                payment.Status = "Completed";
+                payment.PaidAmount = payment.Amount;
+                payment.ReceiptNumber = $"SIM-{DateTime.Now:yyyyMMdd}-{DateTime.Now.Ticks % 100000}";
+                payment.PaymentMethod = "Simulation";
+                payment.RecordedBy = null;
+            }
+
+            if (alloc.CityRoom != null)
+                alloc.CityRoom.CurrentOccupancy = (byte)(alloc.CityRoom.CurrentOccupancy + 1);
+
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, message = "تم الدفع بنجاح! تم تأكيد تسكينك." });
+        }
+
+        private async Task CancelReservationInternal(Allocation alloc, Payment? payment)
+        {
+            alloc.Status = "Cancelled";
+
+            if (payment != null)
+                payment.Status = "Overdue";
+
+            await _context.SaveChangesAsync();
+        }
+
+        // GET: /Student/RequestAbsence
+        [HttpGet]
+        public IActionResult RequestAbsence()
+        {
+            return View();
+        }
+
+        // POST: /Student/RequestAbsence
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RequestAbsence(Absence model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            var studentId = GetCurrentStudentId();
+            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
+
+            var student = await _context.Students.FindAsync(studentId.Value);
+            if (student == null) return NotFound();
+
+            model.StudentID = studentId.Value;
+            model.Status = "Pending";
+            model.RequestedBy = "Student";
+            model.CreatedAt = DateTime.UtcNow;
+
+            var currentAllocation = await _context.Allocations
+                .FirstOrDefaultAsync(a => a.StudentID == studentId.Value && a.Status == "Active");
+
+            if (currentAllocation != null)
+            {
+                var room = await _context.CityRooms
+                    .Include(r => r.CityBuilding)
+                    .FirstOrDefaultAsync(r => r.ID == currentAllocation.CityRoomID);
+
+                if (room?.CityBuilding != null)
+                {
+                    model.DormitoryCityID = room.CityBuilding.DormitoryCityID;
+                }
+            }
+
+            _context.Absences.Add(model);
+            await _context.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(student.Email))
+            {
+                await _emailService.SendAsync(
+                    student.Email,
+                    "تم استلام طلب الإذن/الغياب",
+                    $"تم استلام طلبك رقم #{model.ID} وسيتم مراجعته قريباً.",
+                    EmailType.General,
+                    studentId.Value);
+            }
+
+            TempData["Success"] = "تم إرسال الطلب بنجاح";
+            return RedirectToAction("RequestAbsence");
+        }
+
+        // GET: /Student/Payments
+        [HttpGet]
+        public async Task<IActionResult> Payments()
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
+
+            var alloc = await _context.Allocations
+                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
                 .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
             if (alloc == null)
             {
@@ -579,126 +612,6 @@ namespace UniStay.Controllers
             return Json(new { success = true, booked = meal.IsBooked });
         }
 
-        // GET: /Student/Calendar
-        [HttpGet]
-        public async Task<IActionResult> Calendar(int? year, int? month)
-        {
-            var studentId = GetCurrentStudentId();
-            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
-
-            var alloc = await _context.Allocations
-                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding).ThenInclude(b => b.DormitoryCity)
-                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
-            if (alloc == null)
-            {
-                TempData["Error"] = "أنت غير مسكن حالياً";
-                return RedirectToAction("Home");
-            }
-
-            var student = await _context.Students.FindAsync(studentId.Value);
-            var city = alloc.CityRoom?.CityBuilding?.DormitoryCity;
-            var cityId = city?.ID ?? 0;
-            var cityName = city?.Name ?? "";
-            var today = DateOnly.FromDateTime(DateTime.Today);
-            var now = year.HasValue && month.HasValue ? new DateTime(year.Value, month.Value, 1) : DateTime.Today;
-            var firstOfMonth = new DateTime(now.Year, now.Month, 1);
-            var daysInMonth = DateTime.DaysInMonth(now.Year, now.Month);
-
-            var bookedDates = await _mealBooking.GetBookedDatesAsync(studentId.Value);
-            var blocks = await _context.MealBlocks
-                .Where(b => b.StudentID == studentId && b.IsActive == true)
-                .Select(b => new { b.FromDate, b.ToDate })
-                .ToListAsync();
-
-            var calendarDays = new List<CalendarDayViewModel>();
-            var firstDayOfWeek = (int)firstOfMonth.DayOfWeek;
-            var prevMonthDays = DateTime.DaysInMonth(now.AddMonths(-1).Year, now.AddMonths(-1).Month);
-
-            for (int i = firstDayOfWeek - 1; i >= 0; i--)
-            {
-                var d = DateOnly.FromDateTime(firstOfMonth.AddDays(-i - 1));
-                calendarDays.Add(new CalendarDayViewModel
-                {
-                    Date = d,
-                    DayNumber = prevMonthDays - i,
-                    IsCurrentMonth = false,
-                    IsPast = true,
-                    IsBooked = bookedDates.Contains(d),
-                    IsBlocked = blocks.Any(b => d >= b.FromDate && d <= b.ToDate)
-                });
-            }
-
-            for (int day = 1; day <= daysInMonth; day++)
-            {
-                var date = new DateTime(now.Year, now.Month, day);
-                var d = DateOnly.FromDateTime(date);
-                calendarDays.Add(new CalendarDayViewModel
-                {
-                    Date = d,
-                    DayNumber = day,
-                    IsCurrentMonth = true,
-                    IsPast = d < today,
-                    IsBooked = bookedDates.Contains(d),
-                    IsBlocked = blocks.Any(b => d >= b.FromDate && d <= b.ToDate)
-                });
-            }
-
-            var remainingCells = 42 - calendarDays.Count;
-            for (int i = 1; i <= remainingCells; i++)
-            {
-                var nextMonthDate = firstOfMonth.AddMonths(1).AddDays(i - 1);
-                var d = DateOnly.FromDateTime(nextMonthDate);
-                calendarDays.Add(new CalendarDayViewModel
-                {
-                    Date = d,
-                    DayNumber = i,
-                    IsCurrentMonth = false,
-                    IsPast = true,
-                    IsBooked = bookedDates.Contains(d),
-                    IsBlocked = blocks.Any(b => d >= b.FromDate && d <= b.ToDate)
-                });
-            }
-
-            var monthNames = new[] { "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
-            ViewBag.CalendarDays = calendarDays;
-            ViewBag.MonthYear = $"{monthNames[now.Month - 1]} {now.Year}";
-            ViewBag.PrevYear = now.AddMonths(-1).Year;
-            ViewBag.PrevMonth = now.AddMonths(-1).Month;
-            ViewBag.NextYear = now.AddMonths(1).Year;
-            ViewBag.NextMonth = now.AddMonths(1).Month;
-            ViewBag.DormitoryCityID = cityId;
-            ViewBag.StudentID = studentId.Value;
-            ViewBag.StudentName = student?.FullName ?? "";
-            ViewBag.StudentNationalID = student?.NationalID ?? "";
-            ViewBag.CityName = cityName;
-
-            return View();
-        }
-
-        // POST: /Student/BookDates
-        [HttpPost]
-        [IgnoreAntiforgeryToken]
-        public async Task<IActionResult> BookDates(BookDatesViewModel model)
-        {
-            var studentId = GetCurrentStudentId();
-            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
-
-            model.StudentID = studentId.Value;
-            model.ScanMethod = "StudentPortal";
-
-            var (successCount, errors) = await _mealBooking.BookDatesAsync(model, studentId.Value);
-
-            if (successCount > 0)
-                TempData["Success"] = $"تم حجز {successCount} يوم بنجاح";
-            else
-                TempData["Error"] = "لم يتم حجز أي أيام";
-
-            if (errors.Any())
-                TempData["Error"] += ". " + string.Join(" | ", errors);
-
-            return RedirectToAction("Calendar");
-        }
-
         // GET: /Student/AnnouncementsList
         [HttpGet]
         public async Task<IActionResult> AnnouncementsList()
@@ -738,6 +651,13 @@ namespace UniStay.Controllers
                     && l.RecognizedAt.HasValue
                     && l.RecognizedAt.Value.Date == today)
                 .OrderByDescending(l => l.RecognizedAt)
+                .FirstOrDefaultAsync();
+
+            var todayAbsence = await _context.Absences
+                .Where(a => a.StudentID == studentId.Value
+                    && a.AbsenceDate == DateOnly.FromDateTime(today)
+                    && a.AbsenceType == "Absence"
+                    && a.Status == "Approved")
                 .FirstOrDefaultAsync();
 
             var presentDaysThisMonth = await _context.AttendanceLogs
@@ -784,6 +704,7 @@ namespace UniStay.Controllers
             {
                 IsPresentToday = todayLog != null,
                 TodayRecognitionTime = todayLog?.RecognizedAt,
+                IsAbsentToday = todayAbsence != null,
                 PresentDaysThisMonth = presentDaysThisMonth,
                 TotalSessionDaysThisMonth = totalSessionDaysThisMonth,
                 AttendancePercentage = totalSessionDaysThisMonth > 0

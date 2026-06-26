@@ -71,13 +71,19 @@ public class AttendanceApiController : Controller
         }
 
         var activeSession = await _db.AttendanceSessions
-            .FirstOrDefaultAsync(s => s.IsActive == true);
+                .FirstOrDefaultAsync(s => s.IsActive == true);
 
-        if (activeSession == null)
-        {
-            await LogApiCall(request.StudentID, "Failed", "No active attendance session");
-            return BadRequest(new { message = "No active attendance session" });
-        }
+            if (activeSession == null)
+            {
+                await LogApiCall(request.StudentID, "Failed", "No active attendance session");
+                return BadRequest(new { message = "No active attendance session" });
+            }
+
+            if (activeSession.EndedAt != null)
+            {
+                await LogApiCall(request.StudentID, "Failed", "Session is finalized and locked");
+                return BadRequest(new { message = "Session is finalized. No more checkins allowed." });
+            }
 
         var exists = await _db.AttendanceLogs
             .AnyAsync(l => l.StudentID == request.StudentID && l.SessionID == activeSession.ID);
@@ -162,6 +168,39 @@ public class AttendanceApiController : Controller
         await LogApiCall(null, "Success", $"Session '{activeSession.SessionName}' stopped");
 
         return Ok(new { message = "Session stopped", sessionID = activeSession.ID });
+    }
+
+    [HttpGet("student-accommodation/{studentId:int}")]
+    public async Task<IActionResult> GetStudentAccommodation(int studentId)
+    {
+        var token = HttpContext.Request.Headers["X-Internal-Token"].FirstOrDefault();
+        if (!IsValidToken(token))
+            return Unauthorized(new { message = "Invalid or missing token" });
+
+        var allocation = await _db.Allocations
+            .Where(a => a.StudentID == studentId && a.Status == "Active")
+            .Include(a => a.Student)
+            .Include(a => a.CityRoom)
+                .ThenInclude(cr => cr.CityBuilding)
+                    .ThenInclude(cb => cb.DormitoryCity)
+            .OrderByDescending(a => a.ID)
+            .FirstOrDefaultAsync();
+
+        if (allocation == null)
+            return NotFound(new { found = false, studentID = studentId });
+
+        return Ok(new
+        {
+            found = true,
+            studentID = studentId,
+            studentName = allocation.Student.FullName,
+            nationalID = allocation.Student.NationalID,
+            city = allocation.CityRoom.CityBuilding.DormitoryCity.Name,
+            building = allocation.CityRoom.CityBuilding.BuildingName,
+            room = allocation.CityRoom.RoomNumber,
+            bed = allocation.BedNumber.ToString(),
+            hasPhoto = !string.IsNullOrEmpty(allocation.Student.Photo)
+        });
     }
 
     private async Task LogApiCall(int? studentId, string status, string message)
