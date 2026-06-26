@@ -5,48 +5,46 @@
 }
 
 @section Scripts {
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script>
-$(function(){
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        $(function(){
 
-    // إظهار/إخفاء حقل القيمة حسب نوع النطاق
-    $('#ScopeType').on('change', function(){
-        const val = $(this).val();
-        $('#cityGroup').addClass('d-none');
-        $('#buildingGroup').addClass('d-none');
-        $('#facultyGroup').addClass('d-none');
-        $('#scopeValueHidden').val('');
+            // إظهار/إخفاء حقل القيمة حسب نوع النطاق
+            $('#ScopeType').on('change', function(){
+                const val = $(this).val();
+                $('#cityGroup').addClass('d-none');
+                $('#buildingGroup').addClass('d-none');
+                $('#facultyGroup').addClass('d-none');
+                $('#scopeValueHidden').val('');
 
-        if(val === 'DormitoryCity') $('#cityGroup').removeClass('d-none');
-        else if(val === 'Building')  $('#buildingGroup').removeClass('d-none');
-        else if(val === 'Faculty')   $('#facultyGroup').removeClass('d-none');
-    });
+                if(val === 'DormitoryCity') $('#cityGroup').removeClass('d-none');
+                else if(val === 'Building')  $('#buildingGroup').removeClass('d-none');
+                else if(val === 'Faculty')   $('#facultyGroup').removeClass('d-none');
+            });
 
-    // إزالة نطاق — AJAX
-    $(document).on('click', '.btn-remove-scope', function(){
-        if(!confirm('إزالة هذا النطاق؟')) return;
-        const dsid = $(this).data('id');
-        $.post('/Permissions/RemoveDataScope', {
-            dataScopeId: dsid,
-            userId: @Model.UserID,
-            __RequestVerificationToken: $('[name=__RequestVerificationToken]').val()
-        }).done(r => {
-            if(r.success) location.reload();
-            else toast(r.message, 'danger');
+            // إزالة نطاق — AJAX
+            $(document).on('click', '.btn-remove-scope', function(){
+                if(!confirm('إزالة هذا النطاق؟')) return;
+                const dsid = $(this).data('id');
+                $.post('/Permissions/RemoveDataScope', {
+                    dataScopeId: dsid,
+                    userId: @Model.UserID,
+                    __RequestVerificationToken: (document.querySelector("form [name=__RequestVerificationToken]") || {value:""}).value
+                }).done(r => {
+                    if(r.success) location.reload();
+                    else toast(r.message, 'danger');
+                });
+            });
+
+            function toast(msg, type='success'){
+                const t=$(`<div class="toast align-items-center text-bg-${type} border-0 position-fixed bottom-0 end-0 m-3 show" style="z-index:9999">
+                    <div class="d-flex"><div class="toast-body">${msg}</div>
+                    <button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`);
+                $('body').append(t); setTimeout(()=>t.remove(), 3500);
+            }
         });
-    });
-
-    function toast(msg, type='success'){
-        const t=$(`<div class="toast align-items-center text-bg-${type} border-0 position-fixed bottom-0 end-0 m-3 show" style="z-index:9999">
-            <div class="d-flex"><div class="toast-body">${msg}</div>
-            <button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`);
-        $('body').append(t); setTimeout(()=>t.remove(), 3500);
-    }
-});
-</script>
+    </script>
 }
-
-@Html.AntiForgeryToken()
 
 <div class="container-fluid py-3">
 
@@ -62,9 +60,13 @@ $(function(){
     </div>
 
     @if (TempData["Success"] != null)
-    { <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]<button class="btn-close" data-bs-dismiss="alert"></button></div> }
+    {
+        <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]<button class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
     @if (TempData["Error"] != null)
-    { <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle-fill me-2"></i>@TempData["Error"]<button class="btn-close" data-bs-dismiss="alert"></button></div> }
+    {
+        <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-circle-fill me-2"></i>@TempData["Error"]<button class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
 
     <div class="row g-4">
 
@@ -101,9 +103,14 @@ $(function(){
                                         </td>
                                         <td>
                                             @if (!string.IsNullOrEmpty(scope.ScopeValue))
-                                            { <code class="text-secondary">@scope.ScopeValueDisplay</code> }
+                                            {
+                                                <code class="text-secondary">@scope.ScopeValueDisplay</code>
+                                            }
                                             else
-                                            { <span class="text-muted small">—</span> }
+                                            {
+
+                                                <span class="text-muted small">—</span>
+                                            }
                                         </td>
                                         <td class="text-center">
                                             <button class="btn btn-sm btn-outline-danger btn-remove-scope"
@@ -127,7 +134,7 @@ $(function(){
                     <i class="bi bi-plus-circle me-2"></i>إضافة نطاق جديد
                 </div>
                 <div class="card-body">
-                    <form asp-action="DataScopes" method="post">
+                    <form method="post" action="/Permissions/DataScopes">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="UserID" value="@Model.UserID" />
                         <input type="hidden" name="ScopeValue" id="scopeValueHidden" />

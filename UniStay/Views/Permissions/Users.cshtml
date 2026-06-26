@@ -8,56 +8,60 @@
 }
 
 @section Scripts {
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css"/>
-<script>
-$(function(){
-    $('#usersTable').DataTable({
-        language: { search:"بحث:", lengthMenu:"عرض _MENU_", info:"_START_-_END_ من _TOTAL_", paginate:{next:"التالي",previous:"السابق"}, zeroRecords:"لا توجد نتائج" },
-        order:[[0,'asc']], columnDefs:[{orderable:false,targets:[4,5,7]}]
-    });
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
+    <script>
+        $(function(){
+            $('#usersTable').DataTable({
+                language: { search:"بحث:", lengthMenu:"عرض _MENU_", info:"_START_-_END_ من _TOTAL_", paginate:{next:"التالي",previous:"السابق"}, zeroRecords:"لا توجد نتائج" },
+                order:[[0,'asc']], columnDefs:[{orderable:false,targets:[4,5,7]}]
+            });
 
-    // Toggle Active
-    $(document).on('change','.toggle-active',function(){
-        const id=$(this).data('id'), cb=$(this);
-        $.post('/Permissions/ToggleActive',{id,__RequestVerificationToken:$('[name=__RequestVerificationToken]').val()})
-         .done(r=>{ if(r.success) toast(r.message,r.isActive?'success':'warning');
-                    else{ cb.prop('checked',!cb.prop('checked')); toast(r.message,'danger'); } });
-    });
+            function getToken() {
+                return document.querySelector('#addUserModal [name=__RequestVerificationToken]')?.value ?? '';
+            }
 
-    // Reset Password
-    $(document).on('click','.btn-reset',function(){
-        if(!confirm('إعادة تعيين كلمة المرور وإرسالها بالإيميل؟')) return;
-        const id=$(this).data('id');
-        $.post('/Permissions/ResetPassword',{id,__RequestVerificationToken:$('[name=__RequestVerificationToken]').val()})
-         .done(r=>toast(r.message,r.success?'success':'danger'));
-    });
+            // Toggle Active
+            $(document).on('change','.toggle-active',function(){
+                const id=$(this).data('id'), cb=$(this);
+                $.post('/Permissions/ToggleActive',{id,__RequestVerificationToken:getToken()})
+                 .done(r=>{ if(r.success) toast(r.message,r.isActive?'success':'warning');
+                            else{ cb.prop('checked',!cb.prop('checked')); toast(r.message,'danger'); } });
+            });
 
-    // Delete
-    $(document).on('click','.btn-delete',function(){
-        const id=$(this).data('id'), name=$(this).data('name');
-        if(!confirm(`حذف "${name}"؟ لا يمكن التراجع.`)) return;
-        $.post('/Permissions/DeleteUser',{id,__RequestVerificationToken:$('[name=__RequestVerificationToken]').val()})
-         .done(r=>{ if(r.success) location.reload(); else toast(r.message,'danger'); });
-    });
+            // Reset Password
+            $(document).on('click','.btn-reset',function(){
+                if(!confirm('إعادة تعيين كلمة المرور وإرسالها بالإيميل؟')) return;
+                const id=$(this).data('id');
+                $.post('/Permissions/ResetPassword',{id,__RequestVerificationToken:getToken()})
+                 .done(r=>toast(r.message,r.success?'success':'danger'));
+            });
 
-    // Select All per group (create modal)
-    $(document).on('change','.chk-all-create',function(){
-        const checked=$(this).prop('checked');
-        const gid=$(this).data('group');
-        $(`.perm-check-create[data-group="${gid}"]`).prop('checked',checked);
-    });
+            // Delete
+            $(document).on('click','.btn-delete',function(){
+                const id=$(this).data('id'), name=$(this).data('name');
+                if(!confirm(`حذف "${name}"؟ لا يمكن التراجع.`)) return;
+                $.post('/Permissions/DeleteUser',{id,__RequestVerificationToken:getToken()})
+                 .done(r=>{ if(r.success) location.reload(); else toast(r.message,'danger'); });
+            });
 
-    function toast(msg,type='success'){
-        const t=$(`<div class="toast align-items-center text-bg-${type} border-0 position-fixed bottom-0 end-0 m-3 show" style="z-index:9999">
-            <div class="d-flex"><div class="toast-body">${msg}</div>
-            <button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`);
-        $('body').append(t); setTimeout(()=>t.remove(),3500);
-    }
-});
-</script>
+            // Select All per group (create modal)
+            $(document).on('change','.chk-all-create',function(){
+                const checked=$(this).prop('checked');
+                const gid=$(this).data('group');
+                $(`.perm-check-create[data-group="${gid}"]`).prop('checked',checked);
+            });
+
+            function toast(msg,type='success'){
+                const t=$(`<div class="toast align-items-center text-bg-${type} border-0 position-fixed bottom-0 end-0 m-3 show" style="z-index:9999">
+                    <div class="d-flex"><div class="toast-body">${msg}</div>
+                    <button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div></div>`);
+                $('body').append(t); setTimeout(()=>t.remove(),3500);
+            }
+        });
+    </script>
 }
 
 <div class="container-fluid py-3">
@@ -126,9 +130,6 @@ $(function(){
         </div>
     }
 
-    @* AntiForgery للـ AJAX *@
-    @Html.AntiForgeryToken()
-
     @* الجدول *@
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
@@ -147,7 +148,7 @@ $(function(){
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var (user, i) in Model.Users.Select((u,i)=>(u,i+1)))
+                    @foreach (var (user, i) in Model.Users.Select((u, i) => (u, i + 1)))
                     {
                         <tr>
                             <td class="text-muted">@i</td>
@@ -168,7 +169,9 @@ $(function(){
                                         <small class="text-muted">@user.Email</small>
                                         @if (user.MustChangePassword)
                                         {
-                                            <br><small class="text-warning"><i class="bi bi-exclamation-triangle"></i> يجب تغيير كلمة المرور</small>
+                                            <br>
+                                    
+                                            <small class="text-warning"><i class="bi bi-exclamation-triangle"></i> يجب تغيير كلمة المرور</small>
                                         }
                                     </div>
                                 </div>
@@ -199,7 +202,11 @@ $(function(){
                                         <span class="badge bg-light text-dark border me-1 mb-1" style="font-size:.73rem">@r</span>
                                     }
                                 }
-                                else { <span class="text-muted small">لا يوجد</span> }
+                                else
+                                {
+
+                                    <span class="text-muted small">لا يوجد</span>
+                                }
                             </td>
                             <td>
                                 @if (user.IsSuperAdmin)
@@ -213,8 +220,14 @@ $(function(){
                             </td>
                             <td>
                                 @if (user.LastLoginAt.HasValue)
-                                { <small>@user.LastLoginAt.Value.ToString("dd/MM/yyyy HH:mm")</small> }
-                                else { <small class="text-muted">لم يسجل دخولاً</small> }
+                                {
+                                    <small>@user.LastLoginAt.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                                }
+                                else
+                                {
+
+                                    <small class="text-muted">لم يسجل دخولاً</small>
+                                }
                             </td>
                             <td>
                                 <div class="form-check form-switch">
@@ -265,7 +278,7 @@ $(function(){
 <div class="modal fade" id="addUserModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form asp-action="Users" method="post">
+            <form method="post" action="/Permissions/Users">
                 @Html.AntiForgeryToken()
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>إضافة موظف جديد</h5>
@@ -291,7 +304,7 @@ $(function(){
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">الأدوار <small class="text-muted">(اختياري، متعدد)</small></label>
-                        <select name="SelectedRoleIds" class="form-select" multiple size="4">
+                        <select name="SelectedRoleIds" class="form-select" multiple size="@Math.Max(Model.AvailableRoles.Count, 3)">
                             @foreach (var r in Model.AvailableRoles)
                             {
                                 <option value="@r.Value">@r.Text</option>
@@ -322,8 +335,8 @@ $(function(){
                         </div>
                     </div>
                     <div class="form-check form-switch mb-3">
-                        <input name="IsSuperAdmin" type="checkbox" class="form-check-input" id="isSuperAdmin" value="true" />
                         <input name="IsSuperAdmin" type="hidden" value="false" />
+                        <input name="IsSuperAdmin" type="checkbox" class="form-check-input" id="isSuperAdmin" value="true" />
                         <label class="form-check-label text-danger fw-semibold" for="isSuperAdmin">
                             <i class="bi bi-shield-fill-exclamation me-1"></i>منح صلاحيات SuperAdmin الكاملة
                         </label>
