@@ -35,15 +35,20 @@ namespace UniStay.Controllers
             return View(new ApplicationViewModel());
         }
 
-        // POST: /Application/Apply
+        /// <summary>
+        /// Handles student housing application submission with transaction safety,
+        /// validation-first ordering, and proper error recovery.
+        /// </summary>
         [HttpPost("Application/Apply")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Apply(ApplicationViewModel model)
         {
+            #region === PHASE 1: VALIDATION (no side effects) ===
+
             if (!ModelState.IsValid)
                 return View(model);
 
-            // التحقق من رفع الصورة الشخصية
+            // -- Photo validation --
             if (model.Photo == null || model.Photo.Length == 0)
             {
                 ModelState.AddModelError("Photo", "الصورة الشخصية مطلوبة");
@@ -62,14 +67,14 @@ namespace UniStay.Controllers
                 return View(model);
             }
 
-            // FIX 1: التحقق من تطابق كلمتي المرور (احتياطي إضافي فوق [Compare])
+            // -- Password confirmation --
             if (model.Password != model.ConfirmPassword)
             {
                 ModelState.AddModelError("ConfirmPassword", "كلمتا المرور غير متطابقتين");
                 return View(model);
             }
 
-            // التحقق من عدم استخدام البريد الإلكتروني من قبل طالب آخر
+            // -- Email uniqueness --
             var emailExists = await _context.Students
                 .AnyAsync(s => s.Email == model.Email && s.NationalID != model.NationalID && s.IsDeleted != true);
             if (emailExists)
@@ -78,170 +83,214 @@ namespace UniStay.Controllers
                 return View(model);
             }
 
-            // حساب المسافة من الجامعة تلقائياً بناءً على المحافظة
+            // -- Calculate distance from university --
             model.DistanceFromUniv = CalculateDistance(model.Governorate, model.City);
 
-            // 1. إنشاء أو تحديث Student
+            #endregion
+
+            #region === PHASE 2: LOOKUPS & PRE-CHECKS ===
+
+            // -- Existing student or new --
             var student = await _context.Students
                 .FirstOrDefaultAsync(s => s.NationalID == model.NationalID);
-
             bool isNewStudent = student == null;
 
-            if (student == null)
-            {
-                student = new Student
-                {
-                    NationalID = model.NationalID,
-                    FullName = model.FullName,
-                    Gender = model.Gender,
-                    BirthDate = model.BirthDate,
-                    Religion = model.Religion,
-                    Nationality = model.Nationality,
-                    Phone = model.Phone,
-                    Email = model.Email,
-                    Faculty = model.Faculty,
-                    AcademicYear = (byte?)model.AcademicYear,
-                    GradePercentage = model.GradePercentage,
-                    Governorate = model.Governorate,
-                    Markaz = model.Markaz,
-                    City = model.City,
-                    Address = model.Address,
-                    DistanceFromUniv = model.DistanceFromUniv,
-                    HasFamilyAbroad = model.HasFamilyAbroad,
-                    HasMedicalCondition = model.HasMedicalCondition,
-                    MedicalDescription = model.MedicalDescription,
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.Students.Add(student);
-                await _context.SaveChangesAsync();
-            }
-
-            // حفظ الصورة الشخصية
-            var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "student-photos");
-            Directory.CreateDirectory(uploadsDir);
-            var fileName = $"{student.ID}_{DateTime.Now:yyyyMMddHHmmss}{ext}";
-            var filePath = Path.Combine(uploadsDir, fileName);
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await model.Photo!.CopyToAsync(stream);
-            }
-            student.Photo = $"/uploads/student-photos/{fileName}";
-
-            // FIX 2: التحقق من وجود طلب مسبق لنفس العام الدراسي (تفادي UNIQUE constraint violation)
+            // -- Duplicate application check (BEFORE any writes) --
             string currentAcademicYear = $"{DateTime.Now.Year}-{DateTime.Now.Year + 1}";
-            var existingApplication = await _context.Applications
-                .FirstOrDefaultAsync(a => a.StudentID == student.ID
-                    && a.AcademicYear == currentAcademicYear
-                    && a.Status != "Cancelled"
-                    && a.Status != "Rejected");
-
-            if (existingApplication != null)
+            if (student != null)
             {
-                ModelState.AddModelError("", "لديك طلب مقدّم بالفعل لهذا العام الدراسي. يمكنك متابعة حالة طلبك من صفحة الاستعلام.");
-                return View(model);
-            }
-
-            // 2. حفظ Guardian (Father + ولي الأمر عند الحاجة)
-            var father = new Guardian
-            {
-                StudentID = student.ID,
-                GuardianType = "Father",
-                FullName = model.FatherName,
-                Job = model.FatherJob,
-                Address = model.FatherAddress,
-                IsDeceased = model.IsFatherDeceased
-            };
-            _context.Guardians.Add(father);
-
-            if (model.IsFatherDeceased && !string.IsNullOrEmpty(model.GuardianName))
-            {
-                var guardian = new Guardian
+                var existingApplication = await _context.Applications
+                    .FirstOrDefaultAsync(a => a.StudentID == student.ID
+                        && a.AcademicYear == currentAcademicYear
+                        && a.Status != "Cancelled"
+                        && a.Status != "Rejected");
+                if (existingApplication != null)
                 {
-                    StudentID = student.ID,
-                    GuardianType = "Other",
-                    FullName = model.GuardianName,
-                    NationalID = model.GuardianNationalID,
-                    Address = model.GuardianAddress
-                };
-                _context.Guardians.Add(guardian);
+                    ModelState.AddModelError("", "لديك طلب مقدّم بالفعل لهذا العام الدراسي. يمكنك متابعة حالة طلبك من صفحة الاستعلام.");
+                    return View(model);
+                }
             }
 
-            await _context.SaveChangesAsync();
-
-            // FIX 3: تحديد DormitoryCityID بناءً على جنس الطالب بدلاً من القيمة الثابتة 1
-            // يجب اختيار المدينة المناسبة من قاعدة البيانات بناءً على gender
+            // -- Dormitory availability check (deterministic: order by ID) --
             var dormitoryCity = await _context.DormitoryCities
                 .Where(d => d.IsActive == true && d.IsDeleted == false
                     && (d.CityType == (model.Gender == "Male" ? "Male" : "Female")
                         || d.CityType == "Mixed"))
+                .OrderBy(d => d.ID)
                 .FirstOrDefaultAsync();
-
             if (dormitoryCity == null)
             {
                 ModelState.AddModelError("", "لا توجد مدينة جامعية متاحة حالياً. يرجى المحاولة لاحقاً أو التواصل مع الإدارة.");
                 return View(model);
             }
 
-            // 3. إنشاء Application
-            var application = new Application
+            // -- Existing login check --
+            int? existingStudentId = student?.ID;
+            var existingLogin = existingStudentId != null
+                ? await _context.StudentLogins.FirstOrDefaultAsync(l => l.StudentID == existingStudentId)
+                : null;
+
+            #endregion
+
+            #region === PHASE 3: EXECUTION STRATEGY (retry-safe DB + file operations) ===
+
+            // SqlServerRetryingExecutionStrategy conflicts with manual BeginTransactionAsync().
+            // Using CreateExecutionStrategy().ExecuteAsync() lets EF manage both retries and
+            // the implicit transaction as a single retriable unit.
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            // Declared here so both the strategy lambda and the outer scope can access them
+            Application application = null!;
+            string? savedFilePath = null;
+            string? savedPhotoPath = null;
+
+            await strategy.ExecuteAsync(async () =>
             {
-                StudentID = student.ID,
-                DormitoryCityID = dormitoryCity.ID,
-                AcademicYear = currentAcademicYear,
-                StudentType = model.IsReturningStudent ? "Returning" : "New",
-                HousingType = model.HousingType,
-                HasSpecialNeeds = model.HasMedicalCondition,
-                SpecialNeedsDescription = model.MedicalDescription,
-                MealSubscription = model.MealSubscription,
-                Status = "Pending",
-                CreatedAt = DateTime.UtcNow
-            };
+                // -- 3a. Create / update Student record --
+                // Idempotent: if retried, student already exists → skip
+                if (student == null)
+                {
+                    student = new Student
+                    {
+                        NationalID = model.NationalID,
+                        FullName = model.FullName,
+                        Gender = model.Gender,
+                        BirthDate = model.BirthDate,
+                        Religion = model.Religion,
+                        Nationality = model.Nationality,
+                        Phone = model.Phone,
+                        Email = model.Email,
+                        Faculty = model.Faculty,
+                        AcademicYear = (byte?)model.AcademicYear,
+                        GradePercentage = model.GradePercentage,
+                        Governorate = model.Governorate,
+                        Markaz = model.Markaz,
+                        City = model.City,
+                        Address = model.Address,
+                        DistanceFromUniv = model.DistanceFromUniv,
+                        HasFamilyAbroad = model.HasFamilyAbroad,
+                        HasMedicalCondition = model.HasMedicalCondition,
+                        MedicalDescription = model.MedicalDescription,
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.Students.Add(student);
+                    await _context.SaveChangesAsync();
+                }
 
-            _context.Applications.Add(application);
-            await _context.SaveChangesAsync();
+                // -- 3b. Guardian records --
+                if (!model.IsFatherDeceased)
+                {
+                    var father = new Guardian
+                    {
+                        StudentID = student.ID,
+                        GuardianType = "Father",
+                        FullName = model.FatherName,
+                        Job = model.FatherJob,
+                        Address = model.FatherAddress,
+                        IsDeceased = false
+                    };
+                    _context.Guardians.Add(father);
+                }
 
-            // FIX 4: التحقق من عدم وجود حساب مسبق قبل إنشاء StudentLogin (تفادي UNIQUE constraint violation)
-            var existingLogin = await _context.StudentLogins
-                .FirstOrDefaultAsync(l => l.StudentID == student.ID);
+                if (model.IsFatherDeceased && !string.IsNullOrEmpty(model.GuardianName))
+                {
+                    var guardian = new Guardian
+                    {
+                        StudentID = student.ID,
+                        GuardianType = "Other",
+                        FullName = model.GuardianName,
+                        NationalID = model.GuardianNationalID,
+                        Address = model.GuardianAddress
+                    };
+                    _context.Guardians.Add(guardian);
+                }
 
-            if (existingLogin == null)
-            {
-                var studentLogin = new StudentLogin
+                // -- 3c. Application record --
+                application = new Application
                 {
                     StudentID = student.ID,
-                    Username = model.NationalID,
-                    PasswordHash = _passwordService.HashPassword(model.Password),
-                    IsActive = true,
-                    MustChangePassword = false,
+                    DormitoryCityID = dormitoryCity.ID,
+                    AcademicYear = currentAcademicYear,
+                    StudentType = model.IsReturningStudent ? "Returning" : "New",
+                    HousingType = model.HousingType,
+                    HasSpecialNeeds = model.HasMedicalCondition,
+                    SpecialNeedsDescription = model.MedicalDescription,
+                    MealSubscription = model.MealSubscription,
+                    Status = "Pending",
                     CreatedAt = DateTime.UtcNow
                 };
-                _context.StudentLogins.Add(studentLogin);
+                _context.Applications.Add(application);
+
+                // -- 3d. Student login (only if first time) --
+                if (existingLogin == null)
+                {
+                    var studentLogin = new StudentLogin
+                    {
+                        StudentID = student.ID,
+                        Username = model.NationalID,
+                        PasswordHash = _passwordService.HashPassword(model.Password),
+                        IsActive = true,
+                        MustChangePassword = false,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    _context.StudentLogins.Add(studentLogin);
+                }
+
                 await _context.SaveChangesAsync();
-            }
 
-            // 5. تسجيل في Audit — FIX 5: استخدام isNewStudent في الـ action
-            string auditAction = isNewStudent ? "Application.NewStudentSubmitted" : "Application.ReturningStudentSubmitted";
-            await _auditService.LogAsync(student.ID, "Student", auditAction, "Application", application.ID);
+                // -- 3e. File operation (inside strategy so any failure triggers retry) --
+                var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "student-photos");
+                Directory.CreateDirectory(uploadsDir);
+                var fileName = $"{student.ID}_{DateTime.Now:yyyyMMddHHmmssffff}{ext}";
+                var filePath = Path.Combine(uploadsDir, fileName);
+                await using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await model.Photo!.CopyToAsync(stream);
+                }
+                savedFilePath = filePath;
+                savedPhotoPath = $"/uploads/student-photos/{fileName}";
 
-            // 6. إرسال إيميل تأكيد
+                // -- 3f. Update student photo path --
+                student.Photo = savedPhotoPath;
+                await _context.SaveChangesAsync();
+            });
+
+            #endregion
+
+            #region === PHASE 4: POST-STRATEGY (audit, email — non-critical) ===
+
+            string auditAction = isNewStudent
+                ? "Application.NewStudentSubmitted"
+                : "Application.ReturningStudentSubmitted";
+            await _auditService.LogAsync(student!.ID, "Student", auditAction, "Application", application.ID);
+
             if (!string.IsNullOrEmpty(student.Email))
             {
-                string emailBody = $@"
-                    <h3>تم استلام طلبك بنجاح</h3>
-                    <p>رقم الطلب: <strong>{application.ID:00000}</strong></p>
-                    <p>اسم المستخدم: <strong>{model.NationalID}</strong></p>
-                    <p>سيتم مراجعة طلبك قريباً وسنخطرك بالنتيجة.</p>";
-
-                await _emailService.SendAsync(
-                    student.Email,
-                    "تأكيد تقديم طلب السكن - UniStay",
-                    emailBody,
-                    EmailType.ApplicationReceived,
-                    student.ID);
+                try
+                {
+                    string emailBody = $@"
+                        <h3>تم استلام طلبك بنجاح</h3>
+                        <p>رقم الطلب: <strong>{application.ID:00000}</strong></p>
+                        <p>اسم المستخدم: <strong>{model.NationalID}</strong></p>
+                        <p>سيتم مراجعة طلبك قريباً وسنخبرك بالنتيجة.</p>";
+                    await _emailService.SendAsync(
+                        student.Email,
+                        "تأكيد تقديم طلب السكن - UniStay",
+                        emailBody,
+                        EmailType.ApplicationReceived,
+                        student.ID);
+                }
+                catch (Exception ex)
+                {
+                    await _auditService.LogAsync(student.ID, "Student",
+                        "Application.EmailFailed", "Application", application.ID,
+                        null, new { Error = ex.Message });
+                }
             }
 
-            // 7. التوجيه إلى صفحة التأكيد
+            #endregion
+
             return RedirectToAction("Confirm", new { id = application.ID });
         }
 

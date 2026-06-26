@@ -1077,6 +1077,11 @@ public partial class AssuitDbContext : DbContext
             entity.Property(e => e.Amount).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.Notes).HasMaxLength(500);
             entity.Property(e => e.PaidAmount).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.PaidAt);
+            entity.Property(e => e.VerificationToken)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.MonthYear).HasMaxLength(10);
             entity.Property(e => e.PaymentMethod)
                 .HasMaxLength(30)
                 .IsUnicode(false);

@@ -31,6 +31,15 @@ public partial class Payment
 
     public DateTime? RecordedAt { get; set; }
 
+    /// <summary>When the payment was actually completed (nullable until paid).</summary>
+    public DateTime? PaidAt { get; set; }
+
+    /// <summary>Token/payload from the payment gateway for server-side verification.</summary>
+    public string? VerificationToken { get; set; }
+
+    /// <summary>Display month for monthly fees (e.g. "سبتمبر 2026"). Replaces Notes misuse.</summary>
+    public string? MonthYear { get; set; }
+
     public string? Notes { get; set; }
 
     public virtual Allocation? Allocation { get; set; }

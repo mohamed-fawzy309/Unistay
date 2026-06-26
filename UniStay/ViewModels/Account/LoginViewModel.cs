@@ -4,11 +4,10 @@ namespace UniStay.ViewModels.Account
 {
     public class LoginViewModel
     {
-        [Required(ErrorMessage = "الرقم القومي مطلوب")]
-        [StringLength(14, MinimumLength = 14, ErrorMessage = "يجب أن يكون الرقم القومي 14 رقماً بالضبط")]
-        [RegularExpression(@"^\d{14}$", ErrorMessage = "الرقم القومي يجب أن يحتوي على أرقام فقط")]
-        [Display(Name = "الرقم القومي")]
-        public string NationalID { get; set; } = string.Empty;
+        [Required(ErrorMessage = "اسم المستخدم مطلوب")]
+        [StringLength(100, MinimumLength = 2, ErrorMessage = "اسم المستخدم يجب أن يكون بين 2 و 100 حرف")]
+        [Display(Name = "اسم المستخدم")]
+        public string Name { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "كلمة المرور مطلوبة")]
         [MinLength(8, ErrorMessage = "كلمة المرور يجب أن تكون 8 أحرف على الأقل")]
