@@ -161,6 +161,7 @@ def sync_settings():
             headers={"X-Internal-Token": Config.INTERNAL_TOKEN},
             timeout=5,
             verify=Config.VERIFY_SSL,
+            headers={"X-Internal-Token": Config.INTERNAL_TOKEN},
         )
         resp.raise_for_status()
         data = resp.json()
@@ -657,6 +658,45 @@ def recognition_loop():
                 with latest_faces_lock:
                     latest_faces = current_faces
 
+                disp = frame.copy()
+                for f in current_faces:
+                    bx, by, bw, bh = f["bbox"][:4]
+                    name = f["name"]
+                    score = f["score"]
+                    is_match = f["isMatch"]
+                    above = f["aboveThreshold"]
+                    sid = f["studentID"]
+
+                    if not is_match:
+                        color = (0, 0, 255)
+                        label = "?"
+                    elif not above:
+                        color = (0, 165, 255)
+                        label = f"{score:.0%}"
+                    elif sid and sid in session_marked:
+                        color = (0, 255, 255)
+                        label = f"{name.split('_', 1)[-1] if '_' in name else name} ({score:.0%})"
+                    else:
+                        color = (0, 255, 0)
+                        label = f"{name.split('_', 1)[-1] if '_' in name else name} ({score:.0%})"
+
+                    cv2.rectangle(disp, (bx, by), (bx + bw, by + bh), color, 2)
+                    cv2.putText(disp, label, (bx, by - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+                cv2.imshow("UniStay - التعرف على الوجه", disp)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    logger.info("Camera preview closed by user (pressed 'q')")
+                    attendance_running = False
+                    break
+                try:
+                    if cv2.getWindowProperty("UniStay - التعرف على الوجه", cv2.WND_PROP_VISIBLE) < 1:
+                        logger.info("Camera preview window closed by user")
+                        attendance_running = False
+                        break
+                except:
+                    pass
+
                 time.sleep(Config.RECOGNITION_LOOP_DELAY)
 
             except cv2.error as e:
@@ -678,6 +718,7 @@ def recognition_loop():
             cam.release()
             logger.info("cam.release() called by recognition_loop finally  [thread=%s]", _tid_exit)
         camera_is_open = False
+        cv2.destroyAllWindows()
         with latest_frame_lock:
             latest_frame = None
             logger.info("latest_frame set to None (recognition loop ended)  [thread=%s]", _tid_exit)
@@ -1228,6 +1269,16 @@ def enrollment_test():
         logger.error("Test recognition error: %s", e)
         return jsonify({"error": f"خطأ في اختبار التعرف: {e}"}), 500
 
+
+@app.route("/api/shutdown", methods=["POST"])
+def shutdown():
+    logger.info("Shutdown requested via API")
+    global attendance_running
+    attendance_running = False
+    if recognition_thread and recognition_thread.is_alive():
+        recognition_thread.join(timeout=10)
+    logger.info("Shutdown complete. Exiting process.")
+    os._exit(0)
 
 signal.signal(signal.SIGINT, shutdown_handler)
 signal.signal(signal.SIGTERM, shutdown_handler)

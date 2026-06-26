@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
@@ -71,7 +72,7 @@ namespace UniStay.Controllers
                 .ToListAsync();
             var roomMap = allocations
                 .GroupBy(a => a.StudentID)
-                .ToDictionary(g => g.Key, g => g.First().CityRoom.RoomNumber);
+                .ToDictionary(g => g.Key, g => g.First().CityRoom?.RoomNumber ?? "N/A");
 
             var records = todayLogs
                 .Where(l => string.IsNullOrEmpty(studentName) ||
@@ -739,12 +740,20 @@ namespace UniStay.Controllers
                 var response = await client.PostAsJsonAsync(
                     $"{baseUrl}/api/enrollment/register", request);
                 var body = await response.Content.ReadAsStringAsync();
-                return StatusCode((int)response.StatusCode, body);
+                try
+                {
+                    var jsonResult = JsonSerializer.Deserialize<JsonElement>(body);
+                    return StatusCode((int)response.StatusCode, jsonResult);
+                }
+                catch (JsonException)
+                {
+                    return StatusCode((int)response.StatusCode, JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(new { error = body })));
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Face enrollment request failed");
-                return StatusCode(500, new { error = "تعذر الاتصال بنظام التعرف" });
+                return StatusCode(500, JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(new { error = "تعذر الاتصال بنظام التعرف" })));
             }
         }
 
@@ -759,12 +768,20 @@ namespace UniStay.Controllers
                 var response = await client.PostAsJsonAsync(
                     $"{baseUrl}/api/enrollment/delete", request);
                 var body = await response.Content.ReadAsStringAsync();
-                return StatusCode((int)response.StatusCode, body);
+                try
+                {
+                    var jsonResult = JsonSerializer.Deserialize<JsonElement>(body);
+                    return StatusCode((int)response.StatusCode, jsonResult);
+                }
+                catch (JsonException)
+                {
+                    return StatusCode((int)response.StatusCode, JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(new { error = body })));
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Face deletion request failed");
-                return StatusCode(500, new { error = "تعذر الاتصال بنظام التعرف" });
+                return StatusCode(500, JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(new { error = "تعذر الاتصال بنظام التعرف" })));
             }
         }
 
@@ -779,13 +796,121 @@ namespace UniStay.Controllers
                 var response = await client.PostAsJsonAsync(
                     $"{baseUrl}/api/enrollment/test", request);
                 var body = await response.Content.ReadAsStringAsync();
-                return StatusCode((int)response.StatusCode, body);
+                try
+                {
+                    var jsonResult = JsonSerializer.Deserialize<JsonElement>(body);
+                    return StatusCode((int)response.StatusCode, jsonResult);
+                }
+                catch (JsonException)
+                {
+                    return StatusCode((int)response.StatusCode, JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(new { error = body })));
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Face test request failed");
-                return StatusCode(500, new { error = "تعذر الاتصال بنظام التعرف" });
+                return StatusCode(500, JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(new { error = "تعذر الاتصال بنظام التعرف" })));
             }
+        }
+
+        private string? FlaskPidFilePath =>
+            System.IO.Path.Combine(
+                System.IO.Path.GetDirectoryName(typeof(Program).Assembly.Location)!,
+                "..", "..", "..", "..", "UniStay.FaceRecognition", "flask_pid.txt");
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> StartFlask()
+        {
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            var client = CreateFlaskClient();
+            try
+            {
+                var resp = await client.GetAsync($"{baseUrl}/api/status");
+                if (resp.IsSuccessStatusCode)
+                    return Json(new { success = true, message = "نظام التعرف يعمل بالفعل" });
+            }
+            catch { }
+
+            var flaskDir = System.IO.Path.Combine(
+                System.IO.Path.GetDirectoryName(typeof(Program).Assembly.Location)!,
+                "..", "..", "..", "..", "UniStay.FaceRecognition");
+
+            if (!Directory.Exists(flaskDir))
+                return Json(new { success = false, message = "لم يتم العثور على مجلد نظام التعرف" });
+
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "python",
+                    Arguments = "flask_api.py",
+                    WorkingDirectory = flaskDir,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+                using var process = new Process { StartInfo = psi };
+                process.Start();
+                System.IO.File.WriteAllText(FlaskPidFilePath, process.Id.ToString());
+
+                await Task.Delay(3000);
+
+                try
+                {
+                    var resp = await client.GetAsync($"{baseUrl}/api/status");
+                    if (resp.IsSuccessStatusCode)
+                        return Json(new { success = true, message = "تم تشغيل نظام التعرف بنجاح" });
+                }
+                catch { }
+
+                return Json(new { success = true, message = "تم بدء التشغيل. النظام قد يحتاج بضع ثوانٍ للاستجابة" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start Flask");
+                return Json(new { success = false, message = "فشل تشغيل نظام التعرف" });
+            }
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> StopFlask()
+        {
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            var client = CreateFlaskClient();
+
+            try
+            {
+                var resp = await client.PostAsync($"{baseUrl}/api/shutdown", null);
+                if (resp.IsSuccessStatusCode)
+                {
+                    await Task.Delay(1000);
+                    CleanupFlaskPid();
+                    return Json(new { success = true, message = "تم إيقاف نظام التعرف" });
+                }
+            }
+            catch { }
+
+            if (System.IO.File.Exists(FlaskPidFilePath))
+            {
+                var pid = int.Parse(System.IO.File.ReadAllText(FlaskPidFilePath).Trim());
+                try
+                {
+                    var proc = Process.GetProcessById(pid);
+                    proc.Kill(entireProcessTree: true);
+                    CleanupFlaskPid();
+                    await Task.Delay(500);
+                    return Json(new { success = true, message = "تم إيقاف نظام التعرف" });
+                }
+                catch { }
+            }
+
+            return Json(new { success = false, message = "تعذر إيقاف النظام - يرجى إغلاق flask_api.py يدويًا" });
+        }
+
+        private void CleanupFlaskPid()
+        {
+            try { if (System.IO.File.Exists(FlaskPidFilePath)) System.IO.File.Delete(FlaskPidFilePath); } catch { }
         }
 
         [HttpPost]
@@ -897,6 +1022,9 @@ namespace UniStay.Controllers
             };
 
             ViewBag.Cities = await _db.DormitoryCities.OrderBy(c => c.Name).ToListAsync();
+            ViewBag.FilterCityName = cityId.HasValue && cityId.Value > 0
+                ? await _db.DormitoryCities.Where(c => c.ID == cityId.Value).Select(c => c.Name).FirstOrDefaultAsync()
+                : null;
 
             return View(vm);
         }
@@ -904,6 +1032,10 @@ namespace UniStay.Controllers
         public async Task<IActionResult> DailyReportExportExcel(DateTime? date, string? studentName, string? roomNumber, int? cityId)
         {
             var filterDate = date ?? DateTime.Today;
+
+            var filterCityName = cityId.HasValue && cityId.Value > 0
+                ? await _db.DormitoryCities.Where(c => c.ID == cityId.Value).Select(c => c.Name).FirstOrDefaultAsync()
+                : null;
 
             var logs = await _db.AttendanceLogs
                 .Where(l => l.RecognizedAt.HasValue && l.RecognizedAt.Value.Date == filterDate.Date)
@@ -976,6 +1108,10 @@ namespace UniStay.Controllers
         public async Task<IActionResult> DailyReportExportPdf(DateTime? date, string? studentName, string? roomNumber, int? cityId)
         {
             var filterDate = date ?? DateTime.Today;
+
+            var filterCityName = cityId.HasValue && cityId.Value > 0
+                ? await _db.DormitoryCities.Where(c => c.ID == cityId.Value).Select(c => c.Name).FirstOrDefaultAsync()
+                : null;
 
             var logs = await _db.AttendanceLogs
                 .Where(l => l.RecognizedAt.HasValue && l.RecognizedAt.Value.Date == filterDate.Date)
@@ -1074,9 +1210,13 @@ namespace UniStay.Controllers
             var totalStudents = await _db.Students
                 .CountAsync(s => s.IsEnrolled == true && s.IsDeleted != true);
 
-            var students = await _db.Students
-                .Where(s => s.IsEnrolled == true && s.IsDeleted != true)
-                .ToListAsync();
+            var studentsQuery = _db.Students
+                .Where(s => s.IsEnrolled == true && s.IsDeleted != true);
+
+            if (!string.IsNullOrEmpty(studentName))
+                studentsQuery = studentsQuery.Where(s => s.FullName.Contains(studentName));
+
+            var students = await studentsQuery.ToListAsync();
 
             var allocations = await _db.Allocations
                 .Where(a => a.Status == "Active")
@@ -1084,7 +1224,7 @@ namespace UniStay.Controllers
                 .ToListAsync();
             var roomMap = allocations
                 .GroupBy(a => a.StudentID)
-                .ToDictionary(g => g.Key, g => g.First().CityRoom.RoomNumber);
+                .ToDictionary(g => g.Key, g => g.First().CityRoom?.RoomNumber ?? "N/A");
 
             var logsInMonth = await _db.AttendanceLogs
                 .Where(l => l.RecognizedAt.HasValue && l.RecognizedAt.Value >= startDate && l.RecognizedAt.Value < endDate)
@@ -1095,7 +1235,6 @@ namespace UniStay.Controllers
                 .ToDictionary(g => g.Key, g => g.Select(l => l.RecognizedAt!.Value.Date).Distinct().Count());
 
             var rows = students
-                .Where(s => string.IsNullOrEmpty(studentName) || s.FullName.Contains(studentName, StringComparison.OrdinalIgnoreCase))
                 .Select(s =>
                 {
                     var presentDays = presentDaysPerStudent.GetValueOrDefault(s.ID, 0);
@@ -1145,9 +1284,13 @@ namespace UniStay.Controllers
                 .Distinct()
                 .CountAsync();
 
-            var students = await _db.Students
-                .Where(s => s.IsEnrolled == true && s.IsDeleted != true)
-                .ToListAsync();
+            var studentsQuery = _db.Students
+                .Where(s => s.IsEnrolled == true && s.IsDeleted != true);
+
+            if (!string.IsNullOrEmpty(studentName))
+                studentsQuery = studentsQuery.Where(s => s.FullName.Contains(studentName));
+
+            var students = await studentsQuery.ToListAsync();
 
             var allocations = await _db.Allocations
                 .Where(a => a.Status == "Active")
@@ -1155,7 +1298,7 @@ namespace UniStay.Controllers
                 .ToListAsync();
             var roomMap = allocations
                 .GroupBy(a => a.StudentID)
-                .ToDictionary(g => g.Key, g => g.First().CityRoom.RoomNumber);
+                .ToDictionary(g => g.Key, g => g.First().CityRoom?.RoomNumber ?? "N/A");
 
             var logsInMonth = await _db.AttendanceLogs
                 .Where(l => l.RecognizedAt.HasValue && l.RecognizedAt.Value >= startDate && l.RecognizedAt.Value < endDate)
@@ -1166,7 +1309,6 @@ namespace UniStay.Controllers
                 .ToDictionary(g => g.Key, g => g.Select(l => l.RecognizedAt!.Value.Date).Distinct().Count());
 
             var rows = students
-                .Where(s => string.IsNullOrEmpty(studentName) || s.FullName.Contains(studentName, StringComparison.OrdinalIgnoreCase))
                 .Select(s =>
                 {
                     var presentDays = presentDaysPerStudent.GetValueOrDefault(s.ID, 0);
@@ -1231,9 +1373,13 @@ namespace UniStay.Controllers
                 .Distinct()
                 .CountAsync();
 
-            var students = await _db.Students
-                .Where(s => s.IsEnrolled == true && s.IsDeleted != true)
-                .ToListAsync();
+            var studentsQuery = _db.Students
+                .Where(s => s.IsEnrolled == true && s.IsDeleted != true);
+
+            if (!string.IsNullOrEmpty(studentName))
+                studentsQuery = studentsQuery.Where(s => s.FullName.Contains(studentName));
+
+            var students = await studentsQuery.ToListAsync();
 
             var allocations = await _db.Allocations
                 .Where(a => a.Status == "Active")
@@ -1241,7 +1387,7 @@ namespace UniStay.Controllers
                 .ToListAsync();
             var roomMap = allocations
                 .GroupBy(a => a.StudentID)
-                .ToDictionary(g => g.Key, g => g.First().CityRoom.RoomNumber);
+                .ToDictionary(g => g.Key, g => g.First().CityRoom?.RoomNumber ?? "N/A");
 
             var logsInMonth = await _db.AttendanceLogs
                 .Where(l => l.RecognizedAt.HasValue && l.RecognizedAt.Value >= startDate && l.RecognizedAt.Value < endDate)
@@ -1252,7 +1398,6 @@ namespace UniStay.Controllers
                 .ToDictionary(g => g.Key, g => g.Select(l => l.RecognizedAt!.Value.Date).Distinct().Count());
 
             var rows = students
-                .Where(s => string.IsNullOrEmpty(studentName) || s.FullName.Contains(studentName, StringComparison.OrdinalIgnoreCase))
                 .Select(s =>
                 {
                     var presentDays = presentDaysPerStudent.GetValueOrDefault(s.ID, 0);
@@ -1309,6 +1454,41 @@ namespace UniStay.Controllers
 
             var pdfBytes = doc.GeneratePdf();
             return File(pdfBytes, "application/pdf", $"MonthlyReport_{filterYear}{filterMonth:D2}.pdf");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetLatestRecords(DateTime? date, int? lastId)
+        {
+            var filterDate = date ?? DateTime.Today;
+
+            var logs = await _db.AttendanceLogs
+                .Where(l => l.RecognizedAt.HasValue && l.RecognizedAt.Value.Date == filterDate.Date
+                    && (!lastId.HasValue || l.ID > lastId.Value))
+                .Include(l => l.Student)
+                .OrderByDescending(l => l.RecognizedAt)
+                .Take(50)
+                .ToListAsync();
+
+            var studentIds = logs.Select(l => l.StudentID).Distinct().ToList();
+            var allocations = await _db.Allocations
+                .Where(a => studentIds.Contains(a.StudentID) && a.Status == "Active")
+                .Include(a => a.CityRoom)
+                .ToListAsync();
+            var roomMap = allocations
+                .GroupBy(a => a.StudentID)
+                .ToDictionary(g => g.Key, g => g.First().CityRoom?.RoomNumber ?? "N/A");
+
+            var records = logs.Select(l => new
+            {
+                id = l.ID,
+                studentName = l.Student.FullName,
+                roomNumber = roomMap.GetValueOrDefault(l.StudentID, "N/A"),
+                recognizedAt = l.RecognizedAt?.ToString("HH:mm:ss"),
+                confidence = l.Confidence?.ToString("P1") ?? "N/A",
+                confidenceValue = l.Confidence ?? 0
+            }).ToList();
+
+            return Json(new { records, maxId = logs.Any() ? logs.Max(l => l.ID) : (lastId ?? 0) });
         }
 
         [HttpGet]

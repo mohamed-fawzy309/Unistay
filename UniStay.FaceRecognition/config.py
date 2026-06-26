@@ -28,4 +28,4 @@ class Config:
     ENROLLMENT_FRAMES = 15
     BACKUP_DIR = os.path.join(BASE_DIR, "database", "backups")
     MAX_BACKUPS = 20
-    BLUR_THRESHOLD = 80.0
+    BLUR_THRESHOLD = 5.0

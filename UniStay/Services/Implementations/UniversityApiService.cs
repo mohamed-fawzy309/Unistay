@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 using RestSharp;
 using UniStay.Data;
 using UniStay.Models;
@@ -71,7 +72,12 @@ namespace UniStay.Services.Implementations
 
             if (local != null)
             {
-                local.IsEnrolled = result.IsEnrolled;
+                // Only update IsEnrolled if the API explicitly returned the field
+                var apiJson = JObject.Parse(apiData);
+                if (apiJson["isEnrolled"] != null || apiJson["IsEnrolled"] != null)
+                {
+                    local.IsEnrolled = result.IsEnrolled;
+                }
             }
 
             await db.SaveChangesAsync();
