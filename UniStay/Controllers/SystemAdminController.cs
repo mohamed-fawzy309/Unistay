@@ -10,6 +10,7 @@ namespace UniStay.Controllers;
 
 [Route("SystemAdmin")]
 [AdminAuthorize]
+[IgnoreAntiforgeryToken]
 public class SystemAdminController : Controller
 {
     private readonly AssuitDbContext _db;
@@ -34,12 +35,17 @@ public class SystemAdminController : Controller
 
     private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
 
+    [HttpGet("")]
+    [HttpGet("Index")]
+    public IActionResult Index()
+    {
+        return RedirectToAction(nameof(StudentOperations));
+    }
     // ══════════════════════════════════════════════════════════════
     // Student Operations - Advanced (5 operations)
     // ══════════════════════════════════════════════════════════════
 
     [HttpPost("CorrectNationalId")]
-    [ValidateAntiForgeryToken]
     [RequirePermission("Students.Manage", "CanEdit")]
     public async Task<IActionResult> CorrectNationalId(CorrectNationalIdViewModel model)
     {
@@ -62,7 +68,6 @@ public class SystemAdminController : Controller
     }
 
     [HttpPost("ChangeStudentNumber")]
-    [ValidateAntiForgeryToken]
     [RequirePermission("Students.Manage", "CanEdit")]
     public async Task<IActionResult> ChangeStudentNumber(ChangeStudentNumberViewModel model)
     {
@@ -82,7 +87,6 @@ public class SystemAdminController : Controller
     }
 
     [HttpPost("ReverseAcceptance")]
-    [ValidateAntiForgeryToken]
     [RequirePermission("Coordination.Manage", "CanEdit")]
     public async Task<IActionResult> ReverseAcceptance(ReverseAcceptanceViewModel model)
     {
@@ -104,7 +108,6 @@ public class SystemAdminController : Controller
     }
 
     [HttpPost("TransferUniversity")]
-    [ValidateAntiForgeryToken]
     [RequirePermission("Students.Manage", "CanEdit")]
     public async Task<IActionResult> TransferUniversity(TransferUniversityViewModel model)
     {
@@ -127,7 +130,6 @@ public class SystemAdminController : Controller
     }
 
     [HttpPost("ResetStudentPassword")]
-    [ValidateAntiForgeryToken]
     [RequirePermission("Students.Manage", "CanEdit")]
     public async Task<IActionResult> ResetStudentPassword(int studentId)
     {
@@ -167,7 +169,6 @@ public class SystemAdminController : Controller
     }
 
     [HttpPost("ApplicationTypes")]
-    [ValidateAntiForgeryToken]
     [RequirePermission("AppConfig.Manage", "CanCreate")]
     public async Task<IActionResult> ApplicationTypes(CreateApplicationTypeViewModel model)
     {
@@ -185,7 +186,6 @@ public class SystemAdminController : Controller
     }
 
     [HttpPost("EditApplicationType")]
-    [ValidateAntiForgeryToken]
     [RequirePermission("AppConfig.Manage", "CanEdit")]
     public async Task<IActionResult> EditApplicationType(EditApplicationTypeViewModel model)
     {
@@ -328,7 +328,6 @@ public class SystemAdminController : Controller
     }
 
     [HttpPost("CreateAdmin")]
-    [ValidateAntiForgeryToken]
     [RequirePermission("SystemUsers.Manage", "CanCreate")]
     public async Task<IActionResult> CreateAdmin(CreateAdminViewModel model)
     {

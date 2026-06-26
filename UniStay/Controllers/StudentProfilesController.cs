@@ -198,6 +198,23 @@ public class StudentProfilesController : Controller
             StudentCode = student.StudentCode,
             IsActive = student.IsActive ?? false,
 
+            // البيانات الأساسية
+            NationalID = student.NationalID,
+            Gender = student.Gender,
+            BirthDate = student.BirthDate,
+            Religion = student.Religion,
+            Email = student.Email,
+            Phone = student.Phone,
+            Faculty = student.Faculty,
+            Department = student.Department,
+            AcademicYear = student.AcademicYear,
+            GradeText = student.GradeText,
+            Governorate = student.Governorate,
+            Markaz = student.Markaz,
+            City = student.City,
+            Address = student.Address,
+            DistanceFromUniv = student.DistanceFromUniv,
+
             Allocations = student.Allocations.Select(a => new AllocationInfo
             {
                 AllocationId = a.ID,

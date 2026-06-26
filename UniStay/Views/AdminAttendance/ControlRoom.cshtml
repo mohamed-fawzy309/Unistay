@@ -1,0 +1,1130 @@
+@model ControlRoomViewModel
+@{
+    ViewData["Title"] = "غرفة التحكم";
+}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+<style>
+    :root {
+        --bg-dark: #0f1923;
+        --bg-card: #1a2332;
+        --bg-card-hover: #1e2a3a;
+        --text-primary: #e8edf2;
+        --text-secondary: #8892a0;
+        --accent-green: #00c853;
+        --accent-red: #ff1744;
+        --accent-blue: #2979ff;
+        --accent-amber: #ffab00;
+        --accent-purple: #7c4dff;
+        --border-subtle: rgba(255,255,255,0.06);
+    }
+
+    body { background: var(--bg-dark); }
+    .page-title { color: var(--text-primary); font-weight: 700; }
+
+    .monitor-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+    }
+    .monitor-card:hover { background: var(--bg-card-hover); border-color: rgba(255,255,255,0.1); }
+    .monitor-card .card-header {
+        background: transparent;
+        border-bottom: 1px solid var(--border-subtle);
+        color: var(--text-primary);
+        font-weight: 600;
+        padding: 0.75rem 1rem;
+    }
+    .monitor-card .card-body { padding: 1rem; color: var(--text-secondary); }
+
+    .cam-container { position: relative; background: #000; border-radius: 12px; overflow: hidden; min-height: 400px; }
+    .cam-container img { width: 100%; display: block; }
+    .cam-overlay {
+        position: absolute; bottom: 0; left: 0; right: 0;
+        background: linear-gradient(transparent, rgba(0,0,0,0.85));
+        padding: 1.25rem; color: #fff;
+    }
+    .cam-offline {
+        display: flex; align-items: center; justify-content: center;
+        min-height: 400px; background: #0a1118; color: #4a5568;
+        flex-direction: column; gap: 0.75rem;
+    }
+    .cam-offline i { font-size: 3.5rem; }
+
+    .status-indicator {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.25rem 0.75rem; border-radius: 20px;
+        font-size: 0.75rem; font-weight: 600;
+    }
+    .status-indicator .dot {
+        width: 8px; height: 8px; border-radius: 50%;
+    }
+    .status-indicator .dot.online {
+        background: var(--accent-green);
+        box-shadow: 0 0 8px var(--accent-green);
+        animation: pulse-dot 1.5s ease-in-out infinite;
+    }
+    .status-indicator .dot.offline {
+        background: var(--accent-red);
+        box-shadow: 0 0 6px var(--accent-red);
+    }
+    @@keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.3); }
+    }
+    .bg-running { background: rgba(0,200,83,0.15); color: var(--accent-green); }
+    .bg-stopped { background: rgba(255,23,68,0.15); color: var(--accent-red); }
+
+    .stat-tile {
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    .stat-tile:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
+    .stat-tile .stat-icon { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    .stat-tile .stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1.2; }
+    .stat-tile .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7; }
+
+    .skeleton {
+        background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-card-hover) 50%, var(--bg-card) 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s ease-in-out infinite;
+        border-radius: 8px;
+    }
+    @@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    .timeline { position: relative; padding: 0; list-style: none; }
+    .timeline::before {
+        content: ''; position: absolute; right: 1rem; top: 0; bottom: 0;
+        width: 2px; background: var(--border-subtle);
+    }
+    .timeline-item {
+        position: relative; padding: 0.5rem 3rem 0.5rem 1rem;
+        border-bottom: 1px solid var(--border-subtle);
+        transition: background 0.2s;
+    }
+    .timeline-item:hover { background: rgba(255,255,255,0.03); }
+    .timeline-item:last-child { border-bottom: none; }
+    .timeline-item .tl-dot {
+        position: absolute; right: calc(1rem - 4px); top: 0.75rem;
+        width: 10px; height: 10px; border-radius: 50%; z-index: 1;
+    }
+    .tl-dot.success { background: var(--accent-green); }
+    .tl-dot.warning { background: var(--accent-amber); }
+    .tl-dot.danger { background: var(--accent-red); }
+    .tl-dot.info { background: var(--accent-blue); }
+    .tl-dot.purple { background: var(--accent-purple); }
+    .timeline-item .tl-time { font-size: 0.7rem; color: var(--text-secondary); }
+    .timeline-item .tl-msg { font-size: 0.82rem; color: var(--text-primary); }
+
+    .log-panel {
+        background: #0a1118; border-radius: 12px;
+        color: #c8d6e5; font-family: 'Consolas','Courier New',monospace;
+        font-size: 0.75rem; max-height: 260px; overflow-y: auto; padding: 0.75rem;
+    }
+    .log-panel .log-entry { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .log-panel .log-entry:last-child { border-bottom: none; }
+    .log-time { color: #5a6a7a; }
+    .log-success { color: var(--accent-green); }
+    .log-warning { color: var(--accent-amber); }
+    .log-error { color: var(--accent-red); }
+    .log-info { color: #4fc3f7; }
+    .log-duplicate { color: #ffab00; }
+    .log-unknown { color: #ff6d00; }
+
+    .recognition-card {
+        position: fixed; top: 1rem; left: 1rem; z-index: 9999;
+        background: var(--bg-card); border: 1px solid var(--accent-green);
+        border-radius: 16px; padding: 1.25rem; width: 320px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        transform: translateX(-120%); transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+        direction: rtl;
+    }
+    .recognition-card.show { transform: translateX(0); }
+    .recognition-card .rc-photo {
+        width: 64px; height: 64px; border-radius: 50%; object-fit: cover;
+        border: 3px solid var(--accent-green);
+    }
+    .recognition-card .rc-photo-placeholder {
+        width: 64px; height: 64px; border-radius: 50%;
+        background: var(--bg-card-hover); display: flex; align-items: center; justify-content: center;
+        border: 3px solid var(--accent-green);
+    }
+    .recognition-card .rc-name { font-weight: 700; color: var(--text-primary); }
+    .recognition-card .rc-id { font-size: 0.75rem; color: var(--text-secondary); }
+    .recognition-card .rc-detail { font-size: 0.75rem; color: var(--text-secondary); }
+    .recognition-card .rc-conf {
+        font-size: 1.1rem; font-weight: 700;
+    }
+    .recognition-card .rc-conf.high { color: var(--accent-green); }
+    .recognition-card .rc-conf.medium { color: var(--accent-amber); }
+    .recognition-card .rc-conf.low { color: var(--accent-red); }
+
+    .control-btn {
+        border-radius: 10px; font-weight: 600; font-size: 0.8rem;
+        padding: 0.45rem 0.9rem; transition: all 0.2s;
+    }
+    .control-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .health-metric {
+        background: var(--bg-card); border: 1px solid var(--border-subtle);
+        border-radius: 10px; padding: 0.6rem; text-align: center;
+    }
+    .health-metric .hm-value { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+    .health-metric .hm-label { font-size: 0.65rem; text-transform: uppercase; opacity: 0.6; }
+
+    .sound-toggle {
+        background: transparent; border: 1px solid var(--border-subtle);
+        border-radius: 20px; color: var(--text-secondary); font-size: 0.75rem;
+        padding: 0.25rem 0.6rem; transition: all 0.2s;
+        cursor: pointer;
+    }
+    .sound-toggle:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+    .sound-toggle.muted { opacity: 0.4; }
+
+    @@media (max-width: 992px) {
+        .recognition-card { width: 280px; }
+        .cam-container { min-height: 280px; }
+        .cam-offline { min-height: 280px; }
+    }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="page-title mb-0"><i class="bi bi-camera-video-fill ms-1"></i> غرفة التحكم في الحضور</h2>
+    <div class="d-flex gap-2 align-items-center">
+        <span id="soundToggleBtn" class="sound-toggle" title="تشغيل/إيقاف الصوت">
+            <i class="bi bi-volume-up"></i> صوت
+        </span>
+        <a asp-action="Index" class="btn btn-outline-light btn-sm"><i class="bi bi-speedometer2"></i> لوحة الحضور</a>
+        <a asp-action="Monitoring" class="btn btn-outline-light btn-sm"><i class="bi bi-activity"></i> مراقبة API</a>
+    </div>
+</div>
+
+<div class="row g-3">
+
+    <!-- Left Column -->
+    <div class="col-xl-8">
+
+        <!-- Status Bar -->
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <span class="status-indicator bg-running" id="camStatusBadge">
+                <span class="dot offline" id="camStatusDot"></span>
+                <span id="camStatusText">الكاميرا متوقفة</span>
+            </span>
+            <span class="status-indicator bg-stopped" id="recStatusBadge">
+                <span class="dot offline" id="recStatusDot"></span>
+                <span id="recStatusText">التعرف متوقف</span>
+            </span>
+            <span class="status-indicator bg-stopped" id="sessStatusBadge">
+                <span class="dot offline" id="sessStatusDot"></span>
+                <span id="sessStatusText">الجلسة غير نشطة</span>
+            </span>
+        </div>
+
+        <!-- Camera Panel -->
+        <div class="monitor-card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-camera-video ms-1"></i> البث المباشر</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-dark" id="cameraResolution">-</span>
+                    <span class="badge bg-info" id="fpsDisplay">0 FPS</span>
+                    <span id="sessionStatusText" class="small" style="color:rgba(255,255,255,0.5)">متوقفة</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="cam-container" id="camContainer">
+                    <img id="cameraStream" src="" alt="Live Camera Feed" style="visibility: hidden;">
+                    <div class="cam-offline" id="camOffline">
+                        <i class="bi bi-camera-video-off"></i>
+                        <span>لم يتم بدء الجلسة بعد</span>
+                        <small class="text-muted">ابدأ جلسة لعرض البث المباشر</small>
+                    </div>
+                    <div class="cam-overlay" id="camOverlay" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success" id="recognitionStatusBadge">READY</span>
+                                <span class="small" id="activeSessionName">@(Model.ActiveSession ?? "—")</span>
+                            </div>
+                            <div>
+                                <span class="small" id="currentTime"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Session Controls -->
+        <div class="monitor-card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-sliders ms-1"></i> التحكم في الجلسة</span>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    <button id="btnStartSession" class="btn btn-success control-btn">
+                        <i class="bi bi-play-fill"></i> بدء الجلسة
+                    </button>
+                    <button id="btnStopSession" class="btn btn-danger control-btn" disabled>
+                        <i class="bi bi-stop-fill"></i> إيقاف الجلسة
+                    </button>
+                    <button id="btnOpenCamera" class="btn btn-outline-light control-btn" disabled>
+                        <i class="bi bi-camera-video"></i> فتح الكاميرا
+                    </button>
+                    <button id="btnCloseCamera" class="btn btn-outline-secondary control-btn" disabled>
+                        <i class="bi bi-camera-video-off"></i> إغلاق الكاميرا
+                    </button>
+                    <button id="btnCameraTest" class="btn btn-outline-warning control-btn">
+                        <i class="bi bi-camera"></i> اختبار الكاميرا
+                    </button>
+                    <button id="btnRefreshCameras" class="btn btn-outline-info control-btn">
+                        <i class="bi bi-arrow-clockwise"></i> تحديث الكاميرات
+                    </button>
+                    <button id="btnDevMode" class="btn btn-outline-secondary control-btn">
+                        <i class="bi bi-code-slash"></i> وضع المطور
+                    </button>
+                </div>
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-4">
+                        <select id="cameraSelector" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <option value="0">كاميرا 0</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="sessionNameInput" class="form-control form-control-sm bg-dark text-light border-secondary"
+                               placeholder="اسم الجلسة" value="@($"جلسة - {DateTime.Now:yyyy-MM-dd HH:mm}")">
+                    </div>
+                    <div class="col-md-4" id="sessionMessageContainer"></div>
+                </div>
+                <!-- Camera Settings Controls -->
+                <div class="row g-2 align-items-center mt-3 pt-2" style="border-top:1px solid var(--border-subtle);">
+                    <div class="col-md-3">
+                        <label class="small text-secondary mb-1">الدقة</label>
+                        <select id="resolutionSelector" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <option value="Auto">تلقائي</option>
+                            <option value="1920x1080">1920×1080</option>
+                            <option value="1280x720">1280×720</option>
+                            <option value="960x540">960×540</option>
+                            <option value="640x480">640×480</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small text-secondary mb-1">FPS</label>
+                        <select id="fpsSelector" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <option value="15">15</option>
+                            <option value="20">20</option>
+                            <option value="30" selected>30</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="small text-secondary mb-1">جودة JPEG: <span id="qualityValue">90</span></label>
+                        <input type="range" id="qualitySlider" class="form-range" min="60" max="100" value="90" style="height:6px;">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end gap-2">
+                        <button id="btnApplyCameraSettings" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-check-lg"></i> تطبيق
+                        </button>
+                        <small class="text-muted" style="font-size:0.7rem;">تغيير الدقة يعيد تشغيل الكاميرا</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Health -->
+        <div class="monitor-card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-activity ms-1"></i> صحة الكاميرا</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-2" id="healthContainer">
+                    <div class="col-3">
+                        <div class="health-metric">
+                            <div class="hm-value" id="healthResolution">-</div>
+                            <div class="hm-label">الدقة</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="health-metric">
+                            <div class="hm-value" id="healthFps">0</div>
+                            <div class="hm-label">FPS في الحلقة</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="health-metric">
+                            <div class="hm-value" id="healthActualFps">-</div>
+                            <div class="hm-label">FPS الكاميرا</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="health-metric">
+                            <div class="hm-value" id="healthJpegQuality">-</div>
+                            <div class="hm-label">جودة JPEG</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="health-metric">
+                            <div class="hm-value" id="healthResolutionActual">-</div>
+                            <div class="hm-label">الدقة الفعلية</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="health-metric">
+                            <div class="hm-value" id="healthCameraBackend">-</div>
+                            <div class="hm-label">الخلفية</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="health-metric">
+                            <div class="hm-value" id="healthCamera">—</div>
+                            <div class="hm-label">الكاميرا</div>
+                        </div>
+                    </div>
+                    <div class="col-3">
+                        <div class="health-metric">
+                            <div class="hm-value" id="healthReconnects">0</div>
+                            <div class="hm-label">إعادة اتصال</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recognition Log -->
+        <div class="monitor-card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-list-ul ms-1"></i> سجل التعرف</span>
+                <span class="badge bg-secondary" id="logCount">0</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="log-panel" id="logPanel">
+                    <div class="log-entry text-muted text-center py-3">في انتظار أحداث التعرف...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right Column -->
+    <div class="col-xl-4">
+
+        <!-- Dashboard Stats -->
+        <div class="monitor-card mb-3">
+            <div class="card-header"><i class="bi bi-bar-chart-fill ms-1"></i> إحصائيات اليوم</div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="stat-tile border-success border-opacity-25">
+                            <div class="stat-icon text-success"><i class="bi bi-check-circle-fill"></i></div>
+                            <div class="stat-value text-success" id="statPresent">@Model.PresentCount</div>
+                            <div class="stat-label text-success-emphasis">الحاضرون</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-tile border-danger border-opacity-25">
+                            <div class="stat-icon text-danger"><i class="bi bi-x-circle-fill"></i></div>
+                            <div class="stat-value text-danger" id="statAbsent">@Model.AbsentCount</div>
+                            <div class="stat-label text-danger-emphasis">الغائبون</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-tile border-primary border-opacity-25">
+                            <div class="stat-icon text-primary"><i class="bi bi-pie-chart-fill"></i></div>
+                            <div class="stat-value text-primary" id="statPercent">@Model.AttendancePercentage%</div>
+                            <div class="stat-label text-primary-emphasis">نسبة الحضور</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-tile border-warning border-opacity-25">
+                            <div class="stat-icon text-warning"><i class="bi bi-people-fill"></i></div>
+                            <div class="stat-value text-warning" id="statSession">@(Model.ActiveSession ?? "—")</div>
+                            <div class="stat-label text-warning-emphasis">الجلسة النشطة</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recognition Stats -->
+        <div class="monitor-card mb-3">
+            <div class="card-header"><i class="bi bi-cpu ms-1"></i> إحصائيات التعرف</div>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-6">
+                        <div class="stat-tile">
+                            <div class="stat-icon" style="color:#4fc3f7"><i class="bi bi-eye-fill"></i></div>
+                            <div class="stat-value" id="statFacesDetected" style="color:#4fc3f7">0</div>
+                            <div class="stat-label">وجوه مكتشفة</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-tile">
+                            <div class="stat-icon text-success"><i class="bi bi-person-check-fill"></i></div>
+                            <div class="stat-value text-success" id="statRecognized">0</div>
+                            <div class="stat-label">طلاب مميزون</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-tile">
+                            <div class="stat-icon text-danger"><i class="bi bi-question-circle-fill"></i></div>
+                            <div class="stat-value text-danger" id="statUnknown">0</div>
+                            <div class="stat-label">وجوه غير معروفة</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-tile">
+                            <div class="stat-icon" style="color:#b388ff"><i class="bi bi-graph-up-arrow"></i></div>
+                            <div class="stat-value" id="statAccuracy" style="color:#b388ff">0%</div>
+                            <div class="stat-label">دقة التعرف</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Session Timeline -->
+        <div class="monitor-card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history ms-1"></i> الخط الزمني</span>
+                <span class="badge bg-primary" id="timelineCount">0</span>
+            </div>
+            <div class="card-body p-0" style="max-height: 320px; overflow-y: auto;">
+                <ul class="timeline mb-0" id="timelineList">
+                    <li class="timeline-item text-muted text-center py-4" id="timelineEmpty">في انتظار أحداث الجلسة...</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Student Detail Card (inline) -->
+        <div class="monitor-card mb-3" id="studentDetailCard" style="display:none;">
+            <div class="card-header d-flex justify-content-between align-items-center" style="border-color: var(--accent-green);">
+                <span><i class="bi bi-person-badge ms-1"></i> آخر تسجيل</span>
+                <span id="studentDetailStatus" class="badge bg-success">MARKED</span>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div id="studentPhotoContainer" style="width:56px;height:56px;border-radius:50%;overflow:hidden;background:var(--bg-card-hover);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="bi bi-person-circle fs-2 text-secondary" id="studentPhotoPlaceholder"></i>
+                        <img id="studentPhotoImg" src="" style="width:100%;height:100%;object-fit:cover;display:none;">
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold" id="detailStudentName" style="color:var(--text-primary)">—</h6>
+                        <small style="color:var(--text-secondary)" id="detailStudentID">#—</small>
+                    </div>
+                </div>
+                <div class="row g-2 small">
+                    <div class="col-6"><span class="detail-label" style="font-size:0.65rem;color:var(--text-secondary);text-transform:uppercase;">المدينة</span><br><span class="fw-semibold" id="detailCity" style="color:var(--text-primary)">—</span></div>
+                    <div class="col-6"><span class="detail-label" style="font-size:0.65rem;color:var(--text-secondary);text-transform:uppercase;">المبنى</span><br><span class="fw-semibold" id="detailBuilding" style="color:var(--text-primary)">—</span></div>
+                    <div class="col-6"><span class="detail-label" style="font-size:0.65rem;color:var(--text-secondary);text-transform:uppercase;">الغرفة</span><br><span class="fw-semibold" id="detailRoom" style="color:var(--text-primary)">—</span></div>
+                    <div class="col-6"><span class="detail-label" style="font-size:0.65rem;color:var(--text-secondary);text-transform:uppercase;">السرير</span><br><span class="fw-semibold" id="detailBed" style="color:var(--text-primary)">—</span></div>
+                    <div class="col-12 mt-1">
+                        <span class="detail-label" style="font-size:0.65rem;color:var(--text-secondary);text-transform:uppercase;">نسبة الثقة</span><br>
+                        <span class="fw-bold" id="detailConfidence" style="color:var(--accent-green)">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Session Summary Modal -->
+<div class="modal fade" id="sessionSummaryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-subtle);">
+            <div class="modal-header" style="border-color:var(--border-subtle);">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-check ms-1"></i> ملخص الجلسة</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <h6 id="summarySessionName" class="fw-bold">—</h6>
+                    <small style="color:var(--text-secondary)" id="summaryDuration">—</small>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-4"><div class="stat-tile border-success border-opacity-25"><div class="fw-bold fs-4 text-success" id="summaryPresent">0</div><small>حاضر</small></div></div>
+                    <div class="col-4"><div class="stat-tile border-danger border-opacity-25"><div class="fw-bold fs-4 text-danger" id="summaryAbsent">0</div><small>غائب</small></div></div>
+                    <div class="col-4"><div class="stat-tile border-primary border-opacity-25"><div class="fw-bold fs-4 text-primary" id="summaryPercent">0%</div><small>نسبة الحضور</small></div></div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-3"><div class="stat-tile"><div class="fw-bold" style="color:#4fc3f7" id="summaryTotal">0</div><small>الإجمالي</small></div></div>
+                    <div class="col-3"><div class="stat-tile"><div class="fw-bold" style="color:#ffab00" id="summaryFaces">0</div><small>وجوه مكتشفة</small></div></div>
+                    <div class="col-3"><div class="stat-tile"><div class="fw-bold text-success" id="summaryRecognized">0</div><small>تم التعرف</small></div></div>
+                    <div class="col-3"><div class="stat-tile"><div class="fw-bold" style="color:#b388ff" id="summaryAccuracy">0%</div><small>دقة التعرف</small></div></div>
+                </div>
+                <div class="row g-2">
+                    <div class="col-4"><div class="stat-tile"><div class="fw-bold" style="color:#ffab00" id="summaryDuplicates">0</div><small>محاولات مكررة</small></div></div>
+                    <div class="col-4"><div class="stat-tile"><div class="fw-bold" style="color:#4fc3f7" id="summaryCamera">—</div><small>الكاميرا</small></div></div>
+                    <div class="col-4"><div class="stat-tile"><div class="fw-bold" style="color:#ff6d00" id="summaryUnknown">0</div><small>وجوه غير معروفة</small></div></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-color:var(--border-subtle);">
+                <a id="exportExcelBtn" class="btn btn-success" href="#"><i class="bi bi-file-earmark-excel"></i> تصدير Excel</a>
+                <a id="exportPdfBtn" class="btn btn-danger" href="#"><i class="bi bi-file-earmark-pdf"></i> تصدير PDF</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recognition Toast Card (fixed position) -->
+<div class="recognition-card" id="recognitionCard">
+    <div class="d-flex align-items-center gap-3">
+        <div id="rcPhotoContainer">
+            <div class="rc-photo-placeholder" id="rcPhotoPlaceholder"><i class="bi bi-person fs-3 text-secondary"></i></div>
+            <img class="rc-photo" id="rcPhotoImg" src="" style="display:none;">
+        </div>
+        <div style="flex:1;min-width:0;">
+            <div class="rc-name" id="rcName">—</div>
+            <div class="rc-id" id="rcId">#—</div>
+        </div>
+        <div class="rc-conf high text-center" id="rcConf">
+            <div id="rcConfValue">0%</div>
+            <small style="font-size:0.6rem;opacity:0.6;">ثقة</small>
+        </div>
+    </div>
+    <div class="mt-2" style="font-size:0.75rem;color:var(--text-secondary);">
+        <span id="rcFaculty">—</span> · <span id="rcCity">—</span> · <span id="rcRoom">—</span>
+    </div>
+    <div class="mt-2 d-flex justify-content-between align-items-center">
+        <span class="badge" id="rcStatusBadge">حاضر</span>
+        <small style="color:var(--text-secondary)" id="rcTime">—</small>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let pollInterval = null;
+        let activityRefreshInterval = null;
+        let streamActive = false;
+        let currentSessionRunning = @(Model.ActiveSession != null ? "true" : "false");
+        let soundEnabled = true;
+        let reconnectCount = 0;
+        let lastReconnectCount = 0;
+        let recognitionCardTimer = null;
+
+        // ——— Audio Feedback ———
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function playTone(freq, duration, type, volume) {
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new AudioCtx();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type || 'sine';
+                osc.frequency.value = freq;
+                gain.gain.value = volume || 0.15;
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playSuccess() { playTone(880, 0.15, 'sine', 0.12); setTimeout(function () { playTone(1100, 0.2, 'sine', 0.12); }, 100); }
+        function playAlready() { playTone(660, 0.2, 'triangle', 0.1); setTimeout(function () { playTone(550, 0.25, 'triangle', 0.1); }, 120); }
+        function playUnknown() { playTone(330, 0.3, 'sawtooth', 0.06); }
+        function playError() { playTone(220, 0.4, 'sawtooth', 0.08); setTimeout(function () { playTone(180, 0.4, 'sawtooth', 0.08); }, 150); }
+
+        document.getElementById('soundToggleBtn').addEventListener('click', function () {
+            soundEnabled = !soundEnabled;
+            this.innerHTML = soundEnabled ? '<i class="bi bi-volume-up"></i> صوت' : '<i class="bi bi-volume-mute"></i> كتم';
+            this.classList.toggle('muted');
+        });
+
+        // ——— Clock ———
+        function updateClock() {
+            document.getElementById('currentTime').textContent = new Date().toLocaleTimeString('ar-EG');
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // ——— Recognition Card ———
+        function showRecognitionCard(ev) {
+            const card = document.getElementById('recognitionCard');
+            if (!ev || (!ev.studentID && !ev.studentName)) { card.classList.remove('show'); return; }
+
+            document.getElementById('rcName').textContent = ev.studentName || ev.message || '—';
+            document.getElementById('rcId').textContent = '#' + (ev.studentID || '—');
+
+            const confEl = document.getElementById('rcConf');
+            const confVal = document.getElementById('rcConfValue');
+            if (ev.confidence) {
+                const pct = (ev.confidence * 100).toFixed(1);
+                confVal.textContent = pct + '%';
+                confEl.className = 'rc-conf text-center ' + (ev.confidence >= 0.85 ? 'high' : ev.confidence >= 0.7 ? 'medium' : 'low');
+            } else { confVal.textContent = '—'; confEl.className = 'rc-conf text-center'; }
+
+            const badge = document.getElementById('rcStatusBadge');
+            if (ev.attendanceResult === 'MARKED' || ev.type === 'recognition_success') {
+                badge.textContent = 'حاضر'; badge.className = 'badge bg-success';
+            } else if (ev.type === 'already_marked') {
+                badge.textContent = 'مسجل مسبقاً'; badge.className = 'badge bg-warning text-dark';
+            } else if (ev.type === 'unknown_face') {
+                badge.textContent = 'غير معروف'; badge.className = 'badge bg-danger';
+            } else { badge.textContent = '—'; badge.className = 'badge bg-secondary'; }
+
+            document.getElementById('rcTime').textContent = ev.time || '—';
+            document.getElementById('rcFaculty').textContent = '—';
+            document.getElementById('rcCity').textContent = '—';
+            document.getElementById('rcRoom').textContent = '—';
+
+            card.classList.add('show');
+
+            if (ev.studentID && ev.studentID > 0) {
+                fetch('/AdminAttendance/GetStudentAccommodation?studentId=' + ev.studentID)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.found) {
+                            document.getElementById('rcCity').textContent = data.city || '—';
+                            document.getElementById('rcFaculty').textContent = data.faculty || '—';
+                            document.getElementById('rcRoom').textContent = (data.building || '') + ' - ' + (data.room || '');
+                            var img = document.getElementById('rcPhotoImg');
+                            var ph = document.getElementById('rcPhotoPlaceholder');
+                            if (data.hasPhoto) {
+                                img.src = '/images/students/' + ev.studentID + '.jpg?' + new Date().getTime();
+                                img.style.display = 'block'; ph.style.display = 'none';
+                            } else { img.style.display = 'none'; ph.style.display = 'flex'; }
+                        }
+                    }).catch(function () { console.warn('Failed to load student photo:', ev.studentID); });
+            }
+
+            if (recognitionCardTimer) clearTimeout(recognitionCardTimer);
+            recognitionCardTimer = setTimeout(function () { card.classList.remove('show'); }, 5000);
+        }
+
+        // ——— Session Controls ———
+        document.getElementById('btnStartSession').addEventListener('click', function () {
+            const btn = this; btn.disabled = true;
+            const sessionName = document.getElementById('sessionNameInput').value || 'جلسة - ' + new Date().toISOString().slice(0, 16).replace('T', ' ');
+            fetch('/AdminAttendance/StartSessionAjax', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionName: sessionName })
+            }).then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success === true) {
+                    currentSessionRunning = true; updateSessionUI(true); showMessage('تم بدء الجلسة بنجاح', 'success'); startStream();
+                } else { showMessage(data.message || 'تعذر بدء الجلسة. تأكد من اتصال نظام التعرف.', 'danger'); }
+            }).catch(function () { showMessage('تعذر الاتصال بالخادم. تحقق من اتصال الشبكة.', 'danger'); })
+            .finally(function () { btn.disabled = false; });
+        });
+
+        document.getElementById('btnStopSession').addEventListener('click', function () {
+            const btn = this; btn.disabled = true;
+            fetch('/AdminAttendance/StopSessionAjax', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }
+            }).then(function (r) { return r.json(); })
+            .then(function (data) {
+                currentSessionRunning = false; updateSessionUI(false); stopStream();
+                showMessage(data.message || 'تم إيقاف الجلسة', 'warning');
+                setTimeout(showSessionSummary, 500);
+            }).catch(function () { showMessage('تعذر الاتصال بالخادم لإيقاف الجلسة', 'danger'); })
+            .finally(function () { btn.disabled = false; });
+        });
+
+        function showSessionSummary() {
+            fetch('/AdminAttendance/GetSessionSummary')
+                .then(function (r) { return r.json(); })
+                .then(function (s) {
+                    document.getElementById('summarySessionName').textContent = s.sessionName || '—';
+                    document.getElementById('summaryDuration').textContent = 'المدة: ' + (s.duration || '—');
+                    document.getElementById('summaryPresent').textContent = s.presentCount;
+                    document.getElementById('summaryAbsent').textContent = s.absentCount;
+                    document.getElementById('summaryPercent').textContent = s.attendancePercentage + '%';
+                    document.getElementById('summaryTotal').textContent = s.totalStudents;
+                    document.getElementById('summaryFaces').textContent = s.facesDetected;
+                    document.getElementById('summaryRecognized').textContent = s.studentsRecognized;
+                    document.getElementById('summaryAccuracy').textContent = s.recognitionAccuracy + '%';
+                    document.getElementById('summaryDuplicates').textContent = s.duplicateAttempts || 0;
+                    document.getElementById('summaryCamera').textContent = 'كاميرا ' + (s.cameraIndex || 0);
+                    document.getElementById('summaryUnknown').textContent = s.unknownFaces || 0;
+                    document.getElementById('exportExcelBtn').href = '/AdminAttendance/SessionSummaryExportExcel';
+                    document.getElementById('exportPdfBtn').href = '/AdminAttendance/SessionSummaryExportPdf';
+                    var modal = new bootstrap.Modal(document.getElementById('sessionSummaryModal'));
+                    modal.show();
+                }).catch(function () { showMessage('تعذر تحميل ملخص الجلسة', 'danger'); });
+        }
+
+        function updateSessionUI(running) {
+            document.getElementById('btnStartSession').disabled = running;
+            document.getElementById('btnStopSession').disabled = !running;
+            document.getElementById('btnOpenCamera').disabled = !running;
+            document.getElementById('btnCloseCamera').disabled = !running;
+            const dot = document.getElementById('sessStatusDot');
+            const text = document.getElementById('sessStatusText');
+            const badge = document.getElementById('sessStatusBadge');
+            if (running) {
+                dot.className = 'dot online'; text.textContent = 'الجلسة نشطة';
+                badge.className = 'status-indicator bg-running';
+            } else {
+                dot.className = 'dot offline'; text.textContent = 'الجلسة غير نشطة';
+                badge.className = 'status-indicator bg-stopped';
+            }
+        }
+
+        // ——— Stream ———
+        function startStream() {
+            const img = document.getElementById('cameraStream');
+            const offline = document.getElementById('camOffline');
+            const overlay = document.getElementById('camOverlay');
+            const streamUrl = '/AdminAttendance/CameraStreamProxy?' + new Date().getTime();
+
+            img.src = streamUrl;
+            img.style.visibility = 'visible';
+            offline.style.display = 'none';
+            overlay.style.display = 'block';
+            streamActive = true;
+            startPolling();
+        }
+
+        function stopStream() {
+            const img = document.getElementById('cameraStream');
+            const offline = document.getElementById('camOffline');
+            const overlay = document.getElementById('camOverlay');
+            img.src = ''; img.style.visibility = 'hidden';
+            offline.style.display = 'flex'; overlay.style.display = 'none';
+            streamActive = false; stopPolling();
+        }
+
+        // ——— Polling ———
+        function startPolling() {
+            if (pollInterval) clearInterval(pollInterval);
+            if (activityRefreshInterval) clearInterval(activityRefreshInterval);
+            pollInterval = setInterval(pollStatus, 2000);
+            activityRefreshInterval = setInterval(pollEvents, 1000);
+            pollStatus(); pollEvents();
+        }
+
+        function stopPolling() {
+            if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+            if (activityRefreshInterval) { clearInterval(activityRefreshInterval); activityRefreshInterval = null; }
+        }
+
+        function pollStatus() {
+            if (!streamActive) return;
+            fetch('/AdminAttendance/GetFlaskStatus')
+                .then(function (r) { return r.json(); })
+                .then(function (data) { updateStatusUI(data); })
+                .catch(function () { document.getElementById('fpsDisplay').textContent = '-- FPS'; });
+        }
+
+        function pollEvents() {
+            if (!streamActive) return;
+            fetch('/AdminAttendance/GetRecognitionEvents')
+                .then(function (r) { return r.json(); })
+                .then(function (events) {
+                    updateActivityUI(events); updateLogUI(events); updateTimeline(events);
+                }).catch(function () { document.getElementById('statusIndicator').className = 'status-offline'; });
+        }
+
+        function updateStatusUI(data) {
+            if (data.fps !== undefined) {
+                document.getElementById('fpsDisplay').textContent = data.fps + ' FPS';
+                document.getElementById('healthFps').textContent = data.fps;
+            }
+            if (data.resolution) {
+                document.getElementById('cameraResolution').textContent = data.resolution;
+                document.getElementById('healthResolution').textContent = data.resolution;
+            }
+            if (data.actualWidth !== undefined && data.actualHeight !== undefined) {
+                document.getElementById('healthResolutionActual').textContent = data.actualWidth + 'x' + data.actualHeight;
+            }
+            if (data.actualFPS !== undefined) {
+                document.getElementById('healthActualFps').textContent = data.actualFPS;
+            }
+            if (data.jpegQuality !== undefined) {
+                document.getElementById('healthJpegQuality').textContent = data.jpegQuality;
+            }
+            if (data.cameraBackend !== undefined) {
+                var backendNames = { 700: 'DSHOW', 1400: 'MSMF', 0: 'ANY', 200: 'V4L2' };
+                document.getElementById('healthCameraBackend').textContent = backendNames[data.cameraBackend] || data.cameraBackend;
+            }
+            if (data.facesDetected !== undefined) document.getElementById('statFacesDetected').textContent = data.facesDetected;
+            if (data.studentsRecognized !== undefined) document.getElementById('statRecognized').textContent = data.studentsRecognized;
+            if (data.unknownFaces !== undefined) document.getElementById('statUnknown').textContent = data.unknownFaces;
+            if (data.facesDetected > 0) {
+                var accuracy = Math.round((data.studentsRecognized || 0) / data.facesDetected * 100);
+                document.getElementById('statAccuracy').textContent = accuracy + '%';
+            }
+            if (data.sessionName) {
+                document.getElementById('activeSessionName').textContent = data.sessionName;
+                document.getElementById('statSession').textContent = data.sessionName;
+            }
+
+            // Camera status
+            const camDot = document.getElementById('camStatusDot');
+            const camText = document.getElementById('camStatusText');
+            const camBadge = document.getElementById('camStatusBadge');
+            if (data.cameraOpen) {
+                camDot.className = 'dot online'; camText.textContent = 'الكاميرا متصلة';
+                camBadge.className = 'status-indicator bg-running';
+            } else {
+                camDot.className = 'dot offline'; camText.textContent = 'الكاميرا متوقفة';
+                camBadge.className = 'status-indicator bg-stopped';
+            }
+
+            // Recognition status
+            const recDot = document.getElementById('recStatusDot');
+            const recText = document.getElementById('recStatusText');
+            const recBadge = document.getElementById('recStatusBadge');
+            if (data.running) {
+                recDot.className = 'dot online'; recText.textContent = 'التعرف نشط';
+                recBadge.className = 'status-indicator bg-running';
+            } else {
+                recDot.className = 'dot offline'; recText.textContent = 'التعرف متوقف';
+                recBadge.className = 'status-indicator bg-stopped';
+            }
+
+            // Camera health
+            var badge = document.getElementById('recognitionStatusBadge');
+            if (data.running) { badge.textContent = 'READY'; badge.className = 'badge bg-success'; }
+            else { badge.textContent = 'STOPPED'; badge.className = 'badge bg-secondary'; }
+
+            document.getElementById('healthCamera').textContent = 'كاميرا ' + (data.cameraIndex !== undefined ? data.cameraIndex : '—');
+
+            if (data.reconnectCount !== undefined && data.reconnectCount > lastReconnectCount) {
+                reconnectCount += (data.reconnectCount - lastReconnectCount);
+                lastReconnectCount = data.reconnectCount;
+            }
+            document.getElementById('healthReconnects').textContent = reconnectCount;
+        }
+
+        function updateTimeline(events) {
+            var list = document.getElementById('timelineList');
+            var empty = document.getElementById('timelineEmpty');
+            if (!events || events.length === 0) {
+                if (empty) empty.style.display = 'block';
+                document.getElementById('timelineCount').textContent = '0';
+                return;
+            }
+
+            if (empty) empty.style.display = 'none';
+            var types = ['recognition_success', 'already_marked', 'unknown_face', 'session_started', 'session_stopped', 'camera_started', 'camera_stopped', 'face_detected', 'recognition_error', 'low_confidence', 'error'];
+            var html = '';
+            var count = 0;
+            for (var i = 0; i < Math.min(events.length, 30); i++) {
+                var ev = events[i];
+                if (types.indexOf(ev.type) === -1 && !ev.studentName) continue;
+                count++;
+                var dotClass = 'info';
+                if (ev.type === 'recognition_success') dotClass = 'success';
+                else if (ev.type === 'already_marked') dotClass = 'warning';
+                else if (ev.type === 'unknown_face' || ev.type === 'error') dotClass = 'danger';
+                else if (ev.type === 'session_started' || ev.type === 'camera_started') dotClass = 'success';
+                else if (ev.type === 'session_stopped' || ev.type === 'camera_stopped') dotClass = 'danger';
+                else if (ev.type === 'face_detected') dotClass = 'purple';
+
+                var msg = ev.studentName || ev.message || '';
+                if (msg.length > 50) msg = msg.substring(0, 50) + '...';
+                html += '<li class="timeline-item"><span class="tl-dot ' + dotClass + '"></span>' +
+                    '<div class="tl-time">' + (ev.time || '') + '</div>' +
+                    '<div class="tl-msg">' + msg + '</div></li>';
+            }
+            list.innerHTML = html || '<li class="timeline-item text-muted text-center py-3">لا توجد أحداث</li>';
+            document.getElementById('timelineCount').textContent = count;
+        }
+
+        function updateDetailCard(ev) {
+            var card = document.getElementById('studentDetailCard');
+            if (!ev || (!ev.studentID && !ev.studentName)) { card.style.display = 'none'; return; }
+            card.style.display = 'block';
+            document.getElementById('detailStudentName').textContent = ev.studentName || ev.message || '—';
+            document.getElementById('detailStudentID').textContent = '#' + (ev.studentID || '—');
+            var statusBadge = document.getElementById('studentDetailStatus');
+            if (ev.attendanceResult === 'MARKED' || ev.type === 'recognition_success') {
+                statusBadge.textContent = 'حاضر'; statusBadge.className = 'badge bg-success';
+            } else if (ev.type === 'already_marked') {
+                statusBadge.textContent = 'مسجل مسبقاً'; statusBadge.className = 'badge bg-warning text-dark';
+            } else if (ev.type === 'unknown_face') {
+                statusBadge.textContent = 'غير معروف'; statusBadge.className = 'badge bg-danger';
+            }
+            if (ev.confidence !== undefined && ev.confidence !== null) {
+                var pct = (ev.confidence * 100).toFixed(1);
+                document.getElementById('detailConfidence').textContent = pct + '%';
+                document.getElementById('detailConfidence').style.color = ev.confidence >= 0.85 ? 'var(--accent-green)' : ev.confidence >= 0.7 ? 'var(--accent-amber)' : 'var(--accent-red)';
+            }
+            if (ev.studentID && ev.studentID > 0) {
+                fetch('/AdminAttendance/GetStudentAccommodation?studentId=' + ev.studentID)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.found) {
+                            document.getElementById('detailCity').textContent = data.city || '—';
+                            document.getElementById('detailBuilding').textContent = data.building || '—';
+                            document.getElementById('detailRoom').textContent = data.room || '—';
+                            document.getElementById('detailBed').textContent = data.bed || '—';
+                            document.getElementById('detailStudentName').textContent = data.studentName || ev.studentName;
+                            var img = document.getElementById('studentPhotoImg');
+                            var ph = document.getElementById('studentPhotoPlaceholder');
+                            if (data.hasPhoto) {
+                                img.style.display = 'block'; ph.style.display = 'none';
+                                img.src = '/images/students/' + ev.studentID + '.jpg?' + new Date().getTime();
+                                img.onerror = function () { img.style.display = 'none'; ph.style.display = 'block'; };
+                            } else { img.style.display = 'none'; ph.style.display = 'block'; }
+                        }
+                    }).catch(function () {});
+            }
+        }
+
+        function updateActivityUI(events) {
+            if (!events || events.length === 0) {
+                return;
+            }
+            var lastRelevant = null;
+            for (var i = 0; i < Math.min(events.length, 50); i++) {
+                var ev = events[i];
+                if (ev.type === 'recognition_success' || ev.type === 'already_marked' || ev.type === 'unknown_face') {
+                    if (!lastRelevant) lastRelevant = ev;
+                }
+            }
+            if (lastRelevant) {
+                if (lastRelevant.type === 'recognition_success') playSuccess();
+                else if (lastRelevant.type === 'already_marked') playAlready();
+                else if (lastRelevant.type === 'unknown_face') playUnknown();
+                showRecognitionCard(lastRelevant);
+                updateDetailCard(lastRelevant);
+            }
+        }
+
+        function updateLogUI(events) {
+            var panel = document.getElementById('logPanel');
+            if (!events || events.length === 0) return;
+            var html = ''; var count = 0;
+            for (var i = 0; i < Math.min(events.length, 100); i++) {
+                var ev = events[i]; count++;
+                var cls = 'log-info'; var icon = '•';
+                if (ev.type === 'recognition_success') { cls = 'log-success'; icon = '✓'; }
+                else if (ev.type === 'already_marked') { cls = 'log-duplicate'; icon = '◉'; }
+                else if (ev.type === 'unknown_face') { cls = 'log-unknown'; icon = '?'; }
+                else if (ev.type === 'face_detected') { cls = 'log-warning'; icon = '◈'; }
+                else if (ev.type === 'recognition_error' || ev.type === 'error') { cls = 'log-error'; icon = '✗'; }
+                else if (ev.type === 'camera_started' || ev.type === 'camera_stopped' || ev.type === 'session_started' || ev.type === 'session_stopped') { cls = 'log-info'; icon = '◆'; }
+                else if (ev.type === 'low_confidence') { cls = 'log-warning'; icon = '△'; }
+                var msg = ev.message || ''; if (msg.length > 60) msg = msg.substring(0, 60) + '...';
+                html += '<div class="log-entry ' + cls + '"><span class="log-time">[' + ev.time + ']</span> ' + icon + ' ' + msg + '</div>';
+            }
+            panel.innerHTML = html; document.getElementById('logCount').textContent = count; panel.scrollTop = 0;
+        }
+
+        function showMessage(text, type) {
+            var container = document.getElementById('sessionMessageContainer');
+            container.innerHTML = '<div class="alert alert-' + type + ' alert-dismissible fade show py-1 px-2 mb-0 small" style="background:var(--bg-card);border-color:var(--border-subtle);color:var(--text-primary);">' +
+                text + '<button type="button" class="btn-close btn-close-white py-1" data-bs-dismiss="alert"></button></div>';
+            setTimeout(function () {
+                var alert = container.querySelector('.alert');
+                if (alert) { alert.classList.remove('show'); setTimeout(function () { container.innerHTML = ''; }, 300); }
+            }, 4000);
+        }
+
+        // ——— Camera test ———
+        document.getElementById('btnCameraTest').addEventListener('click', function () {
+            var idx = document.getElementById('cameraSelector').value;
+            var btn = this; btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري الاختبار...';
+            fetch('/AdminAttendance/GetFlaskStatus')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.running) showMessage('الكاميرا تعمل - الرقم: ' + idx + ', FPS: ' + (data.fps || '?'), 'success');
+                    else showMessage('نظام التعرف غير نشط. ابدأ جلسة أولاً.', 'warning');
+                }).catch(function () { showMessage('تعذر الاتصال بنظام التعرف. تأكد من تشغيل Flask.', 'danger'); })
+                .finally(function () { btn.disabled = false; btn.innerHTML = '<i class="bi bi-camera"></i> اختبار الكاميرا'; });
+        });
+
+        // ——— Refresh cameras ———
+        document.getElementById('btnRefreshCameras').addEventListener('click', function () {
+            var btn = this; btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري التحديث...';
+            fetch('/AdminAttendance/CameraListProxy')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var sel = document.getElementById('cameraSelector'); sel.innerHTML = '';
+                    if (data.cameras && data.cameras.length > 0) {
+                        data.cameras.forEach(function (cam) {
+                            var opt = document.createElement('option'); opt.value = cam.index;
+                            opt.textContent = cam.name || 'كاميرا ' + cam.index;
+                            if (cam.index === data.selected) opt.selected = true; sel.appendChild(opt);
+                        });
+                        showMessage('تم العثور على ' + data.cameras.length + ' كاميرا/كاميرات', 'success');
+                    } else { sel.innerHTML = '<option value="0">كاميرا 0</option>'; showMessage('لم يتم العثور على كاميرات متاحة', 'warning'); }
+                }).catch(function () { showMessage('تعذر الاتصال بنظام التعرف', 'danger'); })
+                .finally(function () { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> تحديث الكاميرات'; });
+        });
+
+        // ——— Dev mode ———
+        document.getElementById('btnDevMode').addEventListener('click', function () {
+            var btn = this; var enabled = btn.classList.toggle('active');
+            btn.classList.toggle('btn-outline-light'); btn.classList.toggle('btn-warning');
+            fetch('/AdminAttendance/DevModeProxy', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: enabled })
+            }).then(function () { showMessage(enabled ? 'تم تفعيل وضع المطور' : 'تم إيقاف وضع المطور', enabled ? 'warning' : 'info'); })
+            .catch(function () { showMessage('فشل تبديل وضع المطور', 'danger'); });
+        });
+
+        // ——— Quality slider live preview ———
+        document.getElementById('qualitySlider').addEventListener('input', function () {
+            document.getElementById('qualityValue').textContent = this.value;
+        });
+
+        // ——— Apply camera settings (resolution / FPS / quality) ———
+        document.getElementById('btnApplyCameraSettings').addEventListener('click', function () {
+            var btn = this; btn.disabled = true;
+            var origHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            var resolution = document.getElementById('resolutionSelector').value;
+            var fps = parseInt(document.getElementById('fpsSelector').value);
+            var quality = parseInt(document.getElementById('qualitySlider').value);
+
+            var promises = [];
+
+            // Quality applies immediately (no camera restart)
+            promises.push(
+                fetch('/AdminAttendance/CameraQualityProxy', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ quality: quality })
+                }).then(function (r) { return r.json(); }).then(function (d) {
+                    if (d.quality) document.getElementById('qualityValue').textContent = d.quality;
+                })
+            );
+
+            // FPS change (triggers camera restart)
+            promises.push(
+                fetch('/AdminAttendance/CameraFpsProxy', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fps: fps })
+                }).then(function (r) { return r.json(); })
+            );
+
+            // Resolution change (triggers camera restart)
+            promises.push(
+                fetch('/AdminAttendance/CameraResolutionProxy', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ resolution: resolution })
+                }).then(function (r) { return r.json(); })
+            );
+
+            Promise.all(promises)
+                .then(function () { showMessage('تم تطبيق إعدادات الكاميرا', 'success'); })
+                .catch(function () { showMessage('فشل تطبيق الإعدادات', 'danger'); })
+                .finally(function () { btn.disabled = false; btn.innerHTML = origHtml; });
+        });
+
+        // ——— Open/Close camera ———
+        document.getElementById('btnOpenCamera').addEventListener('click', function () {
+            if (currentSessionRunning) { startStream(); showMessage('تم فتح الكاميرا', 'success'); }
+            else { showMessage('يجب بدء الجلسة أولاً', 'warning'); }
+        });
+        document.getElementById('btnCloseCamera').addEventListener('click', function () {
+            stopStream(); showMessage('تم إغلاق الكاميرا', 'info');
+        });
+
+        // ——— Initial state ———
+        if (currentSessionRunning) { updateSessionUI(true); startStream(); }
+    </script>
+}

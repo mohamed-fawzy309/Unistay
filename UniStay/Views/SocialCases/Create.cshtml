@@ -17,11 +17,18 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">الطالب <span class="text-danger">*</span></label>
-                        <select name="StudentID" class="form-select" required>
-                            <option value="">اختر الطالب...</option>
-                        </select>
-                        <input type="text" id="studentSearch" class="form-control form-control-sm mt-1" placeholder="بحث بالاسم أو الرقم الجامعي" />
-                        <div id="studentResults" class="list-group mt-1" style="max-height:200px;overflow-y:auto;display:none;"></div>
+
+                        <input type="text" id="studentSearch" class="form-control" placeholder="ابحث بالاسم أو الرقم الجامعي أو الرقم القومي..." autocomplete="off" />
+                        <div id="studentResults" class="list-group mt-1 position-absolute" style="max-height:220px;overflow-y:auto;display:none;z-index:999;width:calc(100% - 30px);"></div>
+
+                        <input type="hidden" name="StudentID" id="StudentID" required />
+                        <div id="selectedStudent" class="mt-2 p-2 bg-light rounded d-none">
+                            <i class="bi bi-person-check text-success"></i>
+                            <span id="selectedStudentName" class="fw-semibold"></span>
+                            <small class="text-muted ms-2" id="selectedStudentCode"></small>
+                            <button type="button" class="btn btn-sm btn-link text-danger p-0 ms-2" onclick="clearStudent()">✕</button>
+                        </div>
+
                         @if (ViewBag.StudentId != null)
                         {
                             <small class="text-muted">سيتم ربط الحالة بالطالب المحدد</small>
@@ -58,5 +65,74 @@
 </div>
 
 @section Scripts {
-    @* Student search via JSON *@
+    <script>
+        let searchTimer = null;
+
+        document.getElementById('studentSearch').addEventListener('input', function () {
+            clearTimeout(searchTimer);
+            const term = this.value.trim();
+            if (term.length < 2) {
+                document.getElementById('studentResults').style.display = 'none';
+                return;
+            }
+            searchTimer = setTimeout(() => searchStudents(term), 300);
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('#studentSearch') && !e.target.closest('#studentResults')) {
+                document.getElementById('studentResults').style.display = 'none';
+            }
+        });
+
+        async function searchStudents(term) {
+            try {
+                const res = await fetch(`/SocialCases/SearchStudents?term=${encodeURIComponent(term)}`);
+                const data = await res.json();
+                const box = document.getElementById('studentResults');
+
+                if (!data.length) {
+                    box.innerHTML = '<div class="list-group-item text-muted small">لا توجد نتائج</div>';
+                    box.style.display = 'block';
+                    return;
+                }
+
+                box.innerHTML = data.map(s => `
+                    <button type="button" class="list-group-item list-group-item-action"
+                            onclick="selectStudent(${s.id}, '${s.name}', '${s.code}')">
+                        <span class="fw-semibold">${s.name}</span>
+                        <small class="text-muted me-2">${s.code}</small>
+                        ${s.nationalId ? `<small class="text-secondary">${s.nationalId}</small>` : ''}
+                    </button>
+                `).join('');
+                box.style.display = 'block';
+            } catch {
+                console.error('خطأ في البحث');
+            }
+        }
+
+        function selectStudent(id, name, code) {
+            document.getElementById('StudentID').value = id;
+            document.getElementById('studentSearch').value = name;
+            document.getElementById('selectedStudentName').textContent = name;
+            document.getElementById('selectedStudentCode').textContent = code;
+            document.getElementById('selectedStudent').classList.remove('d-none');
+            document.getElementById('studentResults').style.display = 'none';
+        }
+
+        function clearStudent() {
+            document.getElementById('StudentID').value = '';
+            document.getElementById('studentSearch').value = '';
+            document.getElementById('selectedStudent').classList.add('d-none');
+        }
+
+        // لو في studentId محدد مسبقاً
+        @if (ViewBag.StudentId != null)
+        {
+                <text>
+                fetch(`/SocialCases/SearchStudents?term=@ViewBag.StudentId`)
+                    .then(r => r.json())
+                    .then(data => { if(data.length) selectStudent(data[0].id, data[0].name, data[0].code); });
+                </text>
+        }
+    </script>
 }

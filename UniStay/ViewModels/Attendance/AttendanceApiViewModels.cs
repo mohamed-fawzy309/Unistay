@@ -45,6 +45,7 @@ namespace UniStay.ViewModels.Attendance
     {
         public bool IsPresentToday { get; set; }
         public DateTime? TodayRecognitionTime { get; set; }
+        public bool IsAbsentToday { get; set; }
         public int PresentDaysThisMonth { get; set; }
         public int TotalSessionDaysThisMonth { get; set; }
         public decimal AttendancePercentage { get; set; }
@@ -163,5 +164,46 @@ namespace UniStay.ViewModels.Attendance
     public class FaceTestRequest
     {
         public string Image { get; set; } = null!;
+    }
+
+    public class ControlRoomViewModel
+    {
+        public int PresentCount { get; set; }
+        public int AbsentCount { get; set; }
+        public decimal AttendancePercentage { get; set; }
+        public string? ActiveSession { get; set; }
+        public int TotalStudents { get; set; }
+    }
+
+    public class ControlRoomEventItem
+    {
+        public string Time { get; set; } = "";
+        public string Type { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string? StudentName { get; set; }
+        public int? StudentID { get; set; }
+        public double? Confidence { get; set; }
+        public string? AttendanceResult { get; set; }
+    }
+
+    public class SessionSummaryViewModel
+    {
+        public int TotalStudents { get; set; }
+        public int PresentCount { get; set; }
+        public int AbsentCount { get; set; }
+        public decimal AttendancePercentage { get; set; }
+        public int FacesDetected { get; set; }
+        public int StudentsRecognized { get; set; }
+        public int UnknownFaces { get; set; }
+        public decimal RecognitionAccuracy { get; set; }
+        public int DuplicateAttempts { get; set; }
+        public int CameraIndex { get; set; }
+        public string? SessionName { get; set; }
+        public int? SessionId { get; set; }
+        public DateTime? StartedAt { get; set; }
+        public DateTime? EndedAt { get; set; }
+        public string Duration { get; set; } = "—";
+        public bool HasAbsences { get; set; }
+        public int AbsenceCount { get; set; }
     }
 }

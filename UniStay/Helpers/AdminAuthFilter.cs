@@ -44,7 +44,7 @@ public class AdminAuthFilter : IAsyncActionFilter
         var sysUser = await _db.SystemUsers.AsNoTracking()
             .FirstOrDefaultAsync(u => u.ID == userId);
 
-        if (sysUser == null || sysUser.IsActive != true || sysUser.IsDeleted == true || sysUser.IsSuperAdmin != true)
+        if (sysUser == null || sysUser.IsActive != true || sysUser.IsDeleted == true)
         {
             await context.HttpContext.SignOutAsync("AdminCookie");
             context.Result = new RedirectToActionResult("Login", "Account", null);

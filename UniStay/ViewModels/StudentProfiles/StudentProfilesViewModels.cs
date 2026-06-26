@@ -1,4 +1,4 @@
-namespace UniStay.ViewModels.StudentProfiles;
+﻿namespace UniStay.ViewModels.StudentProfiles;
 
 public class StudentProfileListVM
 {
@@ -96,6 +96,22 @@ public class StudentStatusVM
     public string StudentName { get; set; }
     public string StudentCode { get; set; }
     public bool IsActive { get; set; }
+    // البيانات الأساسية
+    public string NationalID { get; set; }
+    public string Gender { get; set; }
+    public DateOnly BirthDate { get; set; }
+    public string Religion { get; set; }
+    public string Email { get; set; }
+    public string Phone { get; set; }
+    public string Faculty { get; set; }
+    public string Department { get; set; }
+    public byte? AcademicYear { get; set; }
+    public string GradeText { get; set; }
+    public string Governorate { get; set; }
+    public string Markaz { get; set; }
+    public string City { get; set; }
+    public string Address { get; set; }
+    public decimal? DistanceFromUniv { get; set; }
 
     public IEnumerable<AllocationInfo> Allocations { get; set; } = new List<AllocationInfo>();
     public IEnumerable<PaymentInfo> Payments { get; set; } = new List<PaymentInfo>();
