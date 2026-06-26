@@ -22,12 +22,17 @@
             @if (Model.IsPresentToday)
             {
                 <div class="display-6 text-success mb-2">✔</div>
-                <h5 class="text-success">تم تسجيل حضورك اليوم الساعة @Model.TodayRecognitionTime?.ToString("HH:mm")</h5>
+                <h5 class="text-success">حاضر - تم تسجيل حضورك اليوم الساعة @Model.TodayRecognitionTime?.ToString("HH:mm")</h5>
+            }
+            else if (Model.IsAbsentToday)
+            {
+                <div class="display-6 text-danger mb-2">✘</div>
+                <h5 class="text-danger">غائب - تم تسجيل غيابك في جلسة اليوم</h5>
             }
             else
             {
-                <div class="display-6 text-danger mb-2">✘</div>
-                <h5 class="text-danger">لم يتم تسجيل حضورك اليوم</h5>
+                <div class="display-6 text-secondary mb-2">—</div>
+                <h5 class="text-secondary">لم يتم تسجيل حضور أو غياب حتى الآن</h5>
             }
         </div>
     </div>

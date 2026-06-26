@@ -9,6 +9,7 @@ using QuestPDF.Infrastructure;
 using UniStay.Data;
 using UniStay.Models;
 using UniStay.ViewModels.Attendance;
+using UniStay.Services.Interfaces;
 
 namespace UniStay.Controllers
 {
@@ -19,13 +20,26 @@ namespace UniStay.Controllers
         private readonly IConfiguration _configuration;
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<AdminAttendanceController> _logger;
+        private readonly IAuditService _audit;
 
-        public AdminAttendanceController(AssuitDbContext db, IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<AdminAttendanceController> logger)
+        public AdminAttendanceController(AssuitDbContext db, IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<AdminAttendanceController> logger, IAuditService audit)
         {
             _db = db;
             _configuration = configuration;
             _httpClientFactory = httpClientFactory;
             _logger = logger;
+            _audit = audit;
+        }
+
+        private HttpClient CreateFlaskClient()
+        {
+            var client = _httpClientFactory.CreateClient();
+            var token = _configuration["AttendanceApi:InternalToken"];
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Add("X-Internal-Token", token);
+            }
+            return client;
         }
 
         [HttpGet]
@@ -77,7 +91,6 @@ namespace UniStay.Controllers
                 .OrderByDescending(s => s.ID)
                 .FirstOrDefaultAsync();
 
-            // Dashboard API stats
             var todayStart = filterDate.Date;
             var todayEnd = todayStart.AddDays(1);
             var apiLogsToday = await _db.AttendanceApiLogs
@@ -128,6 +141,30 @@ namespace UniStay.Controllers
             {
                 activeSession.IsActive = false;
                 activeSession.EndedAt = DateTime.Now;
+                await _db.SaveChangesAsync();
+            }
+
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+
+            try
+            {
+                var client = CreateFlaskClient();
+                var response = await client.PostAsJsonAsync(
+                    $"{baseUrl}/api/session/start",
+                    new { sessionName = request.SessionName });
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var body = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("Flask /api/session/start returned HTTP {StatusCode}: {Body}",
+                        (int)response.StatusCode, body);
+                    return Json(new { success = false, message = "تعذر بدء الجلسة في نظام التعرف" });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Flask /api/session/start unreachable at {BaseUrl}", baseUrl);
+                return Json(new { success = false, message = "تعذر الاتصال بنظام التعرف" });
             }
 
             var session = new AttendanceSession
@@ -139,30 +176,11 @@ namespace UniStay.Controllers
             _db.AttendanceSessions.Add(session);
             await _db.SaveChangesAsync();
 
-            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
-            var client = _httpClientFactory.CreateClient();
+            await _audit.LogAsync(0, "System", "Attendance.SessionStarted",
+                "AttendanceSession", session.ID,
+                null, new { session.SessionName, session.StartedAt });
 
-            try
-            {
-                var response = await client.PostAsJsonAsync(
-                    $"{baseUrl}/api/session/start",
-                    new { sessionName = session.SessionName });
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    var body = await response.Content.ReadAsStringAsync();
-                    _logger.LogError("Flask /api/session/start returned HTTP {StatusCode}: {Body}",
-                        (int)response.StatusCode, body);
-                    return StatusCode(500, new { message = "تعذر بدء الجلسة في نظام التعرف" });
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Flask /api/session/start unreachable at {BaseUrl}", baseUrl);
-                return StatusCode(500, new { message = "تعذر الاتصال بنظام التعرف" });
-            }
-
-            return Json(new { success = true, message = "Attendance session started." });
+            return Json(new { success = true, message = "تم بدء الجلسة بنجاح" });
         }
 
         [HttpPost]
@@ -179,11 +197,15 @@ namespace UniStay.Controllers
             activeSession.EndedAt = DateTime.Now;
             await _db.SaveChangesAsync();
 
+            await _audit.LogAsync(0, "System", "Attendance.SessionStopped",
+                "AttendanceSession", activeSession.ID,
+                null, new { activeSession.SessionName, activeSession.EndedAt });
+
             var baseUrl = _configuration["FaceRecognition:BaseUrl"];
-            var client = _httpClientFactory.CreateClient();
 
             try
             {
+                var client = CreateFlaskClient();
                 var response = await client.PostAsJsonAsync(
                     $"{baseUrl}/api/session/stop",
                     new { });
@@ -193,16 +215,438 @@ namespace UniStay.Controllers
                     var body = await response.Content.ReadAsStringAsync();
                     _logger.LogError("Flask /api/session/stop returned HTTP {StatusCode}: {Body}",
                         (int)response.StatusCode, body);
-                    return StatusCode(500, new { message = "تعذر إيقاف الجلسة في نظام التعرف" });
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Flask /api/session/stop unreachable at {BaseUrl}", baseUrl);
-                return StatusCode(500, new { message = "تعذر الاتصال بنظام التعرف" });
             }
 
-            return Json(new { message = "تم إيقاف الجلسة" });
+            await using var tx = await _db.Database.BeginTransactionAsync();
+            try
+            {
+                await FinalizeAbsencesForSession(activeSession);
+                await tx.CommitAsync();
+
+                await _audit.LogAsync(0, "System", "Attendance.AbsenceProcessingCompleted",
+                    "Absence", null,
+                    null, new { activeSession.ID, activeSession.SessionName });
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync();
+                _logger.LogError(ex, "Absence finalization failed for session {SessionId}, transaction rolled back", activeSession.ID);
+
+                await _audit.LogAsync(0, "System", "Attendance.AbsenceProcessingFailed",
+                    "Absence", null,
+                    null, new { activeSession.ID, activeSession.SessionName, error = ex.Message });
+
+                return Json(new { message = "تم إيقاف الجلسة ولكن فشل احتساب الغياب" });
+            }
+
+            return Json(new { message = "تم إيقاف الجلسة واحتساب الغياب بنجاح" });
+        }
+
+        private async Task FinalizeAbsencesForSession(AttendanceSession session)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var sessionDate = session.StartedAt?.Date ?? DateTime.Today;
+
+            var accommodatedStudents = await _db.Allocations
+                .Where(a => a.Status == "Active" && (a.EndDate == null || a.EndDate >= today))
+                .Include(a => a.CityRoom)
+                    .ThenInclude(cr => cr.CityBuilding)
+                        .ThenInclude(cb => cb.DormitoryCity)
+                .ToListAsync();
+
+            var presentStudentIds = await _db.AttendanceLogs
+                .Where(l => l.SessionID == session.ID && l.RecognizedAt.HasValue)
+                .Select(l => l.StudentID)
+                .Distinct()
+                .ToListAsync();
+
+            var absentStudents = accommodatedStudents
+                .Where(a => !presentStudentIds.Contains(a.StudentID))
+                .ToList();
+
+            var existingAbsences = await _db.Absences
+                .Where(a => a.AbsenceDate == DateOnly.FromDateTime(sessionDate)
+                    && a.AbsenceType == "Absence"
+                    && a.Status == "Approved"
+                    && a.Reason == "تغيب عن جلسة التعرف الآلي")
+                .Select(a => a.StudentID)
+                .ToListAsync();
+
+            var newAbsences = new List<Absence>();
+            foreach (var alloc in absentStudents)
+            {
+                if (existingAbsences.Contains(alloc.StudentID))
+                    continue;
+
+                newAbsences.Add(new Absence
+                {
+                    StudentID = alloc.StudentID,
+                    DormitoryCityID = alloc.CityRoom.CityBuilding.DormitoryCityID,
+                    AbsenceDate = DateOnly.FromDateTime(sessionDate),
+                    AbsenceType = "Absence",
+                    Status = "Approved",
+                    RequestedBy = "Staff",
+                    Reason = "تغيب عن جلسة التعرف الآلي",
+                    CreatedAt = DateTime.Now
+                });
+            }
+
+            if (newAbsences.Count > 0)
+            {
+                _db.Absences.AddRange(newAbsences);
+                await _db.SaveChangesAsync();
+                _logger.LogInformation("Finalized {Count} absences for session {SessionId} ({SessionName})",
+                    newAbsences.Count, session.ID, session.SessionName);
+
+                await _audit.LogAsync(0, "System", "Attendance.AttendanceFinalized",
+                    "Absence", null,
+                    null, new { sessionId = session.ID, sessionName = session.SessionName, absenceCount = newAbsences.Count });
+            }
+            else
+            {
+                _logger.LogInformation("No new absences to record for session {SessionId}", session.ID);
+
+                await _audit.LogAsync(0, "System", "Attendance.AttendanceFinalized",
+                    "Absence", null,
+                    null, new { sessionId = session.ID, sessionName = session.SessionName, absenceCount = 0 });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ControlRoom()
+        {
+            var today = DateTime.Today;
+            var totalStudents = await _db.Students
+                .CountAsync(s => s.IsEnrolled == true && s.IsDeleted != true);
+
+            var presentCount = await _db.AttendanceLogs
+                .Where(l => l.RecognizedAt.HasValue && l.RecognizedAt.Value.Date == today)
+                .Select(l => l.StudentID)
+                .Distinct()
+                .CountAsync();
+
+            var activeSession = await _db.AttendanceSessions
+                .FirstOrDefaultAsync(s => s.IsActive == true);
+
+            var vm = new ControlRoomViewModel
+            {
+                PresentCount = presentCount,
+                AbsentCount = totalStudents - presentCount,
+                AttendancePercentage = totalStudents > 0
+                    ? Math.Round((decimal)presentCount / totalStudents * 100, 1)
+                    : 0,
+                ActiveSession = activeSession?.SessionName,
+                TotalStudents = totalStudents
+            };
+
+            ViewBag.FaceRecognitionUrl = _configuration["FaceRecognition:BaseUrl"];
+            return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetStudentAccommodation(int studentId)
+        {
+            var allocation = await _db.Allocations
+                .Where(a => a.StudentID == studentId && a.Status == "Active")
+                .Include(a => a.Student)
+                .Include(a => a.CityRoom)
+                    .ThenInclude(cr => cr.CityBuilding)
+                        .ThenInclude(cb => cb.DormitoryCity)
+                .OrderByDescending(a => a.ID)
+                .FirstOrDefaultAsync();
+
+            if (allocation == null)
+                return Json(new { found = false });
+
+            return Json(new
+            {
+                found = true,
+                studentID = studentId,
+                studentName = allocation.Student.FullName,
+                nationalID = allocation.Student.NationalID,
+                city = allocation.CityRoom.CityBuilding.DormitoryCity.Name,
+                building = allocation.CityRoom.CityBuilding.BuildingName,
+                room = allocation.CityRoom.RoomNumber,
+                bed = allocation.BedNumber.ToString(),
+                hasPhoto = !string.IsNullOrEmpty(allocation.Student.Photo)
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetSessionSummary()
+        {
+            var today = DateTime.Today;
+            var todayDateOnly = DateOnly.FromDateTime(today);
+
+            var latestSession = await _db.AttendanceSessions
+                .Where(s => s.StartedAt.HasValue && s.StartedAt.Value.Date == today)
+                .OrderByDescending(s => s.ID)
+                .FirstOrDefaultAsync();
+
+            var totalStudents = await _db.Allocations
+                .Where(a => a.Status == "Active" && (a.EndDate == null || a.EndDate >= todayDateOnly))
+                .Select(a => a.StudentID)
+                .Distinct()
+                .CountAsync();
+
+            var presentCount = latestSession != null
+                ? await _db.AttendanceLogs
+                    .Where(l => l.SessionID == latestSession.ID && l.RecognizedAt.HasValue)
+                    .Select(l => l.StudentID)
+                    .Distinct()
+                    .CountAsync()
+                : 0;
+
+            var absentCount = totalStudents - presentCount;
+            var attendancePercent = totalStudents > 0 ? Math.Round((decimal)presentCount / totalStudents * 100, 1) : 0;
+
+            var duplicateCount = latestSession != null
+                ? await _db.AttendanceApiLogs
+                    .CountAsync(al => al.CreatedAt.HasValue && al.CreatedAt.Value.Date == today
+                        && al.Status == "Failed"
+                        && al.Message != null
+                        && al.Message.Contains("Duplicate", StringComparison.OrdinalIgnoreCase))
+                : 0;
+
+            var flaskStats = new { facesDetected = 0, studentsRecognized = 0, unknownFaces = 0, cameraIndex = 0 };
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            try
+            {
+                var client = CreateFlaskClient();
+                var resp = await client.GetAsync($"{baseUrl}/api/status");
+                if (resp.IsSuccessStatusCode)
+                {
+                    var json = await resp.Content.ReadAsStringAsync();
+                    var data = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(json);
+                    flaskStats = new
+                    {
+                        facesDetected = data.TryGetProperty("facesDetected", out var fd) ? fd.GetInt32() : 0,
+                        studentsRecognized = data.TryGetProperty("studentsRecognized", out var sr) ? sr.GetInt32() : 0,
+                        unknownFaces = data.TryGetProperty("unknownFaces", out var uf) ? uf.GetInt32() : 0,
+                        cameraIndex = data.TryGetProperty("cameraIndex", out var ci) ? ci.GetInt32() : 0,
+                    };
+                }
+            }
+            catch { }
+
+            var recognitionAccuracy = flaskStats.facesDetected > 0
+                ? Math.Round((decimal)flaskStats.studentsRecognized / flaskStats.facesDetected * 100, 1)
+                : 0;
+
+            var duration = "—";
+            if (latestSession?.StartedAt != null && latestSession.EndedAt != null)
+            {
+                var diff = latestSession.EndedAt.Value - latestSession.StartedAt.Value;
+                duration = $"{(int)diff.TotalHours}h {diff.Minutes}m";
+            }
+
+            var vm = new SessionSummaryViewModel
+            {
+                TotalStudents = totalStudents,
+                PresentCount = presentCount,
+                AbsentCount = absentCount,
+                AttendancePercentage = attendancePercent,
+                FacesDetected = flaskStats.facesDetected,
+                StudentsRecognized = flaskStats.studentsRecognized,
+                UnknownFaces = flaskStats.unknownFaces,
+                RecognitionAccuracy = recognitionAccuracy,
+                DuplicateAttempts = duplicateCount,
+                CameraIndex = flaskStats.cameraIndex,
+                SessionName = latestSession?.SessionName ?? "—",
+                SessionId = latestSession?.ID,
+                StartedAt = latestSession?.StartedAt,
+                EndedAt = latestSession?.EndedAt,
+                Duration = duration,
+                HasAbsences = absentCount > 0,
+                AbsenceCount = absentCount
+            };
+
+            if (latestSession != null)
+            {
+                await _audit.LogAsync(0, "System", "Attendance.SummaryGenerated",
+                    "AttendanceSession", latestSession.ID,
+                    null, new { latestSession.SessionName, totalStudents, presentCount, absentCount, attendancePercent });
+            }
+
+            return Json(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetFlaskStatus()
+        {
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            var client = CreateFlaskClient();
+            try
+            {
+                var response = await client.GetAsync($"{baseUrl}/api/status");
+                if (!response.IsSuccessStatusCode)
+                    return Json(new { running = false });
+
+                var json = await response.Content.ReadAsStringAsync();
+                return Content(json, "application/json");
+            }
+            catch
+            {
+                return Json(new { running = false });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRecognitionEvents()
+        {
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            var client = CreateFlaskClient();
+            try
+            {
+                var response = await client.GetAsync($"{baseUrl}/api/events/recent");
+                if (!response.IsSuccessStatusCode)
+                    return Json(new List<ControlRoomEventItem>());
+
+                var json = await response.Content.ReadAsStringAsync();
+                return Content(json, "application/json");
+            }
+            catch
+            {
+                return Json(new List<ControlRoomEventItem>());
+            }
+        }
+
+        [HttpGet]
+        public async Task CameraStreamProxy()
+        {
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            var token = _configuration["AttendanceApi:InternalToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                Response.StatusCode = 500;
+                return;
+            }
+            var client = _httpClientFactory.CreateClient();
+            client.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
+            client.DefaultRequestHeaders.Add("X-Internal-Token", token);
+
+            var request = new HttpRequestMessage(HttpMethod.Get, $"{baseUrl}/api/camera/stream");
+            var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                response.Dispose();
+                Response.StatusCode = (int)response.StatusCode;
+                return;
+            }
+
+            Response.ContentType = response.Content.Headers.ContentType?.ToString()
+                ?? "multipart/x-mixed-replace; boundary=frame";
+
+            var stream = await response.Content.ReadAsStreamAsync();
+            try
+            {
+                await stream.CopyToAsync(Response.Body, 81920, HttpContext.RequestAborted);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            finally
+            {
+                stream.Dispose();
+                response.Dispose();
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CameraListProxy()
+        {
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            var client = CreateFlaskClient();
+            try
+            {
+                var response = await client.GetAsync($"{baseUrl}/api/camera/list");
+                if (!response.IsSuccessStatusCode)
+                    return Json(new { cameras = new object[] { } });
+                var json = await response.Content.ReadAsStringAsync();
+                return Content(json, "application/json");
+            }
+            catch
+            {
+                return Json(new { cameras = new object[] { } });
+            }
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> DevModeProxy([FromBody] System.Text.Json.JsonElement body)
+        {
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            var client = CreateFlaskClient();
+            try
+            {
+                var response = await client.PostAsJsonAsync($"{baseUrl}/api/dev/mode", body);
+                var json = await response.Content.ReadAsStringAsync();
+                return Content(json, "application/json");
+            }
+            catch
+            {
+                return Json(new { devMode = false });
+            }
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> CameraResolutionProxy([FromBody] System.Text.Json.JsonElement body)
+        {
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            var client = CreateFlaskClient();
+            try
+            {
+                var response = await client.PostAsJsonAsync($"{baseUrl}/api/camera/resolution", body);
+                var json = await response.Content.ReadAsStringAsync();
+                return Content(json, "application/json");
+            }
+            catch
+            {
+                return Json(new { error = "proxy_error" });
+            }
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> CameraQualityProxy([FromBody] System.Text.Json.JsonElement body)
+        {
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            var client = CreateFlaskClient();
+            try
+            {
+                var response = await client.PostAsJsonAsync($"{baseUrl}/api/camera/quality", body);
+                var json = await response.Content.ReadAsStringAsync();
+                return Content(json, "application/json");
+            }
+            catch
+            {
+                return Json(new { error = "proxy_error" });
+            }
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> CameraFpsProxy([FromBody] System.Text.Json.JsonElement body)
+        {
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            var client = CreateFlaskClient();
+            try
+            {
+                var response = await client.PostAsJsonAsync($"{baseUrl}/api/camera/fps", body);
+                var json = await response.Content.ReadAsStringAsync();
+                return Content(json, "application/json");
+            }
+            catch
+            {
+                return Json(new { error = "proxy_error" });
+            }
         }
 
         [HttpGet]
@@ -268,7 +712,7 @@ namespace UniStay.Controllers
         public async Task<IActionResult> GetEnrolledList()
         {
             var baseUrl = _configuration["FaceRecognition:BaseUrl"];
-            var client = _httpClientFactory.CreateClient();
+            var client = CreateFlaskClient();
             try
             {
                 var response = await client.GetAsync($"{baseUrl}/api/enrollment/list");
@@ -289,7 +733,7 @@ namespace UniStay.Controllers
         public async Task<IActionResult> RegisterFace([FromBody] FaceEnrollRequest request)
         {
             var baseUrl = _configuration["FaceRecognition:BaseUrl"];
-            var client = _httpClientFactory.CreateClient();
+            var client = CreateFlaskClient();
             try
             {
                 var response = await client.PostAsJsonAsync(
@@ -309,7 +753,7 @@ namespace UniStay.Controllers
         public async Task<IActionResult> DeleteFace([FromBody] FaceDeleteRequest request)
         {
             var baseUrl = _configuration["FaceRecognition:BaseUrl"];
-            var client = _httpClientFactory.CreateClient();
+            var client = CreateFlaskClient();
             try
             {
                 var response = await client.PostAsJsonAsync(
@@ -329,7 +773,7 @@ namespace UniStay.Controllers
         public async Task<IActionResult> TestFace([FromBody] FaceTestRequest request)
         {
             var baseUrl = _configuration["FaceRecognition:BaseUrl"];
-            var client = _httpClientFactory.CreateClient();
+            var client = CreateFlaskClient();
             try
             {
                 var response = await client.PostAsJsonAsync(
@@ -420,6 +864,10 @@ namespace UniStay.Controllers
                     .ThenInclude(cb => cb.DormitoryCity)
                 .ToListAsync();
 
+            var cityName = cityId.HasValue && cityId > 0
+                ? await _db.DormitoryCities.Where(c => c.ID == cityId.Value).Select(c => c.Name).FirstOrDefaultAsync()
+                : null;
+
             var rows = logs.Select(l => new DailyReportRowViewModel
             {
                 StudentID = l.StudentID,
@@ -432,7 +880,7 @@ namespace UniStay.Controllers
             })
             .Where(r => string.IsNullOrEmpty(studentName) || r.StudentName.Contains(studentName, StringComparison.OrdinalIgnoreCase))
             .Where(r => string.IsNullOrEmpty(roomNumber) || r.RoomNumber.Contains(roomNumber, StringComparison.OrdinalIgnoreCase))
-            .Where(r => !cityId.HasValue || cityId == 0 || r.CityName == _db.DormitoryCities.Where(c => c.ID == cityId.Value).Select(c => c.Name).FirstOrDefault())
+            .Where(r => string.IsNullOrEmpty(cityName) || r.CityName == cityName)
             .OrderByDescending(r => r.RecognizedAt)
             .ToList();
 
@@ -470,6 +918,10 @@ namespace UniStay.Controllers
                     .ThenInclude(cb => cb.DormitoryCity)
                 .ToListAsync();
 
+            var cityName = cityId.HasValue && cityId > 0
+                ? await _db.DormitoryCities.Where(c => c.ID == cityId.Value).Select(c => c.Name).FirstOrDefaultAsync()
+                : null;
+
             var rows = logs.Select(l => new
             {
                 l.Student.FullName,
@@ -481,7 +933,7 @@ namespace UniStay.Controllers
             })
             .Where(r => string.IsNullOrEmpty(studentName) || r.FullName.Contains(studentName, StringComparison.OrdinalIgnoreCase))
             .Where(r => string.IsNullOrEmpty(roomNumber) || r.RoomNumber.Contains(roomNumber, StringComparison.OrdinalIgnoreCase))
-            .Where(r => !cityId.HasValue || cityId == 0 || r.CityName == _db.DormitoryCities.Where(c => c.ID == cityId.Value).Select(c => c.Name).FirstOrDefault())
+            .Where(r => string.IsNullOrEmpty(cityName) || r.CityName == cityName)
             .OrderByDescending(r => r.RecognizedAt)
             .ToList();
 
@@ -538,6 +990,10 @@ namespace UniStay.Controllers
                     .ThenInclude(cb => cb.DormitoryCity)
                 .ToListAsync();
 
+            var cityName = cityId.HasValue && cityId > 0
+                ? await _db.DormitoryCities.Where(c => c.ID == cityId.Value).Select(c => c.Name).FirstOrDefaultAsync()
+                : null;
+
             var rows = logs.Select(l => new
             {
                 l.Student.FullName,
@@ -549,7 +1005,7 @@ namespace UniStay.Controllers
             })
             .Where(r => string.IsNullOrEmpty(studentName) || r.FullName.Contains(studentName, StringComparison.OrdinalIgnoreCase))
             .Where(r => string.IsNullOrEmpty(roomNumber) || r.RoomNumber.Contains(roomNumber, StringComparison.OrdinalIgnoreCase))
-            .Where(r => !cityId.HasValue || cityId == 0 || r.CityName == _db.DormitoryCities.Where(c => c.ID == cityId.Value).Select(c => c.Name).FirstOrDefault())
+            .Where(r => string.IsNullOrEmpty(cityName) || r.CityName == cityName)
             .OrderByDescending(r => r.RecognizedAt)
             .ToList();
 
@@ -559,8 +1015,9 @@ namespace UniStay.Controllers
                 {
                     page.Size(PageSizes.A4.Landscape());
                     page.Margin(20);
-                    page.Header().Text($"تقرير الحضور اليومي - {filterDate:yyyy/MM/dd}")
-                        .FontSize(16).Bold().AlignCenter();
+                    // FIX: AlignCenter() على الـ container مش على الـ TextDescriptor
+                    page.Header().AlignCenter().Text($"تقرير الحضور اليومي - {filterDate:yyyy/MM/dd}")
+                        .FontSize(16).Bold();
                     page.Content().Table(table =>
                     {
                         table.ColumnsDefinition(c =>
@@ -817,8 +1274,9 @@ namespace UniStay.Controllers
                 {
                     page.Size(PageSizes.A4.Landscape());
                     page.Margin(20);
-                    page.Header().Text($"تقرير الحضور الشهري - {filterYear}/{filterMonth:D2}")
-                        .FontSize(16).Bold().AlignCenter();
+                    // FIX: AlignCenter() على الـ container مش على الـ TextDescriptor
+                    page.Header().AlignCenter().Text($"تقرير الحضور الشهري - {filterYear}/{filterMonth:D2}")
+                        .FontSize(16).Bold();
                     page.Content().Table(table =>
                     {
                         table.ColumnsDefinition(c =>
@@ -882,6 +1340,164 @@ namespace UniStay.Controllers
             };
 
             return View(vm);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> SessionSummaryExportExcel()
+        {
+            var today = DateTime.Today;
+            var todayDateOnly = DateOnly.FromDateTime(today);
+
+            var session = await _db.AttendanceSessions
+                .Where(s => s.StartedAt.HasValue && s.StartedAt.Value.Date == today)
+                .OrderByDescending(s => s.ID)
+                .FirstOrDefaultAsync();
+
+            var accommodated = await _db.Allocations
+                .Where(a => a.Status == "Active" && (a.EndDate == null || a.EndDate >= todayDateOnly))
+                .Include(a => a.Student)
+                .Include(a => a.CityRoom)
+                .ToListAsync();
+
+            var presentIds = session != null
+                ? await _db.AttendanceLogs
+                    .Where(l => l.SessionID == session.ID && l.RecognizedAt.HasValue)
+                    .Select(l => l.StudentID)
+                    .Distinct()
+                    .ToListAsync()
+                : new List<int>();
+
+            var logTimeMap = new Dictionary<int, DateTime?>();
+            if (session != null)
+            {
+                var logTimes = await _db.AttendanceLogs
+                    .Where(l => l.SessionID == session.ID && l.RecognizedAt.HasValue)
+                    .Select(l => new { l.StudentID, l.RecognizedAt })
+                    .ToListAsync();
+
+                logTimeMap = logTimes
+                    .GroupBy(x => x.StudentID)
+                    .ToDictionary(g => g.Key, g => g.First().RecognizedAt);
+            }
+
+            using var workbook = new ClosedXML.Excel.XLWorkbook();
+            var ws = workbook.Worksheets.Add($"SessionSummary_{today:yyyyMMdd}");
+
+            ws.Cell(1, 1).Value = "رقم الطالب";
+            ws.Cell(1, 2).Value = "اسم الطالب";
+            ws.Cell(1, 3).Value = "رقم الغرفة";
+            ws.Cell(1, 4).Value = "الحالة";
+            ws.Cell(1, 5).Value = "وقت التسجيل";
+
+            var headerRange = ws.Range(1, 1, 1, 5);
+            headerRange.Style.Font.Bold = true;
+            headerRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightGray;
+
+            int row = 2;
+            foreach (var alloc in accommodated.OrderBy(a => a.Student.FullName))
+            {
+                var isPresent = presentIds.Contains(alloc.StudentID);
+                var time = isPresent && logTimeMap.TryGetValue(alloc.StudentID, out var t) ? t : null;
+
+                ws.Cell(row, 1).Value = alloc.StudentID;
+                ws.Cell(row, 2).Value = alloc.Student.FullName;
+                ws.Cell(row, 3).Value = alloc.CityRoom.RoomNumber;
+                ws.Cell(row, 4).Value = isPresent ? "حاضر" : "غائب";
+                ws.Cell(row, 5).Value = time?.ToString("HH:mm:ss") ?? "—";
+                row++;
+            }
+
+            ws.Columns().AdjustToContents();
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+            stream.Seek(0, SeekOrigin.Begin);
+
+            return File(stream.ToArray(),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"SessionSummary_{today:yyyyMMdd}.xlsx");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> SessionSummaryExportPdf()
+        {
+            var today = DateTime.Today;
+            var todayDateOnly = DateOnly.FromDateTime(today);
+
+            var session = await _db.AttendanceSessions
+                .Where(s => s.StartedAt.HasValue && s.StartedAt.Value.Date == today)
+                .OrderByDescending(s => s.ID)
+                .FirstOrDefaultAsync();
+
+            var accommodated = await _db.Allocations
+                .Where(a => a.Status == "Active" && (a.EndDate == null || a.EndDate >= todayDateOnly))
+                .Include(a => a.Student)
+                .Include(a => a.CityRoom)
+                .ToListAsync();
+
+            var presentIds = session != null
+                ? await _db.AttendanceLogs
+                    .Where(l => l.SessionID == session.ID && l.RecognizedAt.HasValue)
+                    .Select(l => l.StudentID)
+                    .Distinct()
+                    .ToListAsync()
+                : new List<int>();
+
+            var rows = accommodated
+                .OrderBy(a => a.Student.FullName)
+                .Select(a => new
+                {
+                    a.StudentID,
+                    a.Student.FullName,
+                    Room = a.CityRoom.RoomNumber,
+                    Status = presentIds.Contains(a.StudentID) ? "حاضر" : "غائب"
+                })
+                .ToList();
+
+            var present = rows.Count(r => r.Status == "حاضر");
+            var absent = rows.Count - present;
+            var pct = rows.Count > 0 ? Math.Round((decimal)present / rows.Count * 100, 1) : 0;
+
+            var doc = QuestPDF.Fluent.Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4.Landscape());
+                    page.Margin(20);
+                    page.Header().AlignCenter().Text($"ملخص الجلسة - {today:yyyy/MM/dd}")
+                        .FontSize(16).Bold();
+
+                    page.Content().Table(table =>
+                    {
+                        table.ColumnsDefinition(c =>
+                        {
+                            c.RelativeColumn();
+                            c.RelativeColumn(3);
+                            c.RelativeColumn();
+                            c.RelativeColumn();
+                        });
+                        table.Header(header =>
+                        {
+                            header.Cell().Text("الرقم").Bold();
+                            header.Cell().Text("الاسم").Bold();
+                            header.Cell().Text("الغرفة").Bold();
+                            header.Cell().Text("الحالة").Bold();
+                        });
+                        foreach (var r in rows)
+                        {
+                            table.Cell().Text(r.StudentID.ToString());
+                            table.Cell().Text(r.FullName);
+                            table.Cell().Text(r.Room);
+                            table.Cell().Text(r.Status);
+                        }
+                    });
+
+                    page.Footer().AlignLeft().Text($"الإجمالي: {rows.Count} | حاضر: {present} | غائب: {absent} | النسبة: {pct}%")
+                        .FontSize(10);
+                });
+            });
+
+            var pdfBytes = doc.GeneratePdf();
+            return File(pdfBytes, "application/pdf", $"SessionSummary_{today:yyyyMMdd}.pdf");
         }
     }
 }

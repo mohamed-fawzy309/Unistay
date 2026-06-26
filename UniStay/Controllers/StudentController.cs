@@ -653,6 +653,13 @@ namespace UniStay.Controllers
                 .OrderByDescending(l => l.RecognizedAt)
                 .FirstOrDefaultAsync();
 
+            var todayAbsence = await _context.Absences
+                .Where(a => a.StudentID == studentId.Value
+                    && a.AbsenceDate == DateOnly.FromDateTime(today)
+                    && a.AbsenceType == "Absence"
+                    && a.Status == "Approved")
+                .FirstOrDefaultAsync();
+
             var presentDaysThisMonth = await _context.AttendanceLogs
                 .Where(l => l.StudentID == studentId.Value
                     && l.RecognizedAt.HasValue
@@ -697,6 +704,7 @@ namespace UniStay.Controllers
             {
                 IsPresentToday = todayLog != null,
                 TodayRecognitionTime = todayLog?.RecognizedAt,
+                IsAbsentToday = todayAbsence != null,
                 PresentDaysThisMonth = presentDaysThisMonth,
                 TotalSessionDaysThisMonth = totalSessionDaysThisMonth,
                 AttendancePercentage = totalSessionDaysThisMonth > 0
