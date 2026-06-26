@@ -14,6 +14,8 @@
     <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
 }
 
+<div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index:9999;"></div>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="page-title">إدارة الحضور</h2>
     <div class="d-flex gap-2">
@@ -31,7 +33,7 @@
                     <i class="bi bi-person-check fs-4"></i>
                 </div>
                 <h6 class="text-muted small">الحاضرون</h6>
-                <h3 class="mb-0 fw-bold text-primary">@Model.PresentCount</h3>
+                <h3 class="mb-0 fw-bold text-primary" id="statPresentCount">@Model.PresentCount</h3>
             </div>
         </div>
     </div>
@@ -42,7 +44,7 @@
                     <i class="bi bi-person-x fs-4"></i>
                 </div>
                 <h6 class="text-muted small">الغائبون</h6>
-                <h3 class="mb-0 fw-bold text-danger">@Model.AbsentCount</h3>
+                <h3 class="mb-0 fw-bold text-danger" id="statAbsentCount">@Model.AbsentCount</h3>
             </div>
         </div>
     </div>
@@ -53,7 +55,7 @@
                     <i class="bi bi-graph-up fs-4"></i>
                 </div>
                 <h6 class="text-muted small">نسبة الحضور</h6>
-                <h3 class="mb-0 fw-bold text-success">@Model.AttendancePercentage%</h3>
+                <h3 class="mb-0 fw-bold text-success" id="statAttendancePct">@Model.AttendancePercentage%</h3>
             </div>
         </div>
     </div>
@@ -101,7 +103,7 @@
 }
 
 <div class="row g-3 mb-4">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                 <span class="fw-bold">التحكم في الجلسة</span>
@@ -119,7 +121,29 @@
             </div>
         </div>
     </div>
-    <div class="col-md-6">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                <span class="fw-bold">نظام التعرف على الوجه</span>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <span id="flaskStatusDot" class="d-inline-block rounded-circle" style="width:12px;height:12px;background:#dc3545;"></span>
+                    <span id="flaskStatusText" class="small">جاري التحقق...</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button id="btnStartFlask" class="btn btn-success" style="display:none;">
+                        <i class="bi bi-play-fill"></i> تشغيل
+                    </button>
+                    <button id="btnStopFlask" class="btn btn-danger" style="display:none;">
+                        <i class="bi bi-stop-fill"></i> إيقاف
+                    </button>
+                </div>
+                <div id="flaskMessage" class="mt-2 small"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
                 <span class="fw-bold">إعدادات الحضور</span>
@@ -189,16 +213,16 @@
                         <th>نسبة الثقة</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="attendanceTableBody">
                     @if (Model.TodayRecords.Count == 0)
                     {
-                        <tr>
+                        <tr id="noRecordsRow">
                             <td colspan="5" class="text-center text-muted py-4">لا توجد سجلات حضور لهذا اليوم</td>
                         </tr>
                     }
                     @foreach (var item in Model.TodayRecords.Select((record, index) => new { record, index }))
                     {
-                        <tr>
+                        <tr data-id="@item.record.StudentID">
                             <td>@(item.index + 1)</td>
                             <td>@item.record.StudentName</td>
                             <td>@item.record.RoomNumber</td>
@@ -218,12 +242,117 @@
 
 @section Scripts {
     <script>
+        // ===== Toast =====
+        function showToast(text, type) {
+            const icons = { success: 'bi-check-circle-fill', danger: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
+            const bg = { success: 'bg-success', danger: 'bg-danger', info: 'bg-info' };
+            const container = document.getElementById('toastContainer');
+            const id = 'toast_' + Date.now();
+            const html = '<div id="' + id + '" class="toast ' + bg[type] + ' text-white" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">' +
+                '<div class="toast-body d-flex align-items-center gap-2"><i class="bi ' + (icons[type] || icons.info) + ' fs-5"></i> ' + text + '</div></div>';
+            container.insertAdjacentHTML('beforeend', html);
+            var el = document.getElementById(id);
+            if (typeof bootstrap !== 'undefined') {
+                new bootstrap.Toast(el).show();
+            }
+            setTimeout(function () { if (el) el.remove(); }, 5000);
+        }
+
+        // ===== Session messages =====
         function showSessionMessage(text, type) {
             const el = document.getElementById('sessionMessage');
             el.textContent = text;
             el.className = 'mt-2 small text-' + type;
         }
 
+        function showFlaskMessage(text, type) {
+            const el = document.getElementById('flaskMessage');
+            el.textContent = text;
+            el.className = 'mt-2 small text-' + type;
+        }
+
+        // ===== Flask status =====
+        function updateFlaskUI(running) {
+            const dot = document.getElementById('flaskStatusDot');
+            const text = document.getElementById('flaskStatusText');
+            const btnStart = document.getElementById('btnStartFlask');
+            const btnStop = document.getElementById('btnStopFlask');
+            if (running) {
+                dot.style.background = '#198754';
+                text.textContent = 'نشط';
+                btnStart.style.display = 'none';
+                btnStop.style.display = '';
+            } else {
+                dot.style.background = '#dc3545';
+                text.textContent = 'متوقف';
+                btnStart.style.display = '';
+                btnStop.style.display = 'none';
+            }
+        }
+
+        function checkFlaskStatus() {
+            fetch('/AdminAttendance/GetFlaskStatus')
+                .then(function (r) { return r.json(); })
+                .then(function (data) { updateFlaskUI(data.running); })
+                .catch(function () { updateFlaskUI(false); });
+        }
+
+        // ===== Live attendance polling =====
+        var lastMaxId = 0;
+        var totalStudents = @ViewBag.TotalStudents;
+
+        function fetchNewRecords() {
+            fetch('/AdminAttendance/GetLatestRecords?lastId=' + lastMaxId)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.records && data.records.length > 0) {
+                        lastMaxId = data.maxId;
+                        appendRecords(data.records);
+                    }
+                })
+                .catch(function () {});
+        }
+
+        function appendRecords(records) {
+            var tbody = document.getElementById('attendanceTableBody');
+            var noRecordRow = document.getElementById('noRecordsRow');
+
+            records.forEach(function (r) {
+                var badgeClass = r.confidenceValue >= 0.8 ? 'bg-success' : r.confidenceValue >= 0.6 ? 'bg-warning text-dark' : 'bg-danger';
+                var row = document.createElement('tr');
+                row.setAttribute('data-id', r.id);
+                row.innerHTML = '<td></td><td>' + r.studentName + '</td><td>' + r.roomNumber + '</td><td>' + r.recognizedAt + '</td>' +
+                    '<td><span class="badge ' + badgeClass + '">' + r.confidence + '</span></td>';
+                if (noRecordRow) noRecordRow.remove();
+                tbody.insertBefore(row, tbody.firstChild);
+                renumberRows();
+                showToast('تم تسجيل حضور: ' + r.studentName, 'success');
+            });
+
+            updateStats(records.length);
+        }
+
+        function renumberRows() {
+            var rows = document.querySelectorAll('#attendanceTableBody tr');
+            rows.forEach(function (row, idx) {
+                var td = row.querySelector('td:first-child');
+                if (td) td.textContent = idx + 1;
+            });
+        }
+
+        function updateStats(newCount) {
+            var presentEl = document.getElementById('statPresentCount');
+            var absentEl = document.getElementById('statAbsentCount');
+            var pctEl = document.getElementById('statAttendancePct');
+            if (!presentEl) return;
+            var cur = parseInt(presentEl.textContent) || 0;
+            var updated = cur + newCount;
+            presentEl.textContent = updated;
+            if (absentEl) absentEl.textContent = Math.max(0, totalStudents - updated);
+            if (pctEl && totalStudents > 0) pctEl.textContent = Math.round(updated / totalStudents * 100) + '%';
+        }
+
+        // ===== Session buttons =====
         document.getElementById('btnStartSession').addEventListener('click', function () {
             const btn = this;
             btn.disabled = true;
@@ -239,11 +368,13 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ sessionName: sessionName })
             })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (data.message) {
+            .then(async function (r) {
+                const data = await r.json();
+                if (r.ok) {
                     showSessionMessage(data.message, 'success');
                     document.getElementById('activeSessionText').textContent = sessionName;
+                } else {
+                    showSessionMessage(data.message || 'حدث خطأ', 'danger');
                 }
             })
             .catch(function () {
@@ -262,11 +393,13 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (data.message) {
+            .then(async function (r) {
+                const data = await r.json();
+                if (r.ok) {
                     showSessionMessage(data.message, 'success');
                     document.getElementById('activeSessionText').textContent = 'لا توجد';
+                } else {
+                    showSessionMessage(data.message || 'حدث خطأ', 'danger');
                 }
             })
             .catch(function () {
@@ -276,5 +409,54 @@
                 btn.disabled = false;
             });
         });
+
+        document.getElementById('btnStartFlask').addEventListener('click', function () {
+            const btn = this;
+            btn.disabled = true;
+            showFlaskMessage('جاري التشغيل...', 'info');
+
+            fetch('/AdminAttendance/StartFlask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(async function (r) {
+                const data = await r.json();
+                showFlaskMessage(data.message, data.success ? 'success' : 'danger');
+                if (data.success) checkFlaskStatus();
+            })
+            .catch(function () {
+                showFlaskMessage('فشل الاتصال بالخادم', 'danger');
+            })
+            .finally(function () {
+                btn.disabled = false;
+            });
+        });
+
+        document.getElementById('btnStopFlask').addEventListener('click', function () {
+            const btn = this;
+            btn.disabled = true;
+            showFlaskMessage('جاري الإيقاف...', 'info');
+
+            fetch('/AdminAttendance/StopFlask', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(async function (r) {
+                const data = await r.json();
+                showFlaskMessage(data.message, data.success ? 'success' : 'danger');
+                if (data.success) checkFlaskStatus();
+            })
+            .catch(function () {
+                showFlaskMessage('فشل الاتصال بالخادم', 'danger');
+            })
+            .finally(function () {
+                btn.disabled = false;
+            });
+        });
+
+        // ===== Start polling =====
+        checkFlaskStatus();
+        setInterval(checkFlaskStatus, 10000);
+        setInterval(fetchNewRecords, 5000);
     </script>
 }

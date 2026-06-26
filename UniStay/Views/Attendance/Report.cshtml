@@ -16,7 +16,7 @@
     <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
 }
 
-<div asp-validation-summary="ModelOnly" class="alert alert-danger d-none"></div>
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
 <form method="get" class="filter-bar row g-2 mb-3">
     <div class="col-md-2">
@@ -73,12 +73,12 @@
                     <td>@rec.AbsenceDate.ToString("yyyy-MM-dd")</td>
                     <td>@rec.ToDate?.ToString("yyyy-MM-dd")</td>
                     <td>
-                        <span class="badge-@(rec.AbsenceType == "Absence" ? "warning" : "info")">
+                        <span class="badge @(rec.AbsenceType == "Absence" ? "bg-warning text-dark" : "bg-info")">
                             @(rec.AbsenceType == "Absence" ? "غياب" : "إذن")
                         </span>
                     </td>
                     <td>
-                        <span class="badge-@(rec.Status switch { "Approved" => "success", "Pending" => "warning", "Rejected" => "danger", "Expired" => "secondary", _ => "secondary" })">
+                        <span class="badge @(rec.Status switch { "Approved" => "bg-success", "Pending" => "bg-warning text-dark", "Rejected" => "bg-danger", "Expired" => "bg-secondary", _ => "bg-secondary" })">
                             @(rec.Status switch { "Approved" => "موافق", "Pending" => "معلق", "Rejected" => "مرفوض", "Expired" => "منتهي", _ => rec.Status })
                         </span>
                     </td>

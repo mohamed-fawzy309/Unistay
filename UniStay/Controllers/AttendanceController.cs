@@ -23,10 +23,18 @@ namespace UniStay.Controllers
             _email = email;
         }
 
-        private int CurrentUserId => int.Parse(User.FindFirst("UserID")!.Value);
+        private int CurrentUserId
+        {
+            get
+            {
+                var c = User.FindFirst("UserID")?.Value;
+                return int.TryParse(c, out var id) ? id : 0;
+            }
+        }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [IgnoreAntiforgeryToken]
+        [RequirePermission("Attendance.Manage", "CanEdit")]
         public async Task<IActionResult> RecordAbsence([FromBody] RecordAbsenceViewModel model)
         {
             if (!ModelState.IsValid)
@@ -63,7 +71,8 @@ namespace UniStay.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [IgnoreAntiforgeryToken]
+        [RequirePermission("Attendance.Manage", "CanEdit")]
         public async Task<IActionResult> RequestPermission([FromBody] RequestPermissionViewModel model)
         {
             if (!ModelState.IsValid)
@@ -104,7 +113,8 @@ namespace UniStay.Controllers
         }
 
         [HttpPost]
-        [ValidateAntiForgeryToken]
+        [IgnoreAntiforgeryToken]
+        [RequirePermission("Attendance.Manage", "CanApprove")]
         public async Task<IActionResult> Approve(int id, [FromBody] ApprovePermissionViewModel model)
         {
             if (!ModelState.IsValid)

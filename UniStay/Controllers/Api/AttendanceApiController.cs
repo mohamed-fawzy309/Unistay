@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using UniStay.Data;
 using UniStay.Models;
 using UniStay.ViewModels.Attendance;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace UniStay.Controllers;
 
 [Route("api/attendance")]
+[ApiController]
 [IgnoreAntiforgeryToken]
 public class AttendanceApiController : Controller
 {
@@ -29,6 +31,10 @@ public class AttendanceApiController : Controller
     [HttpGet("settings")]
     public async Task<IActionResult> GetSettings()
     {
+        var token = HttpContext.Request.Headers["X-Internal-Token"].FirstOrDefault();
+        if (!IsValidToken(token))
+            return Unauthorized(new { message = "Invalid or missing token" });
+
         var setting = await _db.AttendanceSettings
             .OrderByDescending(s => s.ID)
             .FirstOrDefaultAsync();
@@ -88,6 +94,8 @@ public class AttendanceApiController : Controller
             return Conflict(new { message = "Student already checked in for this session" });
         }
 
+        using var transaction = await _db.Database.BeginTransactionAsync();
+
         var log = new AttendanceLog
         {
             StudentID = request.StudentID,
@@ -97,7 +105,16 @@ public class AttendanceApiController : Controller
         };
 
         _db.AttendanceLogs.Add(log);
-        await LogApiCall(request.StudentID, "Success", "Checkin recorded");
+        _db.AttendanceApiLogs.Add(new AttendanceApiLog
+        {
+            StudentID = request.StudentID,
+            Status = "Success",
+            Message = "Checkin recorded",
+            CreatedAt = DateTime.Now
+        });
+
+        await _db.SaveChangesAsync();
+        await transaction.CommitAsync();
 
         return Ok(new { message = "Checkin successful", attendanceLogID = log.ID });
     }

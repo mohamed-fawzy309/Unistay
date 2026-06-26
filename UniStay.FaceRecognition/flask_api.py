@@ -101,6 +101,7 @@ def sync_settings():
             f"{Config.UNISTAY_BASE_URL}/api/attendance/settings",
             timeout=5,
             verify=Config.VERIFY_SSL,
+            headers={"X-Internal-Token": Config.INTERNAL_TOKEN},
         )
 
         resp.raise_for_status()
@@ -296,42 +297,68 @@ def recognition_loop():
             results = extract_all_features(frame)
             logger.info("[DIAG] extract_all_features returned %d faces (loop_count=%d)", len(results) if results else 0, loop_count)
 
-            if not results:
-                time.sleep(Config.RECOGNITION_LOOP_DELAY)
-                continue
+            display_frame = frame.copy()
 
-            threshold = float(current_settings.get("confidenceThreshold", Config.RECOGNITION_THRESHOLD))
+            if results:
+                threshold = float(current_settings.get("confidenceThreshold", Config.RECOGNITION_THRESHOLD))
 
-            for feature, bbox in results:
-                best_name, best_score, is_match = match_with_db(feature, db)
+                for feature, bbox in results:
+                    x, y, w, h, _ = bbox
+                    best_name, best_score, is_match = match_with_db(feature, db)
 
-                if not is_match:
-                    continue
-
-                if best_score < threshold:
-                    logger.debug("Below threshold: name=%s score=%.4f threshold=%.4f", best_name, best_score, threshold)
-                    continue
-
-                try:
-                    student_id = int(best_name.split("_")[0])
-                except (ValueError, IndexError):
-                    logger.warning("Invalid key format: %s", best_name)
-                    continue
-
-                with recognition_lock:
-                    if student_id in session_marked:
-                        logger.info("Duplicate ignored: %s (ID=%d)", best_name, student_id)
+                    if not is_match or best_score < threshold:
+                        cv2.rectangle(display_frame, (int(x), int(y)), (int(x + w), int(y + h)), (0, 0, 255), 2)
+                        label = f"{best_score:.0%}" if best_name else "?"
+                        cv2.putText(display_frame, label, (int(x), int(y) - 10),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
                         continue
-                    session_marked.add(student_id)
 
-                timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                    try:
+                        student_id = int(best_name.split("_")[0])
+                    except (ValueError, IndexError):
+                        logger.warning("Invalid key format: %s", best_name)
+                        cv2.rectangle(display_frame, (int(x), int(y)), (int(x + w), int(y + h)), (0, 0, 255), 2)
+                        continue
 
-                if process_checkin(student_id, best_name, best_score, timestamp):
-                    continue
-                # Queue for retry if API call failed
-                retry_queue.append((student_id, best_name, best_score, timestamp, 0))
-                with recognition_lock:
-                    session_marked.discard(student_id)
+                    with recognition_lock:
+                        if student_id in session_marked:
+                            logger.info("Duplicate ignored: %s (ID=%d)", best_name, student_id)
+                            cv2.rectangle(display_frame, (int(x), int(y)), (int(x + w), int(y + h)), (0, 255, 255), 2)
+                            cv2.putText(display_frame, f"{best_name.split('_', 1)[-1]} ({best_score:.0%})", (int(x), int(y) - 10),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+                            continue
+                        session_marked.add(student_id)
+
+                    timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+                    result = process_checkin(student_id, best_name, best_score, timestamp)
+                    if result == "success":
+                        cv2.rectangle(display_frame, (int(x), int(y)), (int(x + w), int(y + h)), (0, 255, 0), 3)
+                        cv2.putText(display_frame, f"{best_name.split('_', 1)[-1]} ({best_score:.0%})", (int(x), int(y) - 10),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                        cv2.putText(display_frame, "✓", (int(x + w + 5), int(y + h // 2)),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                    else:
+                        cv2.rectangle(display_frame, (int(x), int(y)), (int(x + w), int(y + h)), (0, 255, 0), 2)
+                        cv2.putText(display_frame, f"{best_name.split('_', 1)[-1]} ({best_score:.0%})", (int(x), int(y) - 10),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                        if result == "retry":
+                            retry_queue.append((student_id, best_name, best_score, timestamp, 0))
+                            with recognition_lock:
+                                session_marked.discard(student_id)
+
+            cv2.imshow("UniStay - التعرف على الوجه", display_frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                logger.info("Camera preview closed by user (pressed 'q')")
+                attendance_running = False
+                break
+            try:
+                if cv2.getWindowProperty("UniStay - التعرف على الوجه", cv2.WND_PROP_VISIBLE) < 1:
+                    logger.info("Camera preview window closed by user")
+                    attendance_running = False
+                    break
+            except:
+                pass
 
             time.sleep(Config.RECOGNITION_LOOP_DELAY)
 
@@ -342,6 +369,7 @@ def recognition_loop():
     # Flush remaining queue before stopping
     flush_retry_queue()
     cam.release()
+    cv2.destroyAllWindows()
     logger.info("Camera released, recognition loop ended")
 
 
@@ -594,6 +622,16 @@ def enrollment_test():
         logger.error("Test recognition error: %s", e)
         return jsonify({"error": f"خطأ في اختبار التعرف: {e}"}), 500
 
+
+@app.route("/api/shutdown", methods=["POST"])
+def shutdown():
+    logger.info("Shutdown requested via API")
+    global attendance_running
+    attendance_running = False
+    if recognition_thread and recognition_thread.is_alive():
+        recognition_thread.join(timeout=10)
+    logger.info("Shutdown complete. Exiting process.")
+    os._exit(0)
 
 signal.signal(signal.SIGINT, shutdown_handler)
 signal.signal(signal.SIGTERM, shutdown_handler)

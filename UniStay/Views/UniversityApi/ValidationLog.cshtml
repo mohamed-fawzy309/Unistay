@@ -85,13 +85,17 @@
 </div>
 
 <nav>
+    @{
+        var f = ViewBag.Filters;
+        var baseQuery = $"&nationalId={f?.nationalId}&syncType={f?.syncType}&isMatch={f?.isMatch}&from={f?.from?.ToString("yyyy-MM-dd")}&to={f?.to?.ToString("yyyy-MM-dd")}";
+    }
     @if (ViewBag.Page > 1)
     {
-        <a href="?page=@(ViewBag.Page - 1)&nationalId=@ViewBag.Filters?.nationalId&syncType=@ViewBag.Filters?.syncType" class="btn btn-secondary">السابق</a>
+        <a href="?page=@(ViewBag.Page - 1)@baseQuery" class="btn btn-secondary">السابق</a>
     }
     @if (ViewBag.HasMore)
     {
-        <a href="?page=@(ViewBag.Page + 1)&nationalId=@ViewBag.Filters?.nationalId&syncType=@ViewBag.Filters?.syncType" class="btn btn-secondary">التالي</a>
+        <a href="?page=@(ViewBag.Page + 1)@baseQuery" class="btn btn-secondary">التالي</a>
     }
 </nav>
 
