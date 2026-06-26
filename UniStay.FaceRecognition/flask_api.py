@@ -181,6 +181,7 @@ def fetch_student_details(student_id: int) -> dict | None:
             headers={"X-Internal-Token": Config.INTERNAL_TOKEN},
             timeout=5,
             verify=Config.VERIFY_SSL,
+            headers={"X-Internal-Token": Config.INTERNAL_TOKEN},
         )
         if resp.status_code == 200:
             data = resp.json()
