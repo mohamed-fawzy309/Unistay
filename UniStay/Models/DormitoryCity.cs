@@ -73,4 +73,8 @@ public partial class DormitoryCity
 
 
     public virtual ICollection<FeeConfiguration> FeeConfigurations { get; set; } = new List<FeeConfiguration>();
+
+    public virtual ICollection<StudentPenalty> StudentPenalties { get; set; } = new List<StudentPenalty>();
+
+    public virtual ICollection<HousingFeeTemplate> HousingFeeTemplates { get; set; } = new List<HousingFeeTemplate>();
 }

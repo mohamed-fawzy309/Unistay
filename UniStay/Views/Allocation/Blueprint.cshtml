@@ -1,0 +1,210 @@
+@model BlueprintViewModel
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "كروكى المبنى";
+    var currentFloor = Model.Floors.FirstOrDefault(f => f.FloorNumber == Model.FloorNumber);
+}
+
+<div class="container-fluid py-4" dir="rtl">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">التسكين</a></li>
+            <li class="breadcrumb-item active">كروكى المبنى</li>
+        </ol>
+    </nav>
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-building"></i> @Model.BuildingName</h5>
+            <div class="d-flex align-items-center gap-2">
+                <label for="floorSelect" class="form-label mb-0 text-white small">الدور:</label>
+                <select id="floorSelect" class="form-select form-select-sm" style="width:auto;"
+                        onchange="location.href='@Url.Action("Blueprint")?buildingId=@Model.BuildingID&floorNumber=' + this.value">
+                    @foreach (var fl in Model.AvailableFloors)
+                    {
+                        <option value="@fl" selected="@(fl == Model.FloorNumber ? true : null)">الدور @fl</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+
+    @if (currentFloor != null)
+    {
+        <div class="floor-blueprint">
+            <div class="rooms-grid">
+                @foreach (var room in currentFloor.Rooms)
+                {
+                    <div class="room-card">
+                        <div class="room-header">غرفة @room.RoomNumber</div>
+                        <div class="beds-grid">
+                            @foreach (var bed in room.Beds)
+                            {
+                                if (bed.IsOccupied)
+                                {
+                                    <div class="bed-cell bed-occupied" title="@bed.OccupiedByName">
+                                        <div class="bed-indicator"></div>
+                                        <small class="bed-label">@bed.BedNumber</small>
+                                        <div class="bed-tooltip">@bed.OccupiedByName</div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="bed-cell bed-available" title="متاح">
+                                        <div class="bed-indicator"></div>
+                                        <small class="bed-label">@bed.BedNumber</small>
+                                    </div>
+                                }
+                            }
+                        </div>
+                        <div class="room-footer">
+                            <small class="text-muted">@room.Beds.Count أسرة</small>
+                            <small class="text-muted">| @room.Beds.Count(b => b.IsOccupied) مشغول</small>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-body">
+                <div class="d-flex gap-4 justify-content-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bed-indicator bg-success"></div>
+                        <span>متاح</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bed-indicator bg-danger"></div>
+                        <span>مشغول</span>
+                    </div>
+                </div>
+                <div class="text-center text-muted small mt-2">
+                    @currentFloor.Rooms.Sum(r => r.Beds.Count) سرير | @currentFloor.Rooms.Sum(r => r.Beds.Count(b => b.IsOccupied)) مشغول | @currentFloor.Rooms.Sum(r => r.Beds.Count(b => !b.IsOccupied)) متاح
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">لا توجد غرف في هذا الدور</div>
+    }
+</div>
+
+<style>
+    .floor-blueprint {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+    }
+
+    .rooms-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: 1rem;
+    }
+
+    .room-card {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        transition: box-shadow 0.2s;
+    }
+
+    .room-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
+    .room-header {
+        background: #e9ecef;
+        padding: 0.5rem;
+        text-align: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .beds-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        padding: 0.75rem;
+    }
+
+    .bed-cell {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: default;
+    }
+
+    .bed-indicator {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+
+    .bed-cell:hover .bed-indicator {
+        transform: scale(1.2);
+    }
+
+    .bed-available .bed-indicator {
+        background: #28a745;
+    }
+
+    .bed-occupied .bed-indicator {
+        background: #dc3545;
+    }
+
+    .bed-label {
+        font-size: 0.7rem;
+        margin-top: 2px;
+        color: #6c757d;
+    }
+
+    .bed-tooltip {
+        display: none;
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: #fff;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        z-index: 10;
+        pointer-events: none;
+    }
+
+    .bed-occupied:hover .bed-tooltip {
+        display: block;
+    }
+
+    .bed-available .bed-tooltip {
+        display: none !important;
+    }
+
+    .room-footer {
+        padding: 0.35rem 0.5rem;
+        text-align: center;
+        border-top: 1px solid #f0f0f0;
+        font-size: 0.7rem;
+    }
+
+    .room-footer small {
+        display: inline;
+    }
+
+    .legend .bed-indicator {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+    }
+</style>

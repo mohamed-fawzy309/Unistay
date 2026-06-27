@@ -42,4 +42,6 @@ public partial class Allocation
     public virtual Student Student { get; set; } = null!;
 
     public virtual ICollection<StudentInventory> StudentInventories { get; set; } = new List<StudentInventory>();
+
+    public virtual ICollection<StudentFeeRecord> StudentFeeRecords { get; set; } = new List<StudentFeeRecord>();
 }

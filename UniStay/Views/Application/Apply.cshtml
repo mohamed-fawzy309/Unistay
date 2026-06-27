@@ -1,4 +1,4 @@
-﻿@model UniStay.ViewModels.Application.ApplicationViewModel
+@model UniStay.ViewModels.Application.ApplicationViewModel
 @{
     ViewData["Title"] = "تقديم طلب سكن جامعي - UniStay";
     Layout = null;
@@ -41,15 +41,6 @@
         }
         .nav-link { color: var(--muted) !important; font-weight: 500; font-size: .9rem; transition: color .2s; padding: .4rem .9rem !important; text-decoration: none; }
         .nav-link:hover { color: #fff !important; }
-        .btn-back {
-            display: inline-flex; align-items: center; gap: .5rem;
-            background: transparent; border: 1px solid var(--border);
-            color: var(--muted); border-radius: 10px;
-            padding: .6rem 1.4rem; font-family: 'Tajawal', sans-serif;
-            font-size: .9rem; font-weight: 600; text-decoration: none;
-            transition: all .25s;
-        }
-        .btn-back:hover { border-color: var(--red); color: var(--red); }
 
         .page-header { padding: 7rem 0 2rem; text-align: center; position: relative; }
         .page-header::before {
@@ -127,6 +118,28 @@
         .alert-validation i { color: var(--danger); font-size: 1rem; margin-top: .1rem; }
         .alert-validation ul { color: var(--danger); font-size: .85rem; margin: 0; padding-right: 1.2rem; }
         .alert-validation li { margin-bottom: .2rem; }
+
+        /* ── Sub-section (from Register style) ── */
+        .sub-section {
+            background: rgba(230,57,70,.04);
+            border: 1px dashed rgba(230,57,70,.2);
+            border-radius: 12px;
+            padding: 1.2rem 1.3rem;
+            margin-top: 1rem;
+        }
+        .sub-section-title {
+            font-size: .78rem; font-weight: 700; color: var(--red);
+            letter-spacing: 1px; text-transform: uppercase;
+            margin-bottom: .9rem; display: flex; align-items: center; gap: .5rem;
+        }
+        .sub-section-title::before {
+            content: ''; width: 16px; height: 2px;
+            background: var(--red); border-radius: 2px;
+        }
+
+        /* ── Password strength ── */
+        .strength-bar { flex: 1; height: 4px; border-radius: 4px; background: var(--border); transition: background .3s; }
+        .pass-rule { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: .4rem; }
 
         .btn-submit {
             background: linear-gradient(135deg, var(--red), var(--red-dark));
@@ -235,7 +248,7 @@
                     }
                 }
 
-                @* Student Type Tabs *@
+                @* ── STEP 1: Student Type ── *@
                 <div class="form-card">
                     <div class="form-card-header">
                         <span class="step-badge">1</span>
@@ -255,9 +268,24 @@
                             <i class="fa-solid fa-rotate me-1"></i> طالب مستمر
                         </label>
                     </div>
+
+                    <div class="instructions-box mt-3">
+                        <i class="fa-solid fa-circle-info"></i>
+                        <p>اختر "مصري" إذا كنت تحمل الجنسية المصرية، أو "وافد" إذا كنت من جنسية أخرى.</p>
+                    </div>
+                    <div class="tab-btn-group">
+                        <input type="radio" name="NationalityToggle" id="tabEgyptian" value="Egyptian" checked hidden>
+                        <input type="radio" name="NationalityToggle" id="tabForeign" value="Foreign" hidden>
+                        <label class="tab-btn active" id="tabEgyptianLabel" for="tabEgyptian" onclick="toggleNationalityTab(false)">
+                            <i class="fa-solid fa-flag me-1"></i> مصري
+                        </label>
+                        <label class="tab-btn" id="tabForeignLabel" for="tabForeign" onclick="toggleNationalityTab(true)">
+                            <i class="fa-solid fa-globe me-1"></i> وافد
+                        </label>
+                    </div>
                 </div>
 
-                @* Section 1: Personal Data *@
+                @* ── STEP 2: Personal Data ── *@
                 <div class="form-card">
                     <div class="form-card-header">
                         <span class="step-badge">2</span>
@@ -270,21 +298,13 @@
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label asp-for="NationalID" class="field-label">
-                                الرقم القومي <span class="required">*</span>
-                                <span class="hint">— 14 رقم</span>
-                            </label>
-                            <input asp-for="NationalID" class="form-control" placeholder="مثال: 29801011234567" maxlength="14" oninput="this.value=this.value.replace(/\D/g,'')" />
-                            <span asp-validation-for="NationalID" class="text-danger"></span>
-                        </div>
-                        <div class="col-md-6">
                             <label asp-for="FullName" class="field-label">
                                 الاسم الرباعي <span class="required">*</span>
                             </label>
                             <input asp-for="FullName" class="form-control" placeholder="الاسم كما في شهادة الميلاد" />
                             <span asp-validation-for="FullName" class="text-danger"></span>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label asp-for="Gender" class="field-label">النوع <span class="required">*</span></label>
                             <select asp-for="Gender" class="form-select">
                                 <option value="">-- اختر --</option>
@@ -293,16 +313,7 @@
                             </select>
                             <span asp-validation-for="Gender" class="text-danger"></span>
                         </div>
-                        <div class="col-md-4">
-                            <label asp-for="BirthDate" class="field-label">تاريخ الميلاد <span class="required">*</span></label>
-                            <input asp-for="BirthDate" class="form-control" id="birthDate" placeholder="اختر تاريخ الميلاد" />
-                            <span asp-validation-for="BirthDate" class="text-danger"></span>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="field-label">العمر <span class="hint">— يحسب تلقائياً</span></label>
-                            <input type="text" id="calculatedAge" class="form-control" readonly style="background:var(--black-4);color:var(--success)" placeholder="--" />
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label asp-for="Religion" class="field-label">الديانة <span class="required">*</span></label>
                             <select asp-for="Religion" class="form-select">
                                 <option value="">-- اختر --</option>
@@ -312,21 +323,70 @@
                             <span asp-validation-for="Religion" class="text-danger"></span>
                         </div>
                         <div class="col-md-4">
-                            <label asp-for="Nationality" class="field-label">الجنسية <span class="required">*</span></label>
-                            <select asp-for="Nationality" class="form-select">
-                                <option value="Egyptian">مصري</option>
-                                <option value="Foreign">وافد</option>
-                            </select>
+                            <label asp-for="BirthDate" class="field-label">تاريخ الميلاد <span class="required">*</span></label>
+                            <input asp-for="BirthDate" class="form-control" id="birthDate" placeholder="اختر تاريخ الميلاد" />
+                            <span asp-validation-for="BirthDate" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="field-label">محل الميلاد</label>
+                            <input asp-for="BirthPlace" class="form-control" placeholder="المحافظة / المدينة" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="field-label">العمر <span class="hint">— يحسب تلقائياً</span></label>
+                            <input type="text" id="calculatedAge" class="form-control" readonly style="background:var(--black-4);color:var(--success)" placeholder="--" />
                         </div>
                         <div class="col-md-4">
                             <label asp-for="Phone" class="field-label">رقم التليفون <span class="required">*</span></label>
                             <input asp-for="Phone" class="form-control" placeholder="01xxxxxxxxx" maxlength="11" oninput="this.value=this.value.replace(/\D/g,'')" />
                             <span asp-validation-for="Phone" class="text-danger"></span>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label asp-for="Email" class="field-label">البريد الإلكتروني <span class="required">*</span></label>
                             <input asp-for="Email" type="email" class="form-control" placeholder="example@domain.com" />
                             <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Nationality" class="field-label">الجنسية <span class="required">*</span></label>
+                            <select asp-for="Nationality" class="form-select" id="nationalitySelect">
+                                <option value="">-- اختر الجنسية --</option>
+                                <option value="مصري">🇪🇬 مصري</option>
+                                <option value="سعودي">🇸🇦 سعودي</option>
+                                <option value="ليبي">🇱🇾 ليبي</option>
+                                <option value="سوداني">🇸🇩 سوداني</option>
+                                <option value="يمني">🇾🇪 يمني</option>
+                                <option value="سوري">🇸🇾 سوري</option>
+                                <option value="عراقي">🇮🇶 عراقي</option>
+                                <option value="أردني">🇯🇴 أردني</option>
+                                <option value="فلسطيني">🇵🇸 فلسطيني</option>
+                                <option value="مغربي">🇲🇦 مغربي</option>
+                                <option value="تونسي">🇹🇳 تونسي</option>
+                                <option value="جزائري">🇩🇿 جزائري</option>
+                                <option value="كويتي">🇰🇼 كويتي</option>
+                                <option value="قطري">🇶🇦 قطري</option>
+                                <option value="إماراتي">🇦🇪 إماراتي</option>
+                                <option value="بحاريني">🇧🇪 بحريني</option>
+                                <option value="عماني">🇴🇲 عماني</option>
+                                <option value="لبناني">🇱🇧 لبناني</option>
+                                <option value="ليبي">🇱🇾 ليبي</option>
+                                <option value="موريتاني">🇲🇷 موريتاني</option>
+                                <option value="صومالي">🇸🇴 صومالي</option>
+                                <option value="جيبوتي">🇩🇯 جيبوتي</option>
+                                <option value="أفغاني">🇦🇫 أفغاني</option>
+                                <option value="أمريكي">🇺🇸 أمريكي</option>
+                                <option value="بريطاني">🇬🇧 بريطاني</option>
+                                <option value="فرنسي">🇫🇷 فرنسي</option>
+                                <option value="ألماني">🇩🇪 ألماني</option>
+                                <option value="إيطالي">🇮🇹 إيطالي</option>
+                                <option value="إسباني">🇪🇸 إسباني</option>
+                                <option value="تركي">🇹🇷 تركي</option>
+                                <option value="هندي">🇮🇳 هندي</option>
+                                <option value="صيني">🇨🇳 صيني</option>
+                                <option value="باكستاني">🇵🇰 باكستاني</option>
+                                <option value="ماليزي">🇲🇾 ماليزي</option>
+                                <option value="إندونيسي">🇮🇩 إندونيسي</option>
+                                <option value="نيجيري">🇳🇬 نيجيري</option>
+                                <option value="أخرى">🌍 أخرى</option>
+                            </select>
                         </div>
                         <div class="col-md-4">
                             <label asp-for="Governorate" class="field-label">المحافظة <span class="required">*</span></label>
@@ -357,16 +417,170 @@
                     </div>
                 </div>
 
-                @* Section 2: Academic Data *@
+                @* ── STEP 3: Private Data (Egyptian / Foreign toggle) ── *@
                 <div class="form-card">
                     <div class="form-card-header">
                         <span class="step-badge">3</span>
+                        <i class="fa-solid fa-id-card"></i>
+                        البيانات الخاصة
+                    </div>
+
+                    @* ── Egyptian Fields ── *@
+                    <div id="egyptian-fields">
+                        <div class="instructions-box">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <p>أدخل الرقم القومي المكون من 14 رقم. بيانات الأب إلزامية للمصريين.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="NationalID" class="field-label">
+                                    الرقم القومي <span class="required">*</span>
+                                    <span class="hint">— 14 رقم</span>
+                                </label>
+                                <input asp-for="NationalID" class="form-control" placeholder="مثال: 29801011234567" maxlength="14" oninput="this.value=this.value.replace(/\D/g,'')" />
+                                <span asp-validation-for="NationalID" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="FatherName" class="field-label">اسم الأب <span class="required">*</span></label>
+                                <input asp-for="FatherName" class="form-control" placeholder="الاسم الكامل للأب" />
+                                <span asp-validation-for="FatherName" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="FatherNationalID" class="field-label">
+                                    الرقم القومي للأب
+                                    <span class="hint">— 14 رقم</span>
+                                </label>
+                                <input asp-for="FatherNationalID" class="form-control" maxlength="14" placeholder="14 رقم" oninput="this.value=this.value.replace(/\D/g,'')" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="FatherPhone" class="field-label">هاتف الأب</label>
+                                <input asp-for="FatherPhone" class="form-control" placeholder="01XXXXXXXXX" maxlength="11" oninput="this.value=this.value.replace(/\D/g,'')" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="FatherJob" class="field-label">وظيفة الأب</label>
+                                <input asp-for="FatherJob" class="form-control" placeholder="الوظيفة الحالية" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="FatherAddress" class="field-label">عنوان الأب</label>
+                                <input asp-for="FatherAddress" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ParentStatus" class="field-label">الحالة الأسرية</label>
+                                <select asp-for="ParentStatus" class="form-select">
+                                    <option value="BothAlive">كلاهما على قيد الحياة</option>
+                                    <option value="FatherOnly">الأب فقط</option>
+                                    <option value="MotherOnly">الأم فقط</option>
+                                    <option value="Orphan">يتيم</option>
+                                    <option value="Divorced">مطلق</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" asp-for="HasFamilyAbroad">
+                                    <label class="form-check-label" asp-for="HasFamilyAbroad">أسرة بالخارج 🌍 (أولوية)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" asp-for="SpecialNeeds">
+                                    <label class="form-check-label" asp-for="SpecialNeeds">ذوي احتياجات خاصة ♿</label>
+                                </div>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="isFatherDeceased" asp-for="IsFatherDeceased" onchange="toggleMotherFields()">
+                                    <label class="form-check-label" for="isFatherDeceased" style="color:var(--danger)">
+                                        <i class="fa-solid fa-heart-crack me-1"></i> الأب متوفى — إظهار بيانات ولي الأمر البديل
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        @* Guardian alternative (father deceased) *@
+                        <div id="motherFields" class="mt-4 p-3" style="background:var(--black-3);border:1px solid var(--border);border-radius:12px;display:none">
+                            <div class="fw-bold mb-3" style="color:var(--red)"><i class="fa-solid fa-user-shield me-1"></i> بيانات ولي الأمر البديل</div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label asp-for="GuardianName" class="field-label">اسم ولي الأمر</label>
+                                    <input asp-for="GuardianName" class="form-control" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label asp-for="GuardianNationalID" class="field-label">الرقم القومي لولي الأمر</label>
+                                    <input asp-for="GuardianNationalID" class="form-control" maxlength="14" oninput="this.value=this.value.replace(/\D/g,'')" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="GuardianRelation" class="field-label">صلة القرابة</label>
+                                    <select asp-for="GuardianRelation" class="form-select">
+                                        <option value="Mother">الأم</option>
+                                        <option value="Uncle">العم</option>
+                                        <option value="Brother">الأخ</option>
+                                        <option value="Other">آخر</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="GuardianPhone" class="field-label">هاتف ولي الأمر</label>
+                                    <input asp-for="GuardianPhone" class="form-control" placeholder="01XXXXXXXXX" maxlength="11" oninput="this.value=this.value.replace(/\D/g,'')" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label asp-for="GuardianAddress" class="field-label">عنوان ولي الأمر</label>
+                                    <input asp-for="GuardianAddress" class="form-control" />
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    @* ── Foreign Fields ── *@
+                    <div id="foreign-fields" style="display:none">
+                        <div class="instructions-box">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <p>أدخل بيانات جواز سفرك. إذا لم تجد جنسيتك في القائمة، اختر "أخرى" وأدخلها يدوياً.</p>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="CountryOfOrigin" class="field-label">الجنسية (البلد) <span class="required">*</span></label>
+                                <select asp-for="CountryOfOrigin" class="form-select" id="countryOfOriginSelect" onchange="toggleCountryOther(this.value)">
+                                    <option value="">— اختر الجنسية —</option>
+                                    <option value="SA">🇸🇦 سعودي</option>
+                                    <option value="LY">🇱🇾 ليبي</option>
+                                    <option value="SD">🇸🇩 سوداني</option>
+                                    <option value="YE">🇾🇪 يمني</option>
+                                    <option value="SY">🇸🇾 سوري</option>
+                                    <option value="IQ">🇮🇶 عراقي</option>
+                                    <option value="JO">🇯🇴 أردني</option>
+                                    <option value="PS">🇵🇸 فلسطيني</option>
+                                    <option value="MA">🇲🇦 مغربي</option>
+                                    <option value="TN">🇹🇳 تونسي</option>
+                                    <option value="DZ">🇩🇿 جزائري</option>
+                                    <option value="OTHER">🌍 أخرى</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="country-other-wrapper" style="display:none">
+                                <label asp-for="CountryOfOriginOther" class="field-label">حدد الجنسية <span class="required">*</span></label>
+                                <input asp-for="CountryOfOriginOther" class="form-control" placeholder="اكتب الجنسية..." />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PassportNumber" class="field-label">رقم جواز السفر <span class="required">*</span></label>
+                                <input asp-for="PassportNumber" class="form-control" placeholder="A12345678" />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PassportIssuePlace" class="field-label">مكان إصدار الجواز</label>
+                                <input asp-for="PassportIssuePlace" class="form-control" placeholder="المدينة / الدولة" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @* ── STEP 4: Academic Data ── *@
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="step-badge">4</span>
                         <i class="fa-solid fa-graduation-cap"></i>
                         البيانات الأكاديمية
                     </div>
                     <div class="instructions-box">
                         <i class="fa-solid fa-circle-info"></i>
-                        <p>اختر الكلية والفرقة الدراسية. التقدير بالنسبة المئوية (مثال: 85.5). يحسب البعد عن الجامعة تلقائياً من المحافظة.</p>
+                        <p>اختر الكلية والفرقة الدراسية. التقدير بالنسبة المئوية (مثال: 85.5).</p>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
@@ -390,82 +604,55 @@
                                 <option value="7">السابعة</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label asp-for="GradePercentage" class="field-label">التقدير العام (%) <span class="required">*</span></label>
-                            <input asp-for="GradePercentage" type="number" step="0.01" class="form-control" placeholder="مثال: 85.5" />
-                            <span asp-validation-for="GradePercentage" class="text-danger"></span>
-                        </div>
+
                         <div class="col-md-6" id="studentCodeDiv" style="display:none">
-                            <label asp-for="StudentCode" class="field-label">رقم شئون الطالب <span class="required">*</span></label>
+                            <label asp-for="StudentCode" class="field-label">رقم شئون الطالب</label>
                             <input asp-for="StudentCode" class="form-control" placeholder="رقم شئون الطالب" />
                         </div>
                     </div>
-                </div>
 
-                @* Section 3: Guardian Data *@
-                <div class="form-card">
-                    <div class="form-card-header">
-                        <span class="step-badge">4</span>
-                        <i class="fa-solid fa-people"></i>
-                        بيانات ولي الأمر
-                    </div>
-                    <div class="instructions-box">
-                        <i class="fa-solid fa-circle-info"></i>
-                        <p>بيانات الأب إلزامية. إذا كان الأب متوفياً، فعّل الخيار لإظهار حقول ولي الأمر البديل.</p>
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label asp-for="FatherName" class="field-label">اسم الأب <span class="required">*</span></label>
-                            <input asp-for="FatherName" class="form-control" />
-                            <span asp-validation-for="FatherName" class="text-danger"></span>
-                        </div>
-                        <div class="col-md-6">
-                            <label asp-for="FatherJob" class="field-label">وظيفة الأب</label>
-                            <input asp-for="FatherJob" class="form-control" placeholder="وظيفة الأب" />
-                        </div>
-                        <div class="col-12">
-                            <label asp-for="FatherAddress" class="field-label">عنوان الأب</label>
-                            <input asp-for="FatherAddress" class="form-control" />
-                        </div>
-                        <div class="col-12 mt-2">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="isFatherDeceased" asp-for="IsFatherDeceased" onchange="toggleMotherFields()">
-                                <label class="form-check-label" for="isFatherDeceased" style="color:var(--danger)">
-                                    <i class="fa-solid fa-heart-crack me-1"></i> الأب متوفى — إظهار بيانات ولي الأمر البديل
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="motherFields" class="mt-4 p-3" style="background:var(--black-3);border:1px solid var(--border);border-radius:12px;display:none">
-                        <div class="fw-bold mb-3" style="color:var(--red)"><i class="fa-solid fa-user-shield me-1"></i> بيانات ولي الأمر البديل</div>
+                    @* New student sub-section (Egyptian only) *@
+                    <div id="new-student-fields" class="sub-section mt-3">
+                        <div class="sub-section-title">بيانات المستجد</div>
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                <label asp-for="GuardianName" class="field-label">اسم ولي الأمر</label>
-                                <input asp-for="GuardianName" class="form-control" />
-                            </div>
-                            <div class="col-md-6">
-                                <label asp-for="GuardianNationalID" class="field-label">الرقم القومي لولي الأمر</label>
-                                <input asp-for="GuardianNationalID" class="form-control" maxlength="14" oninput="this.value=this.value.replace(/\D/g,'')" />
+                            <div class="col-md-4">
+                                <label asp-for="HighSchoolDivision" class="field-label">الشعبة / القسم</label>
+                                <input asp-for="HighSchoolDivision" class="form-control" placeholder="علمي / أدبي..." />
                             </div>
                             <div class="col-md-4">
-                                <label asp-for="GuardianRelation" class="field-label">صلة القرابة</label>
-                                <select asp-for="GuardianRelation" class="form-select">
-                                    <option value="Mother">الأم</option>
-                                    <option value="Uncle">العم</option>
-                                    <option value="Brother">الأخ</option>
-                                    <option value="Other">آخر</option>
-                                </select>
+                                <label asp-for="HighSchoolTotal" class="field-label">مجموع الثانوية</label>
+                                <input asp-for="HighSchoolTotal" type="number" class="form-control" step="0.01" placeholder="مثال: 380.5" />
                             </div>
-                            <div class="col-md-8">
-                                <label asp-for="GuardianAddress" class="field-label">عنوان ولي الأمر</label>
-                                <input asp-for="GuardianAddress" class="form-control" />
+                            <div class="col-md-4">
+                                <label asp-for="HighSchoolPercentage" class="field-label">النسبة المئوية %</label>
+                                <input asp-for="HighSchoolPercentage" type="number" class="form-control" step="0.01" max="100" placeholder="مثال: 95.5" />
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="HighSchoolFromAbroad" id="chkHSAbroad">
+                                    <label class="form-check-label" for="chkHSAbroad">ثانوية عامة من الخارج</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Returning student sub-section (Egyptian only) *@
+                    <div id="returning-student-fields" class="sub-section mt-3" style="display:none">
+                        <div class="sub-section-title">بيانات الطالب المستمر</div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="LastYearGrade" class="field-label">تقدير العام الماضي</label>
+                                <input asp-for="LastYearGrade" class="form-control" placeholder="ممتاز / جيد جداً..." />
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="LastYearPercentage" class="field-label">نسبة العام الماضي %</label>
+                                <input asp-for="LastYearPercentage" type="number" class="form-control" step="0.01" max="100" />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                @* Section 4: Housing Preferences *@
+                @* ── STEP 5: Housing Preferences ── *@
                 <div class="form-card">
                     <div class="form-card-header">
                         <span class="step-badge">5</span>
@@ -500,12 +687,6 @@
                         </div>
                         <div class="col-md-4">
                             <div class="form-check mt-2">
-                                <input class="form-check-input" type="checkbox" asp-for="HasFamilyAbroad">
-                                <label class="form-check-label" asp-for="HasFamilyAbroad">أسرة مقيمة بالخارج (أولوية)</label>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-check mt-2">
                                 <input class="form-check-input" type="checkbox" asp-for="HasMedicalCondition" id="medicalCheck" onchange="toggleMedicalDesc()">
                                 <label class="form-check-label" style="color:var(--danger)" asp-for="HasMedicalCondition">حالة مرضية / إعاقة</label>
                             </div>
@@ -517,10 +698,10 @@
                     </div>
                 </div>
 
-                @* Section 4B: Photo & Meals *@
+                @* ── STEP 5B: Photo & Meals ── *@
                 <div class="form-card">
                     <div class="form-card-header">
-                        <span class="step-badge">4ب</span>
+                        <span class="step-badge">5ب</span>
                         <i class="fa-solid fa-camera"></i>
                         الصورة الشخصية والوجبات
                     </div>
@@ -553,7 +734,7 @@
                     </div>
                 </div>
 
-                @* Section 5: Account *@
+                @* ── STEP 6: Account & Declaration ── *@
                 <div class="form-card">
                     <div class="form-card-header">
                         <span class="step-badge">6</span>
@@ -562,13 +743,29 @@
                     </div>
                     <div class="instructions-box">
                         <i class="fa-solid fa-circle-info"></i>
-                        <p>كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حروف وأرقام. احتفظ ببيانات الدخول بعد التسجيل.</p>
+                        <p>كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حروف كبيرة وأرقام ورموز. احتفظ ببيانات الدخول بعد التسجيل.</p>
                     </div>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label asp-for="Password" class="field-label">كلمة المرور <span class="required">*</span></label>
-                            <input asp-for="Password" type="password" class="form-control" minlength="8" />
-                            <span class="text-muted-small">8 أحرف على الأقل (حروف + أرقام)</span>
+                            <input asp-for="Password" type="password" class="form-control" id="passwordField" minlength="8" placeholder="8 أحرف على الأقل" oninput="updateStrength(this.value)" />
+                            @* Strength meter *@
+                            <div class="mt-2 d-flex gap-1 align-items-center">
+                                <div class="strength-bar" id="sb1"></div>
+                                <div class="strength-bar" id="sb2"></div>
+                                <div class="strength-bar" id="sb3"></div>
+                                <div class="strength-bar" id="sb4"></div>
+                                <span id="strengthLabel" style="font-size:.72rem;color:var(--muted);min-width:55px;text-align:center;"></span>
+                            </div>
+                            @* Password rules *@
+                            <div class="mt-2 p-2" style="background:var(--black-4);border-radius:8px;">
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem;">
+                                    <div class="pass-rule" id="r-len"><span>○</span> 8 أحرف على الأقل</div>
+                                    <div class="pass-rule" id="r-upper"><span>○</span> حرف كبير (A-Z)</div>
+                                    <div class="pass-rule" id="r-num"><span>○</span> رقم (0-9)</div>
+                                    <div class="pass-rule" id="r-spec"><span>○</span> رمز خاص (!@@#...)</div>
+                                </div>
+                            </div>
                             <span asp-validation-for="Password" class="text-danger"></span>
                         </div>
                         <div class="col-md-6">
@@ -613,8 +810,10 @@
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/ar.js"></script>
+    <script src="~/js/location-cascade.js"></script>
+    <script src="~/js/site.js"></script>
     <script>
-        // ── Flatpickr
+        // ── Flatpickr date picker
         flatpickr("#birthDate", {
             locale: "ar", dateFormat: "Y-m-d", maxDate: "today",
             onChange: function(sel, str) { calculateAge(str); }
@@ -630,62 +829,7 @@
             document.getElementById('calculatedAge').value = age + ' سنة';
         }
 
-        // ── Egypt locations: Governorate → Markaz → Village  (from JSON file)
-        let egyptData = [];
-
-        fetch('/json/egypt_locations.json')
-            .then(r => r.json())
-            .then(data => {
-                egyptData = data;
-                populateGovernorates(data);
-            })
-            .catch(err => console.error('Failed to load locations:', err));
-
-        function populateGovernorates(data) {
-            const sel = document.getElementById('governorateSelect');
-            sel.innerHTML = '<option value="">-- اختر المحافظة --</option>';
-            data.forEach(g => {
-                const opt = document.createElement('option');
-                opt.value = g.name_ar;
-                opt.textContent = g.name_ar;
-                sel.appendChild(opt);
-            });
-        }
-
-        document.getElementById('governorateSelect').addEventListener('change', function() {
-            const markazSel = document.getElementById('markazSelect');
-            const villageSel = document.getElementById('villageSelect');
-            markazSel.innerHTML = '<option value="">-- اختر المركز --</option>';
-            villageSel.innerHTML = '<option value="">-- اختر القرية --</option>';
-            const gov = egyptData.find(g => g.name_ar === this.value);
-            if (gov && gov.centers) {
-                gov.centers.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c.name_ar;
-                    opt.textContent = c.name_ar;
-                    markazSel.appendChild(opt);
-                });
-            }
-        });
-
-        document.getElementById('markazSelect').addEventListener('change', function() {
-            const villageSel = document.getElementById('villageSelect');
-            villageSel.innerHTML = '<option value="">-- اختر القرية --</option>';
-            const gov = egyptData.find(g => g.name_ar === document.getElementById('governorateSelect').value);
-            if (gov && gov.centers) {
-                const markaz = gov.centers.find(c => c.name_ar === this.value);
-                if (markaz && markaz.cities) {
-                    markaz.cities.forEach(v => {
-                        const opt = document.createElement('option');
-                        opt.value = v.name_ar;
-                        opt.textContent = v.name_ar;
-                        villageSel.appendChild(opt);
-                    });
-                }
-            }
-        });
-
-        // ── All Faculties
+        // ── Faculties
         const faculties = [
             { name: "الهندسة", hint: "شهادة الثانوية العامة شعبة علمي رياضة" },
             { name: "الطب", hint: "شهادة الثانوية العامة شعبة علمي علوم" },
@@ -725,7 +869,7 @@
             { name: "معهد فني صناعي", hint: "شهادة الثانوية العامة" }
         ];
         const facSelect = document.getElementById('facultySelect');
-        const facHint = document.getElementById('facultyHint');
+        const facHint   = document.getElementById('facultyHint');
         faculties.forEach(f => {
             const o = document.createElement('option');
             o.value = f.name; o.textContent = f.name;
@@ -736,21 +880,52 @@
             facHint.textContent = f ? f.hint : '';
         });
 
-        // ── Student type toggle
+        // ── Single visibility controller — reads both toggles and applies all rules
+        function applyVisibility() {
+            const isReturning = document.getElementById('tabReturning').checked;
+            const isForeign   = document.getElementById('tabForeign').checked;
+
+            // Student-type sections (not affected by nationality)
+            document.getElementById('new-student-fields').style.display      = isReturning ? 'none'  : 'block';
+            document.getElementById('returning-student-fields').style.display = isReturning ? 'block' : 'none';
+
+            // Nationality sections (not affected by student type)
+            document.getElementById('egyptian-fields').style.display = isForeign ? 'none' : 'block';
+            document.getElementById('foreign-fields').style.display  = isForeign ? 'block' : 'none';
+        }
+
+        // ── Student type toggle (New / Returning)
         function toggleStudentType(isReturning) {
             document.getElementById('tabNewLabel').classList.toggle('active', !isReturning);
             document.getElementById('tabReturningLabel').classList.toggle('active', isReturning);
             document.getElementById('tabNew').checked = !isReturning;
             document.getElementById('tabReturning').checked = isReturning;
-            const div = document.getElementById('studentCodeDiv');
-            div.style.display = isReturning ? 'block' : 'none';
+            document.getElementById('studentCodeDiv').style.display = isReturning ? 'block' : 'none';
+            applyVisibility();
         }
 
+        // ── Nationality toggle tab (مصري / وافد)
+        function toggleNationalityTab(isForeign) {
+            document.getElementById('tabEgyptianLabel').classList.toggle('active', !isForeign);
+            document.getElementById('tabForeignLabel').classList.toggle('active', isForeign);
+            document.getElementById('tabEgyptian').checked = !isForeign;
+            document.getElementById('tabForeign').checked = isForeign;
+            document.getElementById('nationalitySelect').value = isForeign ? '' : 'مصري';
+            applyVisibility();
+        }
+
+        // ── Country "Other" free-text
+        function toggleCountryOther(val) {
+            document.getElementById('country-other-wrapper').style.display = val === 'OTHER' ? 'block' : 'none';
+        }
+
+        // ── Father deceased → show alternative guardian
         function toggleMotherFields() {
             const c = document.getElementById('isFatherDeceased').checked;
             document.getElementById('motherFields').style.display = c ? 'block' : 'none';
         }
 
+        // ── Medical condition description
         function toggleMedicalDesc() {
             document.getElementById('medicalDescDiv').style.display =
                 document.getElementById('medicalCheck').checked ? 'block' : 'none';
@@ -760,21 +935,50 @@
         function previewPhoto(e) {
             const file = e.target.files[0];
             const preview = document.getElementById('photoPreview');
-            const img = document.getElementById('photoPreviewImg');
+            const img     = document.getElementById('photoPreviewImg');
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(ev) { img.src = ev.target.result; preview.style.display = 'block'; };
                 reader.readAsDataURL(file);
             } else {
-                preview.style.display = 'none';
-                img.src = '';
+                preview.style.display = 'none'; img.src = '';
             }
         }
 
-        // ── Submit loading
+        // ── Password strength meter
+        function updateStrength(val) {
+            const bars  = ['sb1','sb2','sb3','sb4'].map(id => document.getElementById(id));
+            const label = document.getElementById('strengthLabel');
+            const rules = {
+                len:   val.length >= 8,
+                upper: /[A-Z]/.test(val),
+                num:   /[0-9]/.test(val),
+                spec:  /[^A-Za-z0-9]/.test(val)
+            };
+            updateRule('r-len',   rules.len);
+            updateRule('r-upper', rules.upper);
+            updateRule('r-num',   rules.num);
+            updateRule('r-spec',  rules.spec);
+
+            const score  = Object.values(rules).filter(Boolean).length;
+            const colors = ['', '#ef4444', '#f97316', '#eab308', '#10b981'];
+            const labels = ['', 'ضعيفة', 'متوسطة', 'جيدة', 'قوية'];
+            bars.forEach((b, i) => { b.style.background = i < score ? colors[score] : 'var(--border)'; });
+            label.textContent = val.length ? labels[score] : '';
+            label.style.color = colors[score] || 'var(--muted)';
+        }
+
+        function updateRule(id, passed) {
+            const el = document.getElementById(id);
+            el.style.color = passed ? '#10b981' : 'var(--muted)';
+            el.querySelector('span').textContent = passed ? '✓' : '○';
+        }
+
+        // ── Submit loading state
         document.getElementById('applicationForm').addEventListener('submit', function() {
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> جاري الإرسال…';
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> جاري الإرسال…';
         });
     </script>
 </body>

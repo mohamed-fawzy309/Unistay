@@ -118,7 +118,7 @@
     @if (TempData["Success"] != null)
     {
         <div class="alert alert-success alert-dismissible fade show">
-            <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+            <i class="bi bi-check-circle-fill me-2"></i>@Html.Raw(TempData["Success"])
             <button class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     }

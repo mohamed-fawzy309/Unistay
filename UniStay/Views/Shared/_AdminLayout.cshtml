@@ -1,4 +1,11 @@
-﻿<!DOCTYPE html>
+﻿@inject UniStay.Services.Interfaces.IPermissionService PermissionService
+@{
+    var userIdClaim = User.FindFirst("UserID")?.Value;
+    var currentUserId = userIdClaim != null ? int.Parse(userIdClaim) : 0;
+    var perms = currentUserId > 0 ? PermissionService.GetUserPermissionKeys(currentUserId) : new HashSet<string>();
+    bool HasPerm(string key) => perms.Contains(key);
+}
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="utf-8" />
@@ -252,48 +259,49 @@
             <ul class="nav flex-column">
 
                 <!-- ===== لوحة التحكم ===== -->
-                <li class="nav-item">
-                    <a class="nav-link active" asp-controller="Admin" asp-action="Index">
-                        <i class="bi bi-house-door-fill"></i> لوحة التحكم
-                    </a>
-                </li>
+                @if (HasPerm("Dashboard.View"))
+                {
+                    <li class="nav-item">
+                        <a class="nav-link active" asp-controller="Admin" asp-action="Index">
+                            <i class="bi bi-house-door-fill"></i> لوحة التحكم
+                        </a>
+                    </li>
+                }
 
                 <!-- ===== اشراف النظام ===== -->
-                <li class="nav-item">
-                    <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuSuperAdmin" role="button">
-                        <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> اشراف النظام
-                    </div>
-                    <div class="collapse" id="menuSuperAdmin">
-                        <ul class="nav flex-column">
-                            <li class="nav-item"><a class="nav-link" asp-controller="Permissions" asp-action="Users"><i class="bi bi-shield-lock"></i> المستخدمين</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="CreateAdmin"><i class="bi bi-person-plus"></i> إنشاء أدمن وتحديد صلاحياته</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="StudentOperations"><i class="bi bi-pencil-square"></i> إدارة بيانات الطالب</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="Index"><i class="bi bi-speedometer2"></i> إحصائيات عامة</a></li>
-                            <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="StudentsByHousingType"><i class="bi bi-pie-chart"></i> أعداد الطلاب حسب أنواع السكن</a></li>
-                        </ul>
-                    </div>
-                </li>
+                @if (HasPerm("SystemUsers.Manage") || HasPerm("Students.Manage") || HasPerm("Statistics.View"))
+                {
+                    <li class="nav-item">
+                        <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuSuperAdmin" role="button">
+                            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> اشراف النظام
+                        </div>
+                        <div class="collapse" id="menuSuperAdmin">
+                            <ul class="nav flex-column">
+                                @if (HasPerm("SystemUsers.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Permissions" asp-action="Users"><i class="bi bi-shield-lock"></i> المستخدمين</a></li> }
+                                @if (HasPerm("SystemUsers.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="CreateAdmin"><i class="bi bi-person-plus"></i> إنشاء أدمن وتحديد صلاحياته</a></li> }
+                                @if (HasPerm("Students.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="StudentOperations"><i class="bi bi-pencil-square"></i> إدارة بيانات الطالب</a></li> }
+                                @if (HasPerm("Statistics.View")) { <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="Index"><i class="bi bi-speedometer2"></i> إحصائيات عامة</a></li> }
+                                @if (HasPerm("Statistics.View")) { <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="StudentsByHousingType"><i class="bi bi-pie-chart"></i> أعداد الطلاب حسب أنواع السكن</a></li> }
+                            </ul>
+                        </div>
+                    </li>
+                }
 
                 <!-- ===== بيانات وحالات الطلاب ===== -->
-                <li class="nav-item">
-                    <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuStudents" role="button">
-                        <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> بيانات وحالات الطلاب
-                    </div>
-                    <div class="collapse" id="menuStudents">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="Students">
-                                    <i class="bi bi-people-fill"></i> بيانات اساسية
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="StudentStatement">
-                                    <i class="bi bi-file-text"></i> بيان حالة
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
+                @if (HasPerm("Students.Manage") || HasPerm("StudentStatus.View"))
+                {
+                    <li class="nav-item">
+                        <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuStudents" role="button">
+                            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> بيانات وحالات الطلاب
+                        </div>
+                        <div class="collapse" id="menuStudents">
+                            <ul class="nav flex-column">
+                                @if (HasPerm("Students.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Students"><i class="bi bi-people-fill"></i> بيانات اساسية</a></li> }
+                                @if (HasPerm("Students.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="StudentStatement"><i class="bi bi-file-text"></i> بيان حالة</a></li> }
+                            </ul>
+                        </div>
+                    </li>
+                }
 
                 <!-- ===== السكن والتسكين ===== -->
                 <li class="nav-item">
@@ -302,33 +310,11 @@
                     </div>
                     <div class="collapse" id="menuAllocation">
                         <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="Cities">
-                                    <i class="bi bi-building"></i> المدن الجامعية
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="Buildings">
-                                    <i class="bi bi-grid-3x3-gap-fill"></i> المباني
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="Rooms">
-                                    <i class="bi bi-door-open"></i> الغرف
-                                </a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Allocation" asp-action="ManualAllocation">
-                                    <i class="bi bi-pin-map-fill"></i> التسكين اليدوي
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Allocation" asp-action="Index">
-                                    <i class="bi bi-list-check"></i> إدارة التسكين
-                                </a>
-                            </li>
-
+                            @if (HasPerm("DormitoryCities.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Cities"><i class="bi bi-building"></i> المدن الجامعية</a></li> }
+                            @if (HasPerm("Buildings.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Buildings"><i class="bi bi-grid-3x3-gap-fill"></i> المباني</a></li> }
+                            @if (HasPerm("Rooms.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Rooms"><i class="bi bi-door-open"></i> الغرف</a></li> }
+                            <li class="nav-item"><a class="nav-link" asp-controller="Allocation" asp-action="ManualAllocation"><i class="bi bi-pin-map-fill"></i> التسكين اليدوي</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Allocation" asp-action="Index"><i class="bi bi-list-check"></i> إدارة التسكين</a></li>
                         </ul>
                     </div>
                 </li>
@@ -340,112 +326,53 @@
                     </div>
                     <div class="collapse" id="menuAttendance">
                         <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="AdminAttendance" asp-action="ControlRoom">
-                                    <i class="bi bi-camera-video-fill"></i> غرفة التحكم
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="AdminAttendance" asp-action="Index">
-                                    <i class="bi bi-speedometer2"></i> لوحة الحضور
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="AdminAttendance" asp-action="Enrollment">
-                                    <i class="bi bi-person-badge"></i> تسجيل الوجوه
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="AdminAttendance" asp-action="DailyReport">
-                                    <i class="bi bi-file-earmark-text"></i> تقرير يومي
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="AdminAttendance" asp-action="MonthlyReport">
-                                    <i class="bi bi-file-earmark-bar-graph"></i> تقرير شهري
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="AdminAttendance" asp-action="Monitoring">
-                                    <i class="bi bi-activity"></i> مراقبة API
-                                </a>
-                            </li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="AdminAttendance" asp-action="ControlRoom"><i class="bi bi-camera-video-fill"></i> غرفة التحكم</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="AdminAttendance" asp-action="Index"><i class="bi bi-speedometer2"></i> لوحة الحضور</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="AdminAttendance" asp-action="Enrollment"><i class="bi bi-person-badge"></i> تسجيل الوجوه</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="AdminAttendance" asp-action="DailyReport"><i class="bi bi-file-earmark-text"></i> تقرير يومي</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="AdminAttendance" asp-action="MonthlyReport"><i class="bi bi-file-earmark-bar-graph"></i> تقرير شهري</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="AdminAttendance" asp-action="Monitoring"><i class="bi bi-activity"></i> مراقبة API</a></li>
                         </ul>
                     </div>
                 </li>
 
                 <!-- ===== الجزاءات والغياب ===== -->
-                <li class="nav-item">
-                    <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuDiscipline" role="button">
-                        <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الجزاءات والغياب
-                    </div>
-                    <div class="collapse" id="menuDiscipline">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Violation" asp-action="Add">
-                                    <i class="bi bi-exclamation-triangle"></i> تسجيل جزاء
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Discipline" asp-action="BulkPermission">
-                                    <i class="bi bi-calendar-check"></i> تسجيل تصريح 
-                                </a>
-                            </li>
-                            
-                        </ul>
-                    </div>
-                </li>
+                @if (HasPerm("Violations.Manage") || HasPerm("Attendance.Manage"))
+                {
+                    <li class="nav-item">
+                        <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuDiscipline" role="button">
+                            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الجزاءات والغياب
+                        </div>
+                        <div class="collapse" id="menuDiscipline">
+                            <ul class="nav flex-column">
+                                @if (HasPerm("Violations.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Violation" asp-action="Add"><i class="bi bi-exclamation-triangle"></i> تسجيل جزاء</a></li> }
+                                @if (HasPerm("Attendance.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Discipline" asp-action="BulkPermission"><i class="bi bi-calendar-check"></i> تسجيل تصريح</a></li> }
+                            </ul>
+                        </div>
+                    </li>
+                }
 
                 <!-- ===== التقديم والتنسيق ===== -->
-                <li class="nav-item">
-                    <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuApplications" role="button">
-                        <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> التقديم والتنسيق
-                    </div>
-                    <div class="collapse" id="menuApplications">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="ApplicationsCenter" asp-action="Index">
-                                    <i class="bi bi-layout-text-window-reverse"></i> مركز التقديم
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="OnlineReview" asp-action="Index">
-                                    <i class="bi bi-check2-square"></i> مراجعة طلبات التقديم عبر الإنترنت
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="PendingApplications">
-                                    <i class="bi bi-inbox"></i> الطلبات المعلقة
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="AllApplications">
-                                    <i class="bi bi-list-ul"></i> كل الطلبات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Coordination" asp-action="Preview">
-                                    <i class="bi bi-trophy"></i> التنسيق
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Coordination" asp-action="ConfigureRules">
-                                    <i class="bi bi-sliders"></i> قواعد التنسيق
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Coordination" asp-action="Results">
-                                    <i class="bi bi-list-ol"></i> نتائج التنسيق
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Coordination" asp-action="Waitlist">
-                                    <i class="bi bi-hourglass-split"></i> قائمة الانتظار
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
+                @if (HasPerm("Applications.View") || HasPerm("Applications.Review") || HasPerm("PendingRegistrations.Manage") || HasPerm("Coordination.Manage") || HasPerm("Coordination.View"))
+                {
+                    <li class="nav-item">
+                        <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuApplications" role="button">
+                            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> التقديم والتنسيق
+                        </div>
+                        <div class="collapse" id="menuApplications">
+                            <ul class="nav flex-column">
+                                @if (HasPerm("Applications.View")) { <li class="nav-item"><a class="nav-link" asp-controller="ApplicationsCenter" asp-action="Index"><i class="bi bi-layout-text-window-reverse"></i> مركز التقديم</a></li> }
+                                @if (HasPerm("Applications.Review")) { <li class="nav-item"><a class="nav-link" asp-controller="OnlineReview" asp-action="Index"><i class="bi bi-check2-square"></i> مراجعة طلبات التقديم عبر الإنترنت</a></li> }
+                                @if (HasPerm("PendingRegistrations.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="PendingApplications"><i class="bi bi-inbox"></i> الطلبات المعلقة</a></li> }
+                                @if (HasPerm("Coordination.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="AllApplications"><i class="bi bi-list-ul"></i> كل الطلبات</a></li> }
+                                @if (HasPerm("Coordination.View")) { <li class="nav-item"><a class="nav-link" asp-controller="Coordination" asp-action="Preview"><i class="bi bi-trophy"></i> التنسيق</a></li> }
+                                @if (HasPerm("Coordination.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Coordination" asp-action="ConfigureRules"><i class="bi bi-sliders"></i> قواعد التنسيق</a></li> }
+                                @if (HasPerm("Coordination.View")) { <li class="nav-item"><a class="nav-link" asp-controller="Coordination" asp-action="Results"><i class="bi bi-list-ol"></i> نتائج التنسيق</a></li> }
+                                @if (HasPerm("Coordination.View")) { <li class="nav-item"><a class="nav-link" asp-controller="Coordination" asp-action="Waitlist"><i class="bi bi-hourglass-split"></i> قائمة الانتظار</a></li> }
+                            </ul>
+                        </div>
+                    </li>
+                }
 
                 <!-- ===== الرسوم والمدفوعات ===== -->
                 <li class="nav-item">
@@ -454,55 +381,30 @@
                     </div>
                     <div class="collapse" id="menuFees">
                         <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Payment" asp-action="StudentPayments">
-                                    <i class="bi bi-currency-exchange"></i> تسجيل الرسوم
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="FeeTypes">
-                                    <i class="bi bi-tag"></i> أنواع الرسوم
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="FeeConfigurations">
-                                    <i class="bi bi-gear"></i> تكوين الرسوم
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Payment" asp-action="GatewayLog">
-                                    <i class="bi bi-credit-card-2-back"></i> سجل بوابة الدفع
-                                </a>
-                            </li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Payment" asp-action="StudentPayments"><i class="bi bi-currency-exchange"></i> تسجيل الرسوم</a></li>
+                            @if (HasPerm("FeeTypes.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="FeeTypes"><i class="bi bi-tag"></i> أنواع الرسوم</a></li> }
+                            @if (HasPerm("FeeConfigurations.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="FeeConfigurations"><i class="bi bi-gear"></i> تكوين الرسوم</a></li> }
+                            <li class="nav-item"><a class="nav-link" asp-controller="Payment" asp-action="GatewayLog"><i class="bi bi-credit-card-2-back"></i> سجل بوابة الدفع</a></li>
                         </ul>
                     </div>
                 </li>
 
                 <!-- ===== المواعيد والتعليمات ===== -->
-                <li class="nav-item">
-                    <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuSchedules" role="button">
-                        <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> المواعيد والتعليمات
-                    </div>
-                    <div class="collapse" id="menuSchedules">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="Schedules">
-                                    <i class="bi bi-calendar-event"></i> مواعيد التقديم
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="Instructions">
-                                    <i class="bi bi-info-circle"></i> التعليمات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="Announcements">
-                                    <i class="bi bi-megaphone"></i> الإعلانات
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
+                @if (HasPerm("ApplicationSchedules.Manage") || HasPerm("Instructions.Manage") || HasPerm("AppConfig.Manage"))
+                {
+                    <li class="nav-item">
+                        <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuSchedules" role="button">
+                            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> المواعيد والتعليمات
+                        </div>
+                        <div class="collapse" id="menuSchedules">
+                            <ul class="nav flex-column">
+                                @if (HasPerm("ApplicationSchedules.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Schedules"><i class="bi bi-calendar-event"></i> مواعيد التقديم</a></li> }
+                                @if (HasPerm("Instructions.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Instructions"><i class="bi bi-info-circle"></i> التعليمات</a></li> }
+                                @if (HasPerm("AppConfig.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Announcements"><i class="bi bi-megaphone"></i> الإعلانات</a></li> }
+                            </ul>
+                        </div>
+                    </li>
+                }
 
                 <!-- ===== التقارير ===== -->
                 <li class="nav-item">
@@ -511,101 +413,39 @@
                     </div>
                     <div class="collapse" id="menuReports">
                         <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="StudentLists">
-                                    <i class="bi bi-list-ul"></i> قوائم الطلاب
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Violation" asp-action="Report">
-                                    <i class="bi bi-exclamation-triangle"></i> الجزاءات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Attendance" asp-action="Report">
-                                    <i class="bi bi-calendar-x"></i> الغياب والتصاريح
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Payment" asp-action="Report">
-                                    <i class="bi bi-currency-exchange"></i> الرسوم
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="RoomOccupancy">
-                                    <i class="bi bi-bar-chart"></i> حالة الغرف
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="PrintedCards">
-                                    <i class="bi bi-printer"></i> البطاقات المطبوعة
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="StudentsWithoutPhotos">
-                                    <i class="bi bi-camera-off"></i> طلاب بدون صور
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="StudentObligations">
-                                    <i class="bi bi-file-check"></i> بيان استلام الطلاب للواجبات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="MealRestriction">
-                                    <i class="bi bi-ban"></i> المحرومون من الوجبات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="StudentMealHistory">
-                                    <i class="bi bi-journal"></i> وجبات الطالب
-                                </a>
-                            </li>
+                            @if (HasPerm("Students.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="StudentLists"><i class="bi bi-list-ul"></i> قوائم الطلاب</a></li> }
+                            @if (HasPerm("Violations.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Violation" asp-action="Report"><i class="bi bi-exclamation-triangle"></i> الجزاءات</a></li> }
+                            @if (HasPerm("Attendance.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Attendance" asp-action="Report"><i class="bi bi-calendar-x"></i> الغياب والتصاريح</a></li> }
+                            <li class="nav-item"><a class="nav-link" asp-controller="Payment" asp-action="Report"><i class="bi bi-currency-exchange"></i> الرسوم</a></li>
+                            @if (HasPerm("Rooms.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="RoomOccupancy"><i class="bi bi-bar-chart"></i> حالة الغرف</a></li> }
+                            @if (HasPerm("SystemUsers.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="PrintedCards"><i class="bi bi-printer"></i> البطاقات المطبوعة</a></li> }
+                            @if (HasPerm("SystemUsers.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="StudentsWithoutPhotos"><i class="bi bi-camera-off"></i> طلاب بدون صور</a></li> }
+                            @if (HasPerm("Students.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="StudentObligations"><i class="bi bi-file-check"></i> بيان استلام الطلاب للواجبات</a></li> }
+                            @if (HasPerm("Meals.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="MealRestriction"><i class="bi bi-ban"></i> المحرومون من الوجبات</a></li> }
+                            @if (HasPerm("Meals.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="StudentMealHistory"><i class="bi bi-journal"></i> وجبات الطالب</a></li> }
                         </ul>
-
                     </div>
                 </li>
                         
                 <!-- ===== الإحصائيات ===== -->
-                <li class="nav-item">
-                    <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuStats" role="button">
-                        <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الإحصائيات
-                    </div>
-                    <div class="collapse" id="menuStats">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Statistics" asp-action="Applicants">
-                                    <i class="bi bi-people"></i> اعداد المتقدمين
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Statistics" asp-action="AllocatedStudents">
-                                    <i class="bi bi-door-open"></i> أعداد المقيمين
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Statistics" asp-action="TotalStudents">
-                                    <i class="bi bi-people-fill"></i> اعداد جميع الطلاب
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Statistics" asp-action="PrintedCards">
-                                    <i class="bi bi-credit-card"></i> إحصائية البطاقات المطبوعة
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Statistics" asp-action="MealConsumption">
-                                    <i class="bi bi-cup-hot"></i> إحصائية استلام الوجبات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Statistics" asp-action="SmsStatistics">
-                                    <i class="bi bi-envelope-paper"></i> إحصائية الرسائل القصيرة
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
+                @if (HasPerm("Statistics.View"))
+                {
+                    <li class="nav-item">
+                        <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuStats" role="button">
+                            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> الإحصائيات
+                        </div>
+                        <div class="collapse" id="menuStats">
+                            <ul class="nav flex-column">
+                                <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="Applicants"><i class="bi bi-people"></i> اعداد المتقدمين</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="AllocatedStudents"><i class="bi bi-door-open"></i> أعداد المقيمين</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="TotalStudents"><i class="bi bi-people-fill"></i> اعداد جميع الطلاب</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="PrintedCards"><i class="bi bi-credit-card"></i> إحصائية البطاقات المطبوعة</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="MealConsumption"><i class="bi bi-cup-hot"></i> إحصائية استلام الوجبات</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="SmsStatistics"><i class="bi bi-envelope-paper"></i> إحصائية الرسائل القصيرة</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                }
 
                 <!-- ===== الوجبات والتغذية ===== -->
                 <li class="nav-item">
@@ -614,71 +454,19 @@
                     </div>
                     <div class="collapse" id="menuMeals">
                         <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Meal" asp-action="Index">
-                                    <i class="bi bi-cup-hot-fill"></i> إدارة الوجبات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="MealBooking" asp-action="Index">
-                                    <i class="bi bi-calendar-check"></i> حجز الوجبات بالباركود
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="MealReceiving" asp-action="Index">
-                                    <i class="bi bi-upc-scan"></i> استلام الوجبات (باركود)
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="MealReceiving" asp-action="Import">
-                                    <i class="bi bi-file-earmark-excel"></i> استلام الوجبات (إكسل)
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="MealPreparation" asp-action="Index">
-                                    <i class="bi bi-cup-hot-fill"></i> تجهيز الوجبات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Meal" asp-action="Consume">
-                                    <i class="bi bi-upc-scan"></i> صرف الوجبات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="MealRestrictions" asp-action="Index">
-                                    <i class="bi bi-ban"></i> حجب الوجبات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="MealTypes">
-                                    <i class="bi bi-list"></i> أنواع الوجبات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Meal" asp-action="RamadanSchedule">
-                                    <i class="bi bi-moon-stars"></i> جداول رمضان
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Meal" asp-action="ChristianSchedule">
-                                    <i class="bi bi-cross"></i> جداول المسيحيين
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Meal" asp-action="Report">
-                                    <i class="bi bi-graph-up"></i> تقرير الوجبات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="MealRestriction">
-                                    <i class="bi bi-ban"></i> قيود الوجبات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="StudentMealHistory">
-                                    <i class="bi bi-journal"></i> سجل الوجبات
-                                </a>
-                            </li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Meal" asp-action="Index"><i class="bi bi-cup-hot-fill"></i> إدارة الوجبات</a></li>
+                            @if (HasPerm("Meals.Book")) { <li class="nav-item"><a class="nav-link" asp-controller="MealBooking" asp-action="Index"><i class="bi bi-calendar-check"></i> حجز الوجبات بالباركود</a></li> }
+                            @if (HasPerm("Meals.Receive")) { <li class="nav-item"><a class="nav-link" asp-controller="MealReceiving" asp-action="Index"><i class="bi bi-upc-scan"></i> استلام الوجبات (باركود)</a></li> }
+                            @if (HasPerm("Meals.Receive")) { <li class="nav-item"><a class="nav-link" asp-controller="MealReceiving" asp-action="Import"><i class="bi bi-file-earmark-excel"></i> استلام الوجبات (إكسل)</a></li> }
+                            @if (HasPerm("Meals.Prepare")) { <li class="nav-item"><a class="nav-link" asp-controller="MealPreparation" asp-action="Index"><i class="bi bi-cup-hot-fill"></i> تجهيز الوجبات</a></li> }
+                            <li class="nav-item"><a class="nav-link" asp-controller="Meal" asp-action="Consume"><i class="bi bi-upc-scan"></i> صرف الوجبات</a></li>
+                            @if (HasPerm("Meals.Restrict")) { <li class="nav-item"><a class="nav-link" asp-controller="MealRestrictions" asp-action="Index"><i class="bi bi-ban"></i> حجب الوجبات</a></li> }
+                            @if (HasPerm("MealTypes.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="MealTypes"><i class="bi bi-list"></i> أنواع الوجبات</a></li> }
+                            <li class="nav-item"><a class="nav-link" asp-controller="Meal" asp-action="RamadanSchedule"><i class="bi bi-moon-stars"></i> جداول رمضان</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Meal" asp-action="ChristianSchedule"><i class="bi bi-cross"></i> جداول المسيحيين</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Meal" asp-action="Report"><i class="bi bi-graph-up"></i> تقرير الوجبات</a></li>
+                            @if (HasPerm("Meals.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="MealRestriction"><i class="bi bi-ban"></i> قيود الوجبات</a></li> }
+                            @if (HasPerm("Meals.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="StudentMealHistory"><i class="bi bi-journal"></i> سجل الوجبات</a></li> }
                         </ul>
                     </div>
                 </li>
@@ -690,44 +478,27 @@
                     </div>
                     <div class="collapse" id="menuServices">
                         <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Maintenance" asp-action="Index">
-                                    <i class="bi bi-tools"></i> طلبات الصيانة
-                                </a>
-                            </li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Maintenance" asp-action="Index"><i class="bi bi-tools"></i> طلبات الصيانة</a></li>
                         </ul>
                     </div>
                 </li>
                 <!-- ===== البطاقات والصور ===== -->
-                <li class="nav-item">
-                    <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuPhotos" role="button">
-                        <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> البطاقات والصور
-                    </div>
-                    <div class="collapse" id="menuPhotos">
-                        <ul class="nav flex-column">
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Photos" asp-action="Index">
-                                    <i class="bi bi-images"></i> رفع الصور
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Photos" asp-action="BulkImport">
-                                    <i class="bi bi-upload"></i> سحب الصور
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Cards" asp-action="Index">
-                                    <i class="bi bi-printer"></i> طباعة البطاقات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Cards" asp-action="PrintSelection">
-                                    <i class="bi bi-person-check"></i> اختيار البطاقات للطباعة
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
+                @if (HasPerm("Photos.View") || HasPerm("Photos.Manage") || HasPerm("Cards.View") || HasPerm("Cards.Print") || HasPerm("Cards.Manage"))
+                {
+                    <li class="nav-item">
+                        <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuPhotos" role="button">
+                            <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> البطاقات والصور
+                        </div>
+                        <div class="collapse" id="menuPhotos">
+                            <ul class="nav flex-column">
+                                @if (HasPerm("Photos.View")) { <li class="nav-item"><a class="nav-link" asp-controller="Photos" asp-action="Index"><i class="bi bi-images"></i> رفع الصور</a></li> }
+                                @if (HasPerm("Photos.Manage")) { <li class="nav-item"><a class="nav-link" asp-controller="Photos" asp-action="BulkImport"><i class="bi bi-upload"></i> سحب الصور</a></li> }
+                                @if (HasPerm("Cards.View")) { <li class="nav-item"><a class="nav-link" asp-controller="Cards" asp-action="Index"><i class="bi bi-printer"></i> طباعة البطاقات</a></li> }
+                                @if (HasPerm("Cards.View") || HasPerm("Cards.Print")) { <li class="nav-item"><a class="nav-link" asp-controller="Cards" asp-action="PrintSelection"><i class="bi bi-person-check"></i> اختيار البطاقات للطباعة</a></li> }
+                            </ul>
+                        </div>
+                    </li>
+                }
             </ul>
         </div>
     </nav>

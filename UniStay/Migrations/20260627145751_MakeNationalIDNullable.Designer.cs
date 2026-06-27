@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UniStay.Data;
 
@@ -11,9 +12,11 @@ using UniStay.Data;
 namespace UniStay.Migrations
 {
     [DbContext(typeof(AssuitDbContext))]
-    partial class AssuitDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260627145751_MakeNationalIDNullable")]
+    partial class MakeNationalIDNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1199,26 +1202,10 @@ namespace UniStay.Migrations
                     b.Property<int>("DormitoryCityID")
                         .HasColumnType("int");
 
-                    b.Property<string>("HousingType")
-                        .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)");
-
                     b.Property<bool?>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
-
-                    b.Property<bool?>("IsLocked")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<decimal?>("MinDistance")
-                        .HasColumnType("decimal(8, 2)");
-
-                    b.Property<decimal?>("MinGrade")
-                        .HasColumnType("decimal(5, 2)");
 
                     b.Property<byte>("Priority")
                         .HasColumnType("tinyint");
@@ -1233,11 +1220,6 @@ namespace UniStay.Migrations
                         .HasMaxLength(30)
                         .IsUnicode(false)
                         .HasColumnType("varchar(30)");
-
-                    b.Property<string>("StudentType")
-                        .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)");
 
                     b.Property<decimal>("Weight")
                         .HasColumnType("decimal(5, 2)");
@@ -1432,78 +1414,6 @@ namespace UniStay.Migrations
                     b.ToTable("EmailLog", (string)null);
                 });
 
-            modelBuilder.Entity("UniStay.Models.EmployeeRecord", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Department")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("EmployeeCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<bool?>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("JobTitle")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("LastSyncedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("NationalID")
-                        .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)");
-
-                    b.Property<string>("Phone")
-                        .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)");
-
-                    b.HasKey("ID")
-                        .HasName("PK__EmployeeRecord__3214EC27");
-
-                    b.HasIndex("CreatedBy");
-
-                    b.HasIndex(new[] { "EmployeeCode" }, "UQ_EmployeeRecord_Code")
-                        .IsUnique();
-
-                    b.HasIndex(new[] { "NationalID" }, "UQ_EmployeeRecord_NationalID")
-                        .IsUnique()
-                        .HasFilter("[NationalID] IS NOT NULL");
-
-                    b.ToTable("EmployeeRecord", (string)null);
-                });
-
             modelBuilder.Entity("UniStay.Models.EvictionNotice", b =>
                 {
                     b.Property<int>("ID")
@@ -1681,46 +1591,6 @@ namespace UniStay.Migrations
                     b.ToTable("FeeType", (string)null);
                 });
 
-            modelBuilder.Entity("UniStay.Models.GovernorateDistance", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("DistanceFromUniv")
-                        .HasColumnType("decimal(8, 2)");
-
-                    b.Property<string>("GovernorateName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.HasKey("ID")
-                        .HasName("PK__GovernorateDistance__3214EC27");
-
-                    b.HasIndex("CreatedBy");
-
-                    b.HasIndex(new[] { "GovernorateName" }, "UQ_GovernorateDistance_Name")
-                        .IsUnique();
-
-                    b.ToTable("GovernorateDistance", (string)null);
-                });
-
             modelBuilder.Entity("UniStay.Models.Guardian", b =>
                 {
                     b.Property<int>("ID")
@@ -1777,73 +1647,6 @@ namespace UniStay.Migrations
                     b.HasIndex(new[] { "StudentID" }, "IX_Guardian_StudentID");
 
                     b.ToTable("Guardian", (string)null);
-                });
-
-            modelBuilder.Entity("UniStay.Models.HousingFeeTemplate", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<string>("AcademicYear")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(8, 2)");
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DormitoryCityID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("FeeTypeID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("InstallmentCount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1);
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<DateTime?>("LastUpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("LastUpdatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.HasKey("ID")
-                        .HasName("PK__HousingFeeTemplate__3214EC27");
-
-                    b.HasIndex("CreatedBy");
-
-                    b.HasIndex("DormitoryCityID");
-
-                    b.HasIndex("FeeTypeID");
-
-                    b.HasIndex("LastUpdatedBy");
-
-                    b.HasIndex(new[] { "Name" }, "UQ_HousingFeeTemplate_Name")
-                        .IsUnique();
-
-                    b.ToTable("HousingFeeTemplate", (string)null);
                 });
 
             modelBuilder.Entity("UniStay.Models.HousingInstruction", b =>
@@ -2530,61 +2333,6 @@ namespace UniStay.Migrations
                     b.ToTable("PaymentGatewayLog", (string)null);
                 });
 
-            modelBuilder.Entity("UniStay.Models.PenaltyType", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<bool>("AffectsHousingEligibility")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<DateTime?>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.Property<int?>("CreatedBy")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("DefaultFineAmount")
-                        .HasColumnType("decimal(8, 2)");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Severity")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)");
-
-                    b.HasKey("ID")
-                        .HasName("PK__PenaltyType__3214EC27");
-
-                    b.HasIndex("CreatedBy");
-
-                    b.HasIndex(new[] { "Name" }, "UQ_PenaltyType_Name")
-                        .IsUnique();
-
-                    b.ToTable("PenaltyType", (string)null);
-                });
-
             modelBuilder.Entity("UniStay.Models.Permission", b =>
                 {
                     b.Property<int>("ID")
@@ -2747,19 +2495,7 @@ namespace UniStay.Migrations
                     b.Property<DateOnly>("BirthDate")
                         .HasColumnType("date");
 
-                    b.Property<string>("BirthPlace")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<string>("City")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("CountryOfOrigin")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("CountryOfOriginOther")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -2822,21 +2558,6 @@ namespace UniStay.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
-                    b.Property<string>("HighSchoolDivision")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<bool?>("HighSchoolFromAbroad")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<decimal?>("HighSchoolPercentage")
-                        .HasColumnType("decimal(5, 2)");
-
-                    b.Property<decimal?>("HighSchoolTotal")
-                        .HasColumnType("decimal(8, 2)");
-
                     b.Property<bool?>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -2873,13 +2594,6 @@ namespace UniStay.Migrations
                     b.Property<int?>("LastUpdatedBy")
                         .HasColumnType("int");
 
-                    b.Property<string>("LastYearGrade")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<decimal?>("LastYearPercentage")
-                        .HasColumnType("decimal(5, 2)");
-
                     b.Property<string>("Markaz")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -2900,18 +2614,6 @@ namespace UniStay.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(50)")
                         .HasDefaultValue("Egyptian");
-
-                    b.Property<string>("ParentStatus")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("PassportIssuePlace")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("PassportNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("Phone")
                         .IsRequired()
@@ -2989,83 +2691,6 @@ namespace UniStay.Migrations
                     b.HasIndex("StudentID");
 
                     b.ToTable("StudentDownloadLog", (string)null);
-                });
-
-            modelBuilder.Entity("UniStay.Models.StudentFeeRecord", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<int?>("AllocationID")
-                        .HasColumnType("int");
-
-                    b.Property<DateOnly?>("DueDate")
-                        .HasColumnType("date");
-
-                    b.Property<int>("HousingFeeTemplateID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("InstallmentNumber")
-                        .HasColumnType("int");
-
-                    b.Property<string>("MonthYear")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<decimal>("PaidAmount")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(8, 2)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<DateTime?>("PaidAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("RecordedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.Property<int?>("RecordedBy")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)")
-                        .HasDefaultValue("Pending");
-
-                    b.Property<int>("StudentID")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("decimal(8, 2)");
-
-                    b.Property<int>("TotalInstallments")
-                        .HasColumnType("int");
-
-                    b.HasKey("ID")
-                        .HasName("PK__StudentFeeRecord__3214EC27");
-
-                    b.HasIndex("AllocationID");
-
-                    b.HasIndex("HousingFeeTemplateID");
-
-                    b.HasIndex("RecordedBy");
-
-                    b.HasIndex(new[] { "Status" }, "IX_StudentFeeRecord_Status");
-
-                    b.HasIndex(new[] { "StudentID" }, "IX_StudentFeeRecord_StudentID");
-
-                    b.ToTable("StudentFeeRecord", (string)null);
                 });
 
             modelBuilder.Entity("UniStay.Models.StudentInventory", b =>
@@ -3194,77 +2819,6 @@ namespace UniStay.Migrations
                         .IsUnique();
 
                     b.ToTable("StudentLogin", (string)null);
-                });
-
-            modelBuilder.Entity("UniStay.Models.StudentPenalty", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<int?>("DormitoryCityID")
-                        .HasColumnType("int");
-
-                    b.Property<decimal?>("FineAmount")
-                        .HasColumnType("decimal(8, 2)");
-
-                    b.Property<decimal?>("FinePaid")
-                        .HasColumnType("decimal(8, 2)");
-
-                    b.Property<int>("PenaltyTypeID")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("RecordedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("(getdate())");
-
-                    b.Property<int?>("RecordedBy")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ResolutionNotes")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime?>("ResolvedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("ResolvedBy")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)")
-                        .HasDefaultValue("Open");
-
-                    b.Property<int>("StudentID")
-                        .HasColumnType("int");
-
-                    b.HasKey("ID")
-                        .HasName("PK__StudentPenalty__3214EC27");
-
-                    b.HasIndex("DormitoryCityID");
-
-                    b.HasIndex("PenaltyTypeID");
-
-                    b.HasIndex("RecordedBy");
-
-                    b.HasIndex("ResolvedBy");
-
-                    b.HasIndex(new[] { "Status" }, "IX_StudentPenalty_Status");
-
-                    b.HasIndex(new[] { "StudentID" }, "IX_StudentPenalty_StudentID");
-
-                    b.ToTable("StudentPenalty", (string)null);
                 });
 
             modelBuilder.Entity("UniStay.Models.StudentValidationLog", b =>
@@ -4097,16 +3651,6 @@ namespace UniStay.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("UniStay.Models.EmployeeRecord", b =>
-                {
-                    b.HasOne("UniStay.Models.SystemUser", "CreatedByNavigation")
-                        .WithMany("EmployeeRecords")
-                        .HasForeignKey("CreatedBy")
-                        .HasConstraintName("FK_EmployeeRecord_CreatedBy");
-
-                    b.Navigation("CreatedByNavigation");
-                });
-
             modelBuilder.Entity("UniStay.Models.EvictionNotice", b =>
                 {
                     b.HasOne("UniStay.Models.Allocation", "Allocation")
@@ -4165,16 +3709,6 @@ namespace UniStay.Migrations
                     b.Navigation("LastUpdatedByNavigation");
                 });
 
-            modelBuilder.Entity("UniStay.Models.GovernorateDistance", b =>
-                {
-                    b.HasOne("UniStay.Models.SystemUser", "CreatedByNavigation")
-                        .WithMany("GovernorateDistances")
-                        .HasForeignKey("CreatedBy")
-                        .HasConstraintName("FK_GovernorateDistance_CreatedBy");
-
-                    b.Navigation("CreatedByNavigation");
-                });
-
             modelBuilder.Entity("UniStay.Models.Guardian", b =>
                 {
                     b.HasOne("UniStay.Models.Student", "Student")
@@ -4184,38 +3718,6 @@ namespace UniStay.Migrations
                         .HasConstraintName("FK_Guardian_Student");
 
                     b.Navigation("Student");
-                });
-
-            modelBuilder.Entity("UniStay.Models.HousingFeeTemplate", b =>
-                {
-                    b.HasOne("UniStay.Models.SystemUser", "CreatedByNavigation")
-                        .WithMany("HousingFeeTemplateCreatedByNavigations")
-                        .HasForeignKey("CreatedBy")
-                        .HasConstraintName("FK_HousingFeeTemplate_CreatedBy");
-
-                    b.HasOne("UniStay.Models.DormitoryCity", "DormitoryCity")
-                        .WithMany("HousingFeeTemplates")
-                        .HasForeignKey("DormitoryCityID")
-                        .HasConstraintName("FK_HousingFeeTemplate_DormitoryCity");
-
-                    b.HasOne("UniStay.Models.FeeType", "FeeType")
-                        .WithMany("HousingFeeTemplates")
-                        .HasForeignKey("FeeTypeID")
-                        .IsRequired()
-                        .HasConstraintName("FK_HousingFeeTemplate_FeeType");
-
-                    b.HasOne("UniStay.Models.SystemUser", "LastUpdatedByNavigation")
-                        .WithMany("HousingFeeTemplateLastUpdatedByNavigations")
-                        .HasForeignKey("LastUpdatedBy")
-                        .HasConstraintName("FK_HousingFeeTemplate_LastUpdatedBy");
-
-                    b.Navigation("CreatedByNavigation");
-
-                    b.Navigation("DormitoryCity");
-
-                    b.Navigation("FeeType");
-
-                    b.Navigation("LastUpdatedByNavigation");
                 });
 
             modelBuilder.Entity("UniStay.Models.HousingInstruction", b =>
@@ -4464,16 +3966,6 @@ namespace UniStay.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("UniStay.Models.PenaltyType", b =>
-                {
-                    b.HasOne("UniStay.Models.SystemUser", "CreatedByNavigation")
-                        .WithMany("PenaltyTypes")
-                        .HasForeignKey("CreatedBy")
-                        .HasConstraintName("FK_PenaltyType_CreatedBy");
-
-                    b.Navigation("CreatedByNavigation");
-                });
-
             modelBuilder.Entity("UniStay.Models.Permission", b =>
                 {
                     b.HasOne("UniStay.Models.PermissionGroup", "Group")
@@ -4531,39 +4023,6 @@ namespace UniStay.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("UniStay.Models.StudentFeeRecord", b =>
-                {
-                    b.HasOne("UniStay.Models.Allocation", "Allocation")
-                        .WithMany("StudentFeeRecords")
-                        .HasForeignKey("AllocationID")
-                        .HasConstraintName("FK_StudentFeeRecord_Allocation");
-
-                    b.HasOne("UniStay.Models.HousingFeeTemplate", "HousingFeeTemplate")
-                        .WithMany("StudentFeeRecords")
-                        .HasForeignKey("HousingFeeTemplateID")
-                        .IsRequired()
-                        .HasConstraintName("FK_StudentFeeRecord_HousingFeeTemplate");
-
-                    b.HasOne("UniStay.Models.SystemUser", "RecordedByNavigation")
-                        .WithMany("StudentFeeRecordRecordedByNavigations")
-                        .HasForeignKey("RecordedBy")
-                        .HasConstraintName("FK_StudentFeeRecord_RecordedBy");
-
-                    b.HasOne("UniStay.Models.Student", "Student")
-                        .WithMany("StudentFeeRecords")
-                        .HasForeignKey("StudentID")
-                        .IsRequired()
-                        .HasConstraintName("FK_StudentFeeRecord_Student");
-
-                    b.Navigation("Allocation");
-
-                    b.Navigation("HousingFeeTemplate");
-
-                    b.Navigation("RecordedByNavigation");
-
-                    b.Navigation("Student");
-                });
-
             modelBuilder.Entity("UniStay.Models.StudentInventory", b =>
                 {
                     b.HasOne("UniStay.Models.Allocation", "Allocation")
@@ -4611,46 +4070,6 @@ namespace UniStay.Migrations
                         .HasForeignKey("UniStay.Models.StudentLogin", "StudentID")
                         .IsRequired()
                         .HasConstraintName("FK_StudentLogin_Student");
-
-                    b.Navigation("Student");
-                });
-
-            modelBuilder.Entity("UniStay.Models.StudentPenalty", b =>
-                {
-                    b.HasOne("UniStay.Models.DormitoryCity", "DormitoryCity")
-                        .WithMany("StudentPenalties")
-                        .HasForeignKey("DormitoryCityID")
-                        .HasConstraintName("FK_StudentPenalty_DormitoryCity");
-
-                    b.HasOne("UniStay.Models.PenaltyType", "PenaltyType")
-                        .WithMany("StudentPenalties")
-                        .HasForeignKey("PenaltyTypeID")
-                        .IsRequired()
-                        .HasConstraintName("FK_StudentPenalty_PenaltyType");
-
-                    b.HasOne("UniStay.Models.SystemUser", "RecordedByNavigation")
-                        .WithMany("StudentPenaltyRecordedByNavigations")
-                        .HasForeignKey("RecordedBy")
-                        .HasConstraintName("FK_StudentPenalty_RecordedBy");
-
-                    b.HasOne("UniStay.Models.SystemUser", "ResolvedByNavigation")
-                        .WithMany("StudentPenaltyResolvedByNavigations")
-                        .HasForeignKey("ResolvedBy")
-                        .HasConstraintName("FK_StudentPenalty_ResolvedBy");
-
-                    b.HasOne("UniStay.Models.Student", "Student")
-                        .WithMany("StudentPenalties")
-                        .HasForeignKey("StudentID")
-                        .IsRequired()
-                        .HasConstraintName("FK_StudentPenalty_Student");
-
-                    b.Navigation("DormitoryCity");
-
-                    b.Navigation("PenaltyType");
-
-                    b.Navigation("RecordedByNavigation");
-
-                    b.Navigation("ResolvedByNavigation");
 
                     b.Navigation("Student");
                 });
@@ -4814,8 +4233,6 @@ namespace UniStay.Migrations
 
                     b.Navigation("Payments");
 
-                    b.Navigation("StudentFeeRecords");
-
                     b.Navigation("StudentInventories");
                 });
 
@@ -4881,8 +4298,6 @@ namespace UniStay.Migrations
 
                     b.Navigation("FeeConfigurations");
 
-                    b.Navigation("HousingFeeTemplates");
-
                     b.Navigation("HousingInstructions");
 
                     b.Navigation("MaintenanceRequests");
@@ -4897,21 +4312,12 @@ namespace UniStay.Migrations
 
                     b.Navigation("Meals");
 
-                    b.Navigation("StudentPenalties");
-
                     b.Navigation("Violations");
                 });
 
             modelBuilder.Entity("UniStay.Models.FeeType", b =>
                 {
                     b.Navigation("FeeConfigurations");
-
-                    b.Navigation("HousingFeeTemplates");
-                });
-
-            modelBuilder.Entity("UniStay.Models.HousingFeeTemplate", b =>
-                {
-                    b.Navigation("StudentFeeRecords");
                 });
 
             modelBuilder.Entity("UniStay.Models.HousingInstruction", b =>
@@ -4932,11 +4338,6 @@ namespace UniStay.Migrations
             modelBuilder.Entity("UniStay.Models.Payment", b =>
                 {
                     b.Navigation("PaymentGatewayLogs");
-                });
-
-            modelBuilder.Entity("UniStay.Models.PenaltyType", b =>
-                {
-                    b.Navigation("StudentPenalties");
                 });
 
             modelBuilder.Entity("UniStay.Models.Permission", b =>
@@ -4994,13 +4395,9 @@ namespace UniStay.Migrations
 
                     b.Navigation("StudentDownloadLogs");
 
-                    b.Navigation("StudentFeeRecords");
-
                     b.Navigation("StudentInventories");
 
                     b.Navigation("StudentLogin");
-
-                    b.Navigation("StudentPenalties");
 
                     b.Navigation("StudentValidationLogs");
 
@@ -5047,19 +4444,11 @@ namespace UniStay.Migrations
 
                     b.Navigation("DormitoryCityLastUpdatedByNavigations");
 
-                    b.Navigation("EmployeeRecords");
-
                     b.Navigation("EvictionNotices");
 
                     b.Navigation("FeeConfigurationCreatedByNavigations");
 
                     b.Navigation("FeeConfigurationLastUpdatedByNavigations");
-
-                    b.Navigation("GovernorateDistances");
-
-                    b.Navigation("HousingFeeTemplateCreatedByNavigations");
-
-                    b.Navigation("HousingFeeTemplateLastUpdatedByNavigations");
 
                     b.Navigation("HousingInstructions");
 
@@ -5079,19 +4468,11 @@ namespace UniStay.Migrations
 
                     b.Navigation("Payments");
 
-                    b.Navigation("PenaltyTypes");
-
                     b.Navigation("StudentDownloadLogs");
-
-                    b.Navigation("StudentFeeRecordRecordedByNavigations");
 
                     b.Navigation("StudentInventoryAssignedByNavigations");
 
                     b.Navigation("StudentInventoryReturnedByNavigations");
-
-                    b.Navigation("StudentPenaltyRecordedByNavigations");
-
-                    b.Navigation("StudentPenaltyResolvedByNavigations");
 
                     b.Navigation("StudentValidationLogs");
 

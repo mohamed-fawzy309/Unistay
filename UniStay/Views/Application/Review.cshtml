@@ -1,0 +1,440 @@
+@model UniStay.ViewModels.Application.ReviewApplicationViewModel
+@{
+    ViewData["Title"] = "مراجعة الطلب";
+    Layout = "_AdminLayout";
+    var genderLabel = Model.Gender == "Male" ? "ذكر" : "أنثى";
+    var housingTypeLabel = Model.HousingType switch { "Standard" => "عادي", "Premium" => "ممتاز", "VIP" => "VIP", _ => Model.HousingType };
+    var studentTypeLabel = Model.StudentType == "Returning" ? "مستمر" : "جديد";
+    var statusBadge = Model.Status switch
+    {
+        "Pending" => "bg-warning",
+        "Accepted" => "bg-success",
+        "Rejected" => "bg-danger",
+        "Waitlisted" => "bg-info",
+        _ => "bg-secondary"
+    };
+    var statusLabel = Model.Status switch
+    {
+        "Pending" => "قيد المراجعة",
+        "Accepted" => "مقبول",
+        "Rejected" => "مرفوض",
+        "Waitlisted" => "قائمة انتظار",
+        _ => Model.Status
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="page-title">
+        <i class="bi bi-check2-square"></i> مراجعة الطلب
+        <small class="text-muted fs-6 me-2">#@Model.ApplicationID.ToString("00000")</small>
+    </h2>
+    <a asp-controller="ApplicationsCenter" asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-right"></i> العودة
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="row g-3">
+    <!-- Left Panel: Application & Student Details -->
+    <div class="col-lg-8">
+        <!-- Application Info -->
+        <div class="card border-0 shadow-sm animate-fade-in">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-file-text"></i> بيانات الطلب</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">الحالة</label>
+                            <div><span class="badge @statusBadge fs-6">@statusLabel</span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">العام الدراسي</label>
+                            <p class="fw-bold mb-0">@Model.AcademicYear</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">نوع الطالب</label>
+                            <p class="fw-bold mb-0">@studentTypeLabel</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">نوع السكن</label>
+                            <p class="fw-bold mb-0">@housingTypeLabel</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">المدينة الجامعية</label>
+                            <p class="fw-bold mb-0">@Model.DormitoryCityName</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">تاريخ التقديم</label>
+                            <p class="fw-bold mb-0">@(Model.CreatedAt?.ToString("yyyy/MM/dd") ?? "—")</p>
+                        </div>
+                    </div>
+                    @if (Model.MealSubscription.HasValue)
+                    {
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="text-muted small">اشتراك وجبات</label>
+                                <p class="fw-bold mb-0">@(Model.MealSubscription.Value ? "نعم" : "لا")</p>
+                            </div>
+                        </div>
+                    }
+                    @if (Model.HasSpecialNeeds == true)
+                    {
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="text-muted small">احتياجات خاصة</label>
+                                <p class="fw-bold mb-0">@Model.SpecialNeedsDescription</p>
+                            </div>
+                        </div>
+                    }
+                    @if (Model.CoordinationScore.HasValue)
+                    {
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="text-muted small">درجة التنسيق</label>
+                                <p class="fw-bold mb-0">@Model.CoordinationScore.Value.ToString("F2")</p>
+                            </div>
+                        </div>
+                    }
+                    @if (Model.CoordinationRank.HasValue)
+                    {
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="text-muted small">ترتيب التنسيق</label>
+                                <p class="fw-bold mb-0">@Model.CoordinationRank.Value</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.CurrentRejectionReason))
+                {
+                    <div class="alert alert-danger mt-3 mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>سبب الرفض السابق:</strong> @Model.CurrentRejectionReason
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.CurrentAdminNotes))
+                {
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="bi bi-sticky"></i>
+                        <strong>ملاحظات إدارية سابقة:</strong> @Model.CurrentAdminNotes
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Student Info -->
+        <div class="card border-0 shadow-sm animate-fade-in mt-3">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-person"></i> بيانات الطالب</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- Personal Info -->
+                    <div class="col-12">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-person-vcard"></i> البيانات الشخصية
+                        </h6>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">الاسم</label>
+                            <p class="fw-bold mb-0">@Model.StudentName</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">الرقم القومي</label>
+                            <p class="fw-bold mb-0" dir="ltr">@Model.StudentNationalID</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">كود الطالب</label>
+                            <p class="fw-bold mb-0">@Model.StudentCode</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">النوع</label>
+                            <p class="fw-bold mb-0">@genderLabel</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">تاريخ الميلاد</label>
+                            <p class="fw-bold mb-0">@Model.BirthDate.ToString("yyyy/MM/dd")</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">الديانة</label>
+                            <p class="fw-bold mb-0">@Model.Religion</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">الجنسية</label>
+                            <p class="fw-bold mb-0">@Model.Nationality</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">رقم الهاتف</label>
+                            <p class="fw-bold mb-0" dir="ltr">@Model.Phone</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">البريد الإلكتروني</label>
+                            <p class="fw-bold mb-0 small">@Model.Email</p>
+                        </div>
+                    </div>
+
+                    <!-- Academic Info -->
+                    <div class="col-12 mt-3">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-book"></i> البيانات الأكاديمية
+                        </h6>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">الكلية</label>
+                            <p class="fw-bold mb-0">@Model.Faculty</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">القسم</label>
+                            <p class="fw-bold mb-0">@Model.Department</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">الفرقة</label>
+                            <p class="fw-bold mb-0">@Model.AcademicYear</p>
+                        </div>
+                    </div>
+                    @if (Model.GradePercentage.HasValue)
+                    {
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="text-muted small">نسبة التقدير</label>
+                                <p class="fw-bold mb-0">@Model.GradePercentage.Value.ToString("F2")%</p>
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.GradeText))
+                    {
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="text-muted small">التقدير</label>
+                                <p class="fw-bold mb-0">@Model.GradeText</p>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Address Info -->
+                    <div class="col-12 mt-3">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="bi bi-geo-alt"></i> العنوان والمسافة
+                        </h6>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">المحافظة</label>
+                            <p class="fw-bold mb-0">@Model.Governorate</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">المركز</label>
+                            <p class="fw-bold mb-0">@Model.Markaz</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">المدينة / القرية</label>
+                            <p class="fw-bold mb-0">@Model.City</p>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="p-3 bg-light rounded-3">
+                            <label class="text-muted small">العنوان</label>
+                            <p class="fw-bold mb-0">@Model.Address</p>
+                        </div>
+                    </div>
+                    @if (Model.DistanceFromUniv.HasValue)
+                    {
+                        <div class="col-md-4">
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="text-muted small">المسافة من الجامعة</label>
+                                <p class="fw-bold mb-0">@Model.DistanceFromUniv.Value.ToString("F0") كم</p>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Special Conditions -->
+                    @if (Model.HasDisability == true || Model.IsOrphan == true || Model.IsLowIncome == true || Model.HasFamilyAbroad == true || Model.HasMedicalCondition == true || Model.IsForeign == true)
+                    {
+                        <div class="col-12 mt-3">
+                            <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                                <i class="bi bi-heart-pulse"></i> حالات خاصة
+                            </h6>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-2">
+                                @if (Model.HasDisability == true) { <span class="badge bg-warning fs-6"><i class="bi bi-person-wheelchair"></i> ذوي احتياجات خاصة</span> }
+                                @if (Model.IsOrphan == true) { <span class="badge bg-secondary fs-6"><i class="bi bi-heart"></i> يتيم</span> }
+                                @if (Model.IsLowIncome == true) { <span class="badge bg-info fs-6"><i class="bi bi-cash-stack"></i> محدود الدخل</span> }
+                                @if (Model.HasFamilyAbroad == true) { <span class="badge bg-dark fs-6"><i class="bi bi-airplane"></i> أسرة بالخارج</span> }
+                                @if (Model.HasMedicalCondition == true) { <span class="badge bg-danger fs-6"><i class="bi bi-heart-pulse"></i> حالة مرضية</span> }
+                                @if (Model.IsForeign == true) { <span class="badge bg-primary fs-6"><i class="bi bi-globe"></i> وافد</span> }
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(Model.MedicalDescription))
+                        {
+                            <div class="col-12">
+                                <div class="p-3 bg-light rounded-3">
+                                    <label class="text-muted small">وصف الحالة المرضية</label>
+                                    <p class="fw-bold mb-0">@Model.MedicalDescription</p>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Panel: Review Actions -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm animate-fade-in position-sticky" style="top: 1rem;">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-check2-circle"></i> إجراءات المراجعة</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Status == "Pending")
+                {
+                    <form asp-action="Review" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="ApplicationID" />
+                        <input type="hidden" id="reviewAction" name="ReviewAction" value="" />
+
+                        <!-- Approve Button -->
+                        <button type="button" class="btn btn-success w-100 mb-3 py-2" onclick="submitReview('Approve')">
+                            <i class="bi bi-check-lg"></i> قبول الطلب
+                        </button>
+
+                        <!-- Reject Button -->
+                        <button type="button" class="btn btn-danger w-100 mb-3 py-2" onclick="submitReview('Reject')">
+                            <i class="bi bi-x-lg"></i> رفض الطلب
+                        </button>
+
+                        <!-- Rejection Reason -->
+                        <div class="mb-3" id="rejectionReasonGroup" style="display:none;">
+                            <label class="form-label">سبب الرفض <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="rejectionReason" name="RejectionReason" rows="3" placeholder="اذكر سبب الرفض..."></textarea>
+                        </div>
+
+                        <!-- Admin Notes -->
+                        <div class="mb-3">
+                            <label class="form-label">ملاحظات إدارية</label>
+                            <textarea class="form-control" name="AdminNotes" rows="3" placeholder="ملاحظات داخلية...">@Model.CurrentAdminNotes</textarea>
+                        </div>
+
+                        <div class="alert alert-warning small mb-3">
+                            <i class="bi bi-info-circle"></i>
+                            سيتم تغيير حالة الطلب فوراً بعد التأكيد.
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-lock fs-1 text-muted"></i>
+                        <p class="mt-2 text-muted">تمت مراجعة هذا الطلب</p>
+                        @if (Model.Status == "Accepted")
+                        {
+                            <span class="badge bg-success fs-6">تم القبول</span>
+                        }
+                        else if (Model.Status == "Rejected")
+                        {
+                            <span class="badge bg-danger fs-6">تم الرفض</span>
+                            if (!string.IsNullOrEmpty(Model.CurrentRejectionReason))
+                            {
+                                <div class="alert alert-danger mt-3 mb-0 small">
+                                    <strong>السبب:</strong> @Model.CurrentRejectionReason
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary fs-6">@Model.Status</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function submitReview(action) {
+            var reasonGroup = document.getElementById('rejectionReasonGroup');
+            var reasonField = document.getElementById('rejectionReason');
+
+            if (action === 'Reject') {
+                reasonGroup.style.display = 'block';
+                if (!reasonField.value.trim()) {
+                    reasonField.focus();
+                    reasonField.classList.add('is-invalid');
+                    if (!document.querySelector('#rejectionReasonGroup .invalid-feedback')) {
+                        var feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.textContent = 'يرجى إدخال سبب الرفض';
+                        reasonGroup.appendChild(feedback);
+                    }
+                    return;
+                }
+                reasonField.classList.remove('is-invalid');
+            }
+
+            if (confirm(action === 'Approve' ? 'هل أنت متأكد من قبول الطلب؟' : 'هل أنت متأكد من رفض الطلب؟')) {
+                document.getElementById('reviewAction').value = action;
+                document.querySelector('form').submit();
+            }
+        }
+
+        // Show rejection reason field when user types in it
+        document.addEventListener('DOMContentLoaded', function () {
+            var reasonField = document.getElementById('rejectionReason');
+            if (reasonField) {
+                reasonField.addEventListener('focus', function () {
+                    document.getElementById('rejectionReasonGroup').style.display = 'block';
+                });
+            }
+        });
+    </script>
+}

@@ -126,6 +126,18 @@ public partial class AssuitDbContext : DbContext
 
     public virtual DbSet<AttendanceApiLog> AttendanceApiLogs { get; set; }
 
+    public virtual DbSet<PenaltyType> PenaltyTypes { get; set; }
+
+    public virtual DbSet<StudentPenalty> StudentPenalties { get; set; }
+
+    public virtual DbSet<HousingFeeTemplate> HousingFeeTemplates { get; set; }
+
+    public virtual DbSet<StudentFeeRecord> StudentFeeRecords { get; set; }
+
+    public virtual DbSet<GovernorateDistance> GovernorateDistances { get; set; }
+
+    public virtual DbSet<EmployeeRecord> EmployeeRecords { get; set; }
+
     
    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -614,11 +626,16 @@ public partial class AssuitDbContext : DbContext
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsLocked).HasDefaultValue(false);
             entity.Property(e => e.RuleName).HasMaxLength(200);
             entity.Property(e => e.RuleType)
                 .HasMaxLength(30)
                 .IsUnicode(false);
             entity.Property(e => e.Weight).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.MinGrade).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.MinDistance).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.StudentType).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.HousingType).HasMaxLength(20).IsUnicode(false);
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.CoordinationRules)
                 .HasForeignKey(d => d.CreatedBy)
@@ -1219,6 +1236,18 @@ public partial class AssuitDbContext : DbContext
             entity.Property(e => e.StudentCode)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+            entity.Property(e => e.BirthPlace).HasMaxLength(100);
+            entity.Property(e => e.HighSchoolDivision).HasMaxLength(100);
+            entity.Property(e => e.HighSchoolTotal).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.HighSchoolPercentage).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.HighSchoolFromAbroad).HasDefaultValue(false);
+            entity.Property(e => e.LastYearGrade).HasMaxLength(50);
+            entity.Property(e => e.LastYearPercentage).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.ParentStatus).HasMaxLength(50);
+            entity.Property(e => e.CountryOfOrigin).HasMaxLength(100);
+            entity.Property(e => e.CountryOfOriginOther).HasMaxLength(100);
+            entity.Property(e => e.PassportNumber).HasMaxLength(50);
+            entity.Property(e => e.PassportIssuePlace).HasMaxLength(200);
 
             entity.HasOne(d => d.LastUpdatedByNavigation).WithMany(p => p.Students)
                 .HasForeignKey(d => d.LastUpdatedBy)
@@ -1301,7 +1330,7 @@ public partial class AssuitDbContext : DbContext
             entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.MustChangePassword).HasDefaultValue(false);
             entity.Property(e => e.Username)
-                .HasMaxLength(14)
+                .HasMaxLength(200)
                 .IsUnicode(false);
 
             entity.HasOne(d => d.Student).WithOne(p => p.StudentLogin)
@@ -1699,6 +1728,176 @@ public partial class AssuitDbContext : DbContext
             entity.HasOne(d => d.Student).WithMany()
                 .HasForeignKey(d => d.StudentID)
                 .HasConstraintName("FK_AttendanceApiLog_Student");
+        });
+
+        modelBuilder.Entity<PenaltyType>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__PenaltyType__3214EC27");
+
+            entity.ToTable("PenaltyType");
+
+            entity.HasIndex(e => e.Name, "UQ_PenaltyType_Name").IsUnique();
+
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Severity).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.DefaultFineAmount).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.AffectsHousingEligibility).HasDefaultValue(false);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.PenaltyTypes)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_PenaltyType_CreatedBy");
+        });
+
+        modelBuilder.Entity<StudentPenalty>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__StudentPenalty__3214EC27");
+
+            entity.ToTable("StudentPenalty");
+
+            entity.HasIndex(e => e.StudentID, "IX_StudentPenalty_StudentID");
+            entity.HasIndex(e => e.Status, "IX_StudentPenalty_Status");
+
+            entity.Property(e => e.FineAmount).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.FinePaid).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false).HasDefaultValue("Open");
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.ResolutionNotes).HasMaxLength(500);
+            entity.Property(e => e.RecordedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.Student).WithMany(p => p.StudentPenalties)
+                .HasForeignKey(d => d.StudentID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StudentPenalty_Student");
+
+            entity.HasOne(d => d.PenaltyType).WithMany(p => p.StudentPenalties)
+                .HasForeignKey(d => d.PenaltyTypeID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StudentPenalty_PenaltyType");
+
+            entity.HasOne(d => d.DormitoryCity).WithMany(p => p.StudentPenalties)
+                .HasForeignKey(d => d.DormitoryCityID)
+                .HasConstraintName("FK_StudentPenalty_DormitoryCity");
+
+            entity.HasOne(d => d.RecordedByNavigation).WithMany(p => p.StudentPenaltyRecordedByNavigations)
+                .HasForeignKey(d => d.RecordedBy)
+                .HasConstraintName("FK_StudentPenalty_RecordedBy");
+
+            entity.HasOne(d => d.ResolvedByNavigation).WithMany(p => p.StudentPenaltyResolvedByNavigations)
+                .HasForeignKey(d => d.ResolvedBy)
+                .HasConstraintName("FK_StudentPenalty_ResolvedBy");
+        });
+
+        modelBuilder.Entity<HousingFeeTemplate>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__HousingFeeTemplate__3214EC27");
+
+            entity.ToTable("HousingFeeTemplate");
+
+            entity.HasIndex(e => e.Name, "UQ_HousingFeeTemplate_Name").IsUnique();
+
+            entity.Property(e => e.Name).HasMaxLength(200);
+            entity.Property(e => e.Amount).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.AcademicYear).HasMaxLength(10);
+            entity.Property(e => e.InstallmentCount).HasDefaultValue(1);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.FeeType).WithMany(p => p.HousingFeeTemplates)
+                .HasForeignKey(d => d.FeeTypeID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_HousingFeeTemplate_FeeType");
+
+            entity.HasOne(d => d.DormitoryCity).WithMany(p => p.HousingFeeTemplates)
+                .HasForeignKey(d => d.DormitoryCityID)
+                .HasConstraintName("FK_HousingFeeTemplate_DormitoryCity");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.HousingFeeTemplateCreatedByNavigations)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_HousingFeeTemplate_CreatedBy");
+
+            entity.HasOne(d => d.LastUpdatedByNavigation).WithMany(p => p.HousingFeeTemplateLastUpdatedByNavigations)
+                .HasForeignKey(d => d.LastUpdatedBy)
+                .HasConstraintName("FK_HousingFeeTemplate_LastUpdatedBy");
+        });
+
+        modelBuilder.Entity<StudentFeeRecord>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__StudentFeeRecord__3214EC27");
+
+            entity.ToTable("StudentFeeRecord");
+
+            entity.HasIndex(e => e.StudentID, "IX_StudentFeeRecord_StudentID");
+            entity.HasIndex(e => e.Status, "IX_StudentFeeRecord_Status");
+
+            entity.Property(e => e.TotalAmount).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.PaidAmount).HasColumnType("decimal(8, 2)").HasDefaultValue(0m);
+            entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false).HasDefaultValue("Pending");
+            entity.Property(e => e.MonthYear).HasMaxLength(20);
+            entity.Property(e => e.Notes).HasMaxLength(500);
+            entity.Property(e => e.RecordedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.Student).WithMany(p => p.StudentFeeRecords)
+                .HasForeignKey(d => d.StudentID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StudentFeeRecord_Student");
+
+            entity.HasOne(d => d.HousingFeeTemplate).WithMany(p => p.StudentFeeRecords)
+                .HasForeignKey(d => d.HousingFeeTemplateID)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StudentFeeRecord_HousingFeeTemplate");
+
+            entity.HasOne(d => d.Allocation).WithMany(p => p.StudentFeeRecords)
+                .HasForeignKey(d => d.AllocationID)
+                .HasConstraintName("FK_StudentFeeRecord_Allocation");
+
+            entity.HasOne(d => d.RecordedByNavigation).WithMany(p => p.StudentFeeRecordRecordedByNavigations)
+                .HasForeignKey(d => d.RecordedBy)
+                .HasConstraintName("FK_StudentFeeRecord_RecordedBy");
+        });
+
+        modelBuilder.Entity<GovernorateDistance>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__GovernorateDistance__3214EC27");
+
+            entity.ToTable("GovernorateDistance");
+
+            entity.HasIndex(e => e.GovernorateName, "UQ_GovernorateDistance_Name").IsUnique();
+
+            entity.Property(e => e.GovernorateName).HasMaxLength(100);
+            entity.Property(e => e.DistanceFromUniv).HasColumnType("decimal(8, 2)");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.GovernorateDistances)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_GovernorateDistance_CreatedBy");
+        });
+
+        modelBuilder.Entity<EmployeeRecord>(entity =>
+        {
+            entity.HasKey(e => e.ID).HasName("PK__EmployeeRecord__3214EC27");
+
+            entity.ToTable("EmployeeRecord");
+
+            entity.HasIndex(e => e.EmployeeCode, "UQ_EmployeeRecord_Code").IsUnique();
+            entity.HasIndex(e => e.NationalID, "UQ_EmployeeRecord_NationalID").IsUnique().HasFilter("[NationalID] IS NOT NULL");
+
+            entity.Property(e => e.EmployeeCode).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.FullName).HasMaxLength(200);
+            entity.Property(e => e.NationalID).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.Email).HasMaxLength(100);
+            entity.Property(e => e.Phone).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.JobTitle).HasMaxLength(100);
+            entity.Property(e => e.Department).HasMaxLength(100);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.EmployeeRecords)
+                .HasForeignKey(d => d.CreatedBy)
+                .HasConstraintName("FK_EmployeeRecord_CreatedBy");
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -116,7 +116,9 @@ namespace UniStay.Controllers
                 DistanceFromUniv = student.DistanceFromUniv,
                 HasFamilyAbroad = student.HasFamilyAbroad.GetValueOrDefault(false),
                 HasMedicalCondition = student.HasMedicalCondition.GetValueOrDefault(false),
-                MedicalDescription = student.MedicalDescription
+                MedicalDescription = student.MedicalDescription,
+                SpecialNeeds = student.HasDisability.GetValueOrDefault(false),
+                StudentCode = student.StudentCode
             };
 
             return View(model);
@@ -160,6 +162,8 @@ namespace UniStay.Controllers
             student.HasFamilyAbroad = model.HasFamilyAbroad;
             student.HasMedicalCondition = model.HasMedicalCondition;
             student.MedicalDescription = model.MedicalDescription;
+            student.HasDisability = model.SpecialNeeds;
+            student.StudentCode = model.StudentCode;
             student.LastUpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();

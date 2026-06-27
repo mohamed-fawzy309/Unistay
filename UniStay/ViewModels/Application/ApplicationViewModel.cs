@@ -9,11 +9,10 @@ namespace UniStay.ViewModels.Application
         // قسم 1: بيانات الطالب الأساسية
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        [Required(ErrorMessage = "الرقم القومي مطلوب")]
         [StringLength(14, MinimumLength = 14, ErrorMessage = "يجب أن يكون الرقم القومي 14 رقماً بالضبط")]
         [RegularExpression(@"^\d{14}$", ErrorMessage = "الرقم القومي يجب أن يحتوي على أرقام فقط")]
         [Display(Name = "الرقم القومي")]
-        public string NationalID { get; set; } = string.Empty;
+        public string? NationalID { get; set; }
 
         [Required(ErrorMessage = "الاسم الرباعي مطلوب")]
         [StringLength(200, MinimumLength = 5, ErrorMessage = "يجب أن يكون الاسم بين 5 و 200 حرف")]
@@ -70,6 +69,10 @@ namespace UniStay.ViewModels.Application
         [Display(Name = "رقم التليفون")]
         public string Phone { get; set; } = string.Empty;
 
+        [StringLength(100)]
+        [Display(Name = "محل الميلاد")]
+        public string? BirthPlace { get; set; }
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // قسم 2: البيانات الأكاديمية
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -87,23 +90,56 @@ namespace UniStay.ViewModels.Application
         [Display(Name = "رقم شئون الطالب")]
         public string? StudentCode { get; set; }
 
-        [Required(ErrorMessage = "التقدير مطلوب")]
         [Range(0.0, 100.0, ErrorMessage = "التقدير يجب أن يكون بين 0 و 100")]
         [Display(Name = "نسبة التقدير (%)")]
-        public decimal GradePercentage { get; set; }
+        public decimal? GradePercentage { get; set; }
 
         [Range(0.0, 9999.99, ErrorMessage = "المسافة يجب أن تكون قيمة موجبة")]
         [Display(Name = "البُعد عن الجامعة (كم)")]
         public decimal? DistanceFromUniv { get; set; }
 
+        // ── بيانات الثانوية (للطلاب الجدد) ──
+        [StringLength(100)]
+        [Display(Name = "شعبة الثانوية")]
+        public string? HighSchoolDivision { get; set; }
+
+        [Range(0, 9999.99)]
+        [Display(Name = "مجموع الثانوية")]
+        public decimal? HighSchoolTotal { get; set; }
+
+        [Range(0, 100)]
+        [Display(Name = "نسبة الثانوية (%)")]
+        public decimal? HighSchoolPercentage { get; set; }
+
+        [Display(Name = "ثانوية من الخارج")]
+        public bool HighSchoolFromAbroad { get; set; }
+
+        // ── بيانات العام السابق (للطلاب المستمرين) ──
+        [StringLength(50)]
+        [Display(Name = "تقدير العام الماضي")]
+        public string? LastYearGrade { get; set; }
+
+        [Range(0, 100)]
+        [Display(Name = "نسبة العام الماضي (%)")]
+        public decimal? LastYearPercentage { get; set; }
+
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // قسم 3: بيانات ولي الأمر
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        [Required(ErrorMessage = "اسم الأب مطلوب")]
         [StringLength(200)]
         [Display(Name = "اسم الأب")]
-        public string FatherName { get; set; } = string.Empty;
+        public string? FatherName { get; set; }
+
+        [StringLength(14)]
+        [RegularExpression(@"^\d{14}$", ErrorMessage = "الرقم القومي للأب يجب أن يحتوي على 14 رقماً")]
+        [Display(Name = "الرقم القومي للأب")]
+        public string? FatherNationalID { get; set; }
+
+        [StringLength(11)]
+        [RegularExpression(@"^(01)[0-2,5]{1}[0-9]{8}$", ErrorMessage = "رقم هاتف الأب غير صحيح")]
+        [Display(Name = "هاتف الأب")]
+        public string? FatherPhone { get; set; }
 
         [StringLength(100)]
         [Display(Name = "وظيفة الأب")]
@@ -113,8 +149,15 @@ namespace UniStay.ViewModels.Application
         [Display(Name = "عنوان الأب")]
         public string? FatherAddress { get; set; }
 
+        [StringLength(50)]
+        [Display(Name = "الحالة الأسرية")]
+        public string? ParentStatus { get; set; }
+
         [Display(Name = "الأب متوفى")]
         public bool IsFatherDeceased { get; set; }
+
+        [Display(Name = "ذوي احتياجات خاصة")]
+        public bool SpecialNeeds { get; set; }
 
         // حقول ولي الأمر — إلزامية فقط إذا الأب متوفى (يتحقق منها في Controller)
         [StringLength(200)]
@@ -133,6 +176,11 @@ namespace UniStay.ViewModels.Application
         [StringLength(100)]
         [Display(Name = "صلة القرابة")]
         public string? GuardianRelation { get; set; }
+
+        [StringLength(11)]
+        [RegularExpression(@"^(01)[0-2,5]{1}[0-9]{8}$", ErrorMessage = "رقم هاتف ولي الأمر غير صحيح")]
+        [Display(Name = "هاتف ولي الأمر")]
+        public string? GuardianPhone { get; set; }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // قسم 4: بيانات الطلب
@@ -196,5 +244,22 @@ namespace UniStay.ViewModels.Application
         // للتمييز بين طالب جديد ومستمر
         [Display(Name = "طالب مستمر")]
         public bool IsReturningStudent { get; set; }
+
+        // ── بيانات الطالب الوافد (Foreign) ──
+        [StringLength(100)]
+        [Display(Name = "الجنسية (البلد الأصل)")]
+        public string? CountryOfOrigin { get; set; }
+
+        [StringLength(100)]
+        [Display(Name = "جنسية أخرى")]
+        public string? CountryOfOriginOther { get; set; }
+
+        [StringLength(50)]
+        [Display(Name = "رقم جواز السفر")]
+        public string? PassportNumber { get; set; }
+
+        [StringLength(200)]
+        [Display(Name = "مكان إصدار الجواز")]
+        public string? PassportIssuePlace { get; set; }
     }
 }

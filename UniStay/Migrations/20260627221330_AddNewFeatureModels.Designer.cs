@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UniStay.Data;
 
@@ -11,9 +12,11 @@ using UniStay.Data;
 namespace UniStay.Migrations
 {
     [DbContext(typeof(AssuitDbContext))]
-    partial class AssuitDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260627221330_AddNewFeatureModels")]
+    partial class AddNewFeatureModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1199,26 +1202,10 @@ namespace UniStay.Migrations
                     b.Property<int>("DormitoryCityID")
                         .HasColumnType("int");
 
-                    b.Property<string>("HousingType")
-                        .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)");
-
                     b.Property<bool?>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
-
-                    b.Property<bool?>("IsLocked")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<decimal?>("MinDistance")
-                        .HasColumnType("decimal(8, 2)");
-
-                    b.Property<decimal?>("MinGrade")
-                        .HasColumnType("decimal(5, 2)");
 
                     b.Property<byte>("Priority")
                         .HasColumnType("tinyint");
@@ -1233,11 +1220,6 @@ namespace UniStay.Migrations
                         .HasMaxLength(30)
                         .IsUnicode(false)
                         .HasColumnType("varchar(30)");
-
-                    b.Property<string>("StudentType")
-                        .HasMaxLength(20)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(20)");
 
                     b.Property<decimal>("Weight")
                         .HasColumnType("decimal(5, 2)");

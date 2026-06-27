@@ -17,7 +17,17 @@ public partial class CoordinationRule
 
     public decimal Weight { get; set; }
 
+    public decimal? MinGrade { get; set; }
+
+    public decimal? MinDistance { get; set; }
+
+    public string? StudentType { get; set; }
+
+    public string? HousingType { get; set; }
+
     public bool? IsActive { get; set; }
+
+    public bool? IsLocked { get; set; }
 
     public DateTime? CreatedAt { get; set; }
 

@@ -24,7 +24,25 @@ public class OnlineReviewRowViewModel
     public string? Faculty { get; set; }
     public string? CityName { get; set; }
     public string Status { get; set; } = "";
+    public string? ServerVerificationStatus { get; set; }
     public DateTime? SubmittedAt { get; set; }
+
+    public string StatusDisplayName
+    {
+        get
+        {
+            if (ServerVerificationStatus == "Verified")
+                return "تم المراجعة";
+            return Status switch
+            {
+                "Pending" => "قيد المراجعة",
+                "Reviewed" => "تم المراجعة",
+                "Accepted" => "مقبول",
+                "Rejected" => "مرفوض",
+                _ => Status
+            };
+        }
+    }
 }
 
 public class OnlineReviewDetailViewModel

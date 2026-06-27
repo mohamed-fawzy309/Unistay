@@ -1,0 +1,344 @@
+@model UniStay.ViewModels.Reports.StudentStatusReportViewModel
+@{
+    ViewData["Title"] = "بيان حالة الطالب";
+    var genderDisplay = Model.Gender == "Male" ? "ذكر" : Model.Gender == "Female" ? "أنثى" : Model.Gender;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
+    <h2 class="page-title">بيان حالة الطالب</h2>
+    <div class="btn-group">
+        <button onclick="window.print()" class="btn btn-primary"><i class="bi bi-printer"></i> طباعة</button>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> عودة</a>
+    </div>
+</div>
+
+<div class="report-container">
+    <div class="report-header">
+        <div class="header-top">
+            <div class="university-name">جامعة أسيوط</div>
+            <div class="report-title">بيان حالة الطالب</div>
+        </div>
+        <div class="header-line"></div>
+        <div class="header-sub">
+            الإدارة العامة للمدن الجامعية &mdash; إدارة شئون الطلاب
+        </div>
+    </div>
+
+    <table class="info-table">
+        <tr>
+            <td colspan="4" class="section-title">البيانات الشخصية</td>
+        </tr>
+        <tr>
+            <td class="label">الاسم</td>
+            <td class="value">@Model.FullName</td>
+            <td class="label">الرقم القومي</td>
+            <td class="value">@Model.NationalID</td>
+        </tr>
+        <tr>
+            <td class="label">كود الطالب</td>
+            <td class="value">@(Model.StudentCode ?? "—")</td>
+            <td class="label">النوع</td>
+            <td class="value">@genderDisplay</td>
+        </tr>
+        <tr>
+            <td class="label">الهاتف</td>
+            <td class="value">@(Model.Phone ?? "—")</td>
+            <td class="label">البريد الإلكتروني</td>
+            <td class="value">@(Model.Email ?? "—")</td>
+        </tr>
+        <tr>
+            <td class="label">الديانة</td>
+            <td class="value">@(Model.Religion ?? "—")</td>
+            <td class="label">الجنسية</td>
+            <td class="value">@(Model.Nationality ?? "—")</td>
+        </tr>
+        <tr>
+            <td class="label">المحافظة</td>
+            <td class="value">@(Model.Governorate ?? "—")</td>
+            <td class="label">العنوان</td>
+            <td class="value">@(Model.Address ?? "—")</td>
+        </tr>
+    </table>
+
+    <table class="info-table">
+        <tr>
+            <td colspan="4" class="section-title">البيانات الأكاديمية</td>
+        </tr>
+        <tr>
+            <td class="label">الكلية</td>
+            <td class="value">@(Model.Faculty ?? "—")</td>
+            <td class="label">القسم</td>
+            <td class="value">@(Model.Department ?? "—")</td>
+        </tr>
+        <tr>
+            <td class="label">الفرقة الدراسية</td>
+            <td class="value">@(Model.AcademicYear?.ToString() ?? "—")</td>
+            <td class="label">التقدير</td>
+            <td class="value">@(Model.GradeText ?? "—") (@(Model.GradePercentage?.ToString("0.00") ?? "—")%)</td>
+        </tr>
+    </table>
+
+    <table class="info-table">
+        <tr>
+            <td colspan="4" class="section-title">بيانات السكن الحالي</td>
+        </tr>
+        @if (Model.AllocationStatus == "Active")
+        {
+            <tr>
+                <td class="label">المدينة الجامعية</td>
+                <td class="value">@(Model.DormitoryCityName ?? "—")</td>
+                <td class="label">المبنى</td>
+                <td class="value">@(Model.BuildingName ?? "—")</td>
+            </tr>
+            <tr>
+                <td class="label">رقم الغرفة</td>
+                <td class="value">@(Model.RoomNumber ?? "—")</td>
+                <td class="label">رقم السرير</td>
+                <td class="value">@(Model.BedNumber?.ToString() ?? "—")</td>
+            </tr>
+            <tr>
+                <td class="label">تاريخ بدء الإقامة</td>
+                <td class="value">@(Model.AllocationStartDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                <td class="label">تاريخ نهاية الإقامة</td>
+                <td class="value">@(Model.AllocationEndDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+            </tr>
+        }
+        else if (Model.AllocationStatus == "Inactive" || Model.AllocationStatus == "Ended")
+        {
+            <tr>
+                <td colspan="4" class="value text-center text-muted">سبق له السكن ولم يعد مقيمًا حاليًا</td>
+            </tr>
+        }
+        else
+        {
+            <tr>
+                <td colspan="4" class="value text-center text-muted">غير مقيم بالمدن الجامعية</td>
+            </tr>
+        }
+    </table>
+
+    <table class="info-table">
+        <tr>
+            <td colspan="4" class="section-title">الوضع المالي</td>
+        </tr>
+        <tr>
+            <td class="label">إجمالي الرسوم المستحقة</td>
+            <td class="value amount">@Model.TotalFees.ToString("N2") ج.م</td>
+            <td class="label">إجمالي المدفوع</td>
+            <td class="value amount">@Model.TotalPaid.ToString("N2") ج.م</td>
+        </tr>
+        <tr>
+            <td colspan="2"></td>
+            <td class="label">المتبقي</td>
+            <td class="value amount @(Model.OutstandingAmount > 0 ? "text-danger" : "text-success")">
+                @Model.OutstandingAmount.ToString("N2") ج.م
+            </td>
+        </tr>
+    </table>
+
+    <table class="info-table">
+        <tr>
+            <td colspan="4" class="section-title">الوضع التأديبي</td>
+        </tr>
+        @if (Model.ViolationsCount > 0 || Model.PenaltiesCount > 0)
+        {
+            <tr>
+                <td class="label">عدد المخالفات</td>
+                <td class="value">@Model.ViolationsCount</td>
+                <td class="label">إجمالي غرامات المخالفات</td>
+                <td class="value amount">@Model.ViolationsFineTotal.ToString("N2") ج.م</td>
+            </tr>
+            <tr>
+                <td class="label">عدد الجزاءات</td>
+                <td class="value">@Model.PenaltiesCount</td>
+                <td class="label">إجمالي غرامات الجزاءات</td>
+                <td class="value amount">@Model.PenaltiesFineTotal.ToString("N2") ج.م</td>
+            </tr>
+            <tr>
+                <td class="label">إجمالي المسدد من الغرامات</td>
+                <td class="value">@((Model.ViolationsPaidTotal + Model.PenaltiesPaidTotal).ToString("N2")) ج.م</td>
+                <td class="label">المتبقي من الغرامات</td>
+                <td class="value amount text-danger">
+                    @((Model.ViolationsFineTotal + Model.PenaltiesFineTotal - Model.ViolationsPaidTotal - Model.PenaltiesPaidTotal).ToString("N2")) ج.م
+                </td>
+            </tr>
+        }
+        else
+        {
+            <tr>
+                <td colspan="4" class="value text-center text-success">لا توجد مخالفات أو جزاءات</td>
+            </tr>
+        }
+    </table>
+
+    <div class="report-footer">
+        <div class="footer-row">
+            <div class="footer-section">
+                <div class="footer-label">مسؤول شئون الطلاب</div>
+                <div class="footer-line"></div>
+            </div>
+            <div class="footer-section">
+                <div class="footer-label">مدير الإدارة</div>
+                <div class="footer-line"></div>
+            </div>
+            <div class="footer-section">
+                <div class="footer-label">الختم</div>
+                <div class="footer-line"></div>
+            </div>
+        </div>
+        <div class="footer-date">
+            تاريخ الطباعة: @DateTime.Now.ToString("yyyy/MM/dd HH:mm")
+        </div>
+    </div>
+</div>
+
+<style>
+    .report-container {
+        background: #fff;
+        border-radius: 12px;
+        padding: 2rem 2rem 1.5rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        max-width: 900px;
+        margin: 0 auto;
+        font-size: 0.9rem;
+    }
+
+    .report-header {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #1a2a6c;
+    }
+
+    .header-top .university-name {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #1a2a6c;
+        letter-spacing: 1px;
+    }
+
+    .header-top .report-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #2d4373;
+        margin-top: 0.2rem;
+    }
+
+    .header-line {
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #1a2a6c, transparent);
+        margin: 0.5rem auto;
+        width: 60%;
+    }
+
+    .header-sub {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 0.3rem;
+    }
+
+    .info-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+    }
+
+    .info-table td {
+        padding: 0.45rem 0.75rem;
+        border: 1px solid #dee2e6;
+        vertical-align: middle;
+    }
+
+    .info-table .section-title {
+        background: #1a2a6c;
+        color: #fff;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .info-table .label {
+        font-weight: 600;
+        color: #495057;
+        background: #f8f9fa;
+        width: 18%;
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+
+    .info-table .value {
+        color: #212529;
+        font-weight: 500;
+        width: 32%;
+    }
+
+    .info-table .amount {
+        font-family: 'Courier New', monospace;
+        font-weight: 700;
+    }
+
+    .text-success { color: #00c853 !important; }
+    .text-danger { color: #dc3545 !important; }
+    .text-muted { color: #6c757d !important; }
+    .text-center { text-align: center; }
+
+    .report-footer {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 2px solid #dee2e6;
+    }
+
+    .footer-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 1.5rem;
+    }
+
+    .footer-section {
+        flex: 1;
+        text-align: center;
+    }
+
+    .footer-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 0.3rem;
+    }
+
+    .footer-line {
+        border-bottom: 1px solid #495057;
+        height: 2rem;
+        margin-top: 1.5rem;
+    }
+
+    .footer-date {
+        text-align: left;
+        font-size: 0.75rem;
+        color: #adb5bd;
+        margin-top: 0.5rem;
+    }
+
+    @@media print {
+        body { background: #fff !important; }
+        .no-print, .sidebar, .topbar, .main-content .p-3, .main-content .p-lg-4 { display: none !important; }
+        .main-content { margin-right: 0 !important; padding: 0 !important; }
+        .report-container {
+            box-shadow: none !important;
+            border-radius: 0;
+            padding: 0.5in;
+            max-width: 100%;
+        }
+        .info-table { page-break-inside: avoid; }
+        .report-container { page-break-after: avoid; }
+        .footer-line { border-bottom-color: #000; }
+    }
+
+    @@media screen and (max-width: 600px) {
+        .info-table .label { width: 30%; }
+        .info-table .value { width: 70%; }
+        .report-container { padding: 1rem; }
+    }
+</style>

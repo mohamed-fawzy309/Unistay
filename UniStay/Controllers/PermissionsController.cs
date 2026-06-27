@@ -262,7 +262,7 @@ namespace UniStay.Controllers
                 "SystemUser", user.ID,
                 null, new { user.Name, user.Email, model.IsSuperAdmin, RoleIDs = model.SelectedRoleIds, PermCount = model.SelectedPermissionIds?.Count ?? 0 });
 
-            TempData["Success"] = $"تم إنشاء حساب {model.Name} — تم إرسال بيانات الدخول على {model.Email}";
+            TempData["Success"] = $"تم إنشاء حساب {model.Name} — كلمة المرور المؤقتة: <strong>{tempPw}</strong> (تم إرسالها أيضاً على {model.Email})";
             return RedirectToAction(nameof(Users));
         }
 
@@ -325,7 +325,7 @@ namespace UniStay.Controllers
                 CurrentUserID(), "Staff", "User.ResetPassword",
                 "SystemUser", id);
 
-            return Json(new { success = true, message = "تم إعادة تعيين كلمة المرور وإرسالها" });
+            return Json(new { success = true, message = $"تم إعادة تعيين كلمة المرور — كلمة المرور الجديدة: <strong>{newPw}</strong> (تم إرسالها أيضاً على {user.Email})" });
         }
 
         // AJAX — حذف ناعم

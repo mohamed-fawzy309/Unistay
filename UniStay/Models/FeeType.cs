@@ -11,4 +11,6 @@ public partial class FeeType
     public int? CreatedBy { get; set; }
 
     public virtual ICollection<FeeConfiguration> FeeConfigurations { get; set; } = new List<FeeConfiguration>();
+
+    public virtual ICollection<HousingFeeTemplate> HousingFeeTemplates { get; set; } = new List<HousingFeeTemplate>();
 }

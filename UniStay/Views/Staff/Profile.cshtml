@@ -1,74 +1,159 @@
 @model UniStay.ViewModels.Staff.StaffProfileViewModel
 @{
     ViewData["Title"] = "الملف الشخصي";
+    var cityTypeLabels = new Dictionary<string, string> { { "Male", "ذكور" }, { "Female", "إناث" }, { "Mixed", "مختلط" }, { "VIP", "VIP" }, { "Foreign", "وافدون" } };
+    var cityTypeBadges = new Dictionary<string, string> { { "Male", "badge-soft-primary" }, { "Female", "badge-soft-danger" }, { "Mixed", "badge-soft-info" }, { "VIP", "badge-soft-warning" }, { "Foreign", "badge-soft-secondary" } };
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="page-title">الملف الشخصي</h2>
+    <div>
+        @if (Model.CanEdit)
+        {
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                <i class="bi bi-pencil"></i> تعديل
+            </button>
+        }
+        <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-right"></i> العودة</a>
+    </div>
 </div>
 
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
 <div class="row g-3">
-    <div class="col-md-4">
+    <!-- Right Column: Profile Card & Assigned Cities -->
+    <div class="col-lg-4">
+        <!-- Profile Card -->
         <div class="card border-0 shadow-sm animate-fade-in text-center">
-            <div class="card-body py-5">
+            <div class="card-body py-4">
                 <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width:100px;height:100px;">
                     <i class="bi bi-person" style="font-size:3rem;"></i>
                 </div>
                 <h5 class="fw-bold">@Model.Name</h5>
-                <p class="text-muted small mb-1">@Model.Email</p>
-                <p class="text-muted small mb-0">@Model.Phone</p>
+                <p class="text-muted small mb-1"><i class="bi bi-envelope"></i> @Model.Email</p>
+                <p class="text-muted small mb-1"><i class="bi bi-telephone"></i> @Model.Phone</p>
+                <p class="text-muted small mb-1"><i class="bi bi-card-text"></i> @Model.NationalID</p>
                 @if (Model.LastLoginAt.HasValue)
                 {
                     <p class="text-muted small mt-2">
-                        <i class="bi bi-clock"></i> آخر دخول: @Model.LastLoginAt.Value.ToString("g")
+                        <i class="bi bi-clock-history"></i> آخر دخول: @Model.LastLoginAt.Value.ToString("g")
                     </p>
+                }
+                else
+                {
+                    <p class="text-muted small mt-2"><i class="bi bi-clock-history"></i> لم يسجل الدخول بعد</p>
+                }
+                <span class="badge @(Model.IsActive ? "bg-success" : "bg-danger")">
+                    @(Model.IsActive ? "نشط" : "غير نشط")
+                </span>
+            </div>
+        </div>
+
+        <!-- Assigned Cities -->
+        <div class="card border-0 shadow-sm animate-fade-in mt-3">
+            <div class="card-header bg-white py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-building"></i> المدن المسندة</h6>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.AssignedCities.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var city in Model.AssignedCities)
+                        {
+                            var badgeClass = cityTypeBadges.GetValueOrDefault(city.CityType, "badge-soft-light");
+                            var typeLabel = cityTypeLabels.GetValueOrDefault(city.CityType, city.CityType);
+                            <div class="list-group-item px-3 py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="fw-semibold">@city.CityName</span>
+                                        <span class="badge @badgeClass me-1">@typeLabel</span>
+                                    </div>
+                                    <span class="badge @(city.IsPrimary ? "badge-soft-success" : "badge-soft-secondary")">
+                                        @(city.IsPrimary ? "رئيسي" : city.RoleInCity)
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-3 text-muted small">
+                        <i class="bi bi-building-x"></i> لم يتم إسناد أي مدينة
+                    </div>
                 }
             </div>
         </div>
     </div>
 
-    <div class="col-md-8">
+    <!-- Left Column: Details, Permissions, Activity -->
+    <div class="col-lg-8">
+        <!-- Account Info -->
         <div class="card border-0 shadow-sm animate-fade-in">
-            <div class="card-header bg-white py-3">
-                <h5 class="fw-bold mb-0">معلومات الحساب</h5>
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0"><i class="bi bi-person-badge"></i> معلومات الحساب</h5>
+                @if (Model.CreatedAt.HasValue)
+                {
+                    <small class="text-muted">تاريخ الإنشاء: @Model.CreatedAt.Value.ToString("g")</small>
+                }
             </div>
             <div class="card-body">
-                <div class="row mb-3">
-                    <label class="col-sm-4 fw-semibold text-muted">الاسم</label>
+                <div class="row mb-2">
+                    <label class="col-sm-4 fw-semibold text-muted small">الاسم</label>
                     <div class="col-sm-8">@Model.Name</div>
                 </div>
-                <div class="row mb-3">
-                    <label class="col-sm-4 fw-semibold text-muted">البريد الإلكتروني</label>
+                <div class="row mb-2">
+                    <label class="col-sm-4 fw-semibold text-muted small">البريد الإلكتروني</label>
                     <div class="col-sm-8">@Model.Email</div>
                 </div>
-                <div class="row mb-3">
-                    <label class="col-sm-4 fw-semibold text-muted">رقم الهاتف</label>
+                <div class="row mb-2">
+                    <label class="col-sm-4 fw-semibold text-muted small">رقم الهاتف</label>
                     <div class="col-sm-8">@Model.Phone</div>
                 </div>
-                <div class="row mb-3">
-                    <label class="col-sm-4 fw-semibold text-muted">الرقم القومي</label>
-                    <div class="col-sm-8">@Model.NationalID</div>
+                <div class="row mb-2">
+                    <label class="col-sm-4 fw-semibold text-muted small">الرقم القومي</label>
+                    <div class="col-sm-8" dir="ltr">@Model.NationalID</div>
                 </div>
-                <hr>
-                <h6 class="fw-bold mb-3">المدن المسندة</h6>
-                @if (Model.AssignedCities.Any())
+            </div>
+        </div>
+
+        <!-- Permissions -->
+        <div class="card border-0 shadow-sm animate-fade-in mt-3">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-shield-check"></i> الصلاحيات</h5>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.Permissions.Any())
                 {
                     <div class="table-responsive">
-                        <table class="table table-sm">
+                        <table class="table table-sm mb-0">
                             <thead>
                                 <tr>
-                                    <th>المدينة</th>
-                                    <th>النوع</th>
-                                    <th>الدور</th>
+                                    <th>الصلاحية</th>
+                                    <th>التصنيف</th>
+                                    <th class="text-center">عرض</th>
+                                    <th class="text-center">إنشاء</th>
+                                    <th class="text-center">تعديل</th>
+                                    <th class="text-center">حذف</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var city in Model.AssignedCities)
+                                @foreach (var perm in Model.Permissions.OrderBy(p => p.Category))
                                 {
                                     <tr>
-                                        <td>@city.CityName</td>
-                                        <td>@city.CityType</td>
-                                        <td><span class="badge @(city.IsPrimary ? "bg-success" : "bg-secondary")">@(city.IsPrimary ? "رئيسي" : city.RoleInCity)</span></td>
+                                        <td class="small">@perm.DisplayName</td>
+                                        <td><span class="badge bg-light text-dark">@perm.Category</span></td>
+                                        <td class="text-center">@if (perm.CanView) {<i class="bi bi-check-lg text-success"></i>} else {<i class="bi bi-x-lg text-muted"></i>}</td>
+                                        <td class="text-center">@if (perm.CanCreate) {<i class="bi bi-check-lg text-success"></i>} else {<i class="bi bi-x-lg text-muted"></i>}</td>
+                                        <td class="text-center">@if (perm.CanEdit) {<i class="bi bi-check-lg text-success"></i>} else {<i class="bi bi-x-lg text-muted"></i>}</td>
+                                        <td class="text-center">@if (perm.CanDelete) {<i class="bi bi-check-lg text-success"></i>} else {<i class="bi bi-x-lg text-muted"></i>}</td>
                                     </tr>
                                 }
                             </tbody>
@@ -77,9 +162,103 @@
                 }
                 else
                 {
-                    <p class="text-muted">لم يتم إسناد أي مدينة</p>
+                    <div class="text-center py-3 text-muted small">
+                        <i class="bi bi-shield-x"></i> لا توجد صلاحيات محددة
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card border-0 shadow-sm animate-fade-in mt-3">
+            <div class="card-header bg-white py-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-activity"></i> آخر النشاطات</h5>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.RecentActivities.Any())
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var act in Model.RecentActivities)
+                        {
+                            <div class="list-group-item px-3 py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="small fw-semibold">@act.Action</span>
+                                        @if (!string.IsNullOrEmpty(act.TableName))
+                                        {
+                                            <span class="text-muted small d-block">@act.TableName</span>
+                                        }
+                                    </div>
+                                    <small class="text-muted" dir="ltr">@act.CreatedAt.ToString("g")</small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-3 text-muted small">
+                        <i class="bi bi-clock-history"></i> لا توجد نشاطات حديثة
+                    </div>
                 }
             </div>
         </div>
     </div>
 </div>
+
+<!-- Edit Profile Modal -->
+@if (Model.CanEdit)
+{
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form asp-action="UpdateProfile" method="post" class="modal-content">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ID" />
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-pencil"></i> تعديل الملف الشخصي</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">الاسم</label>
+                            <input type="text" class="form-control" id="editName" name="Name" value="@Model.Name" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">البريد الإلكتروني</label>
+                            <input type="email" class="form-control" id="editEmail" name="Email" value="@Model.Email" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">رقم الهاتف</label>
+                            <input type="text" class="form-control" id="editPhone" name="Phone" value="@Model.Phone" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">الرقم القومي</label>
+                            <input type="text" class="form-control" id="editNationalID" name="NationalID" value="@Model.NationalID" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> حفظ التغييرات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var editModal = document.getElementById('editProfileModal');
+            if (editModal) {
+                editModal.addEventListener('show.bs.modal', function () {
+                    document.getElementById('editName').value = '@Html.Raw(Model.Name.Replace("'", "\\'"))';
+                    document.getElementById('editEmail').value = '@Html.Raw(Model.Email.Replace("'", "\\'"))';
+                    document.getElementById('editPhone').value = '@Html.Raw(Model.Phone?.Replace("'", "\\'"))';
+                    document.getElementById('editNationalID').value = '@Html.Raw(Model.NationalID?.Replace("'", "\\'"))';
+                });
+            }
+        });
+    </script>
+}

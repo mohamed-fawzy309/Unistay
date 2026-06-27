@@ -79,14 +79,44 @@ namespace UniStay.Controllers;
         return View(vm);
     }
 
-    public async Task<IActionResult> Profile()
+    public async Task<IActionResult> Profile(int? id)
     {
-        var user = await _db.SystemUsers.FindAsync(CurrentUserId);
+        int targetUserId = id ?? CurrentUserId;
+        var canEdit = id == null || id == CurrentUserId || User.IsInRole("SuperAdmin");
+
+        var user = await _db.SystemUsers.FindAsync(targetUserId);
         if (user == null) return RedirectToAction("Index", "Home");
 
         var assignedCities = await _db.CityStaffs
             .Include(cs => cs.DormitoryCity)
-            .Where(cs => cs.SystemUserID == CurrentUserId)
+            .Where(cs => cs.SystemUserID == targetUserId)
+            .ToListAsync();
+
+        var permissions = await _db.UserPermissions
+            .Include(up => up.Permission)
+            .Where(up => up.SystemUserID == targetUserId)
+            .Select(up => new StaffPermissionViewModel
+            {
+                PermissionKey = up.Permission.PermissionKey,
+                DisplayName = up.Permission.DisplayName,
+                Category = up.Permission.Category,
+                CanView = up.CanView ?? false,
+                CanCreate = up.CanCreate ?? false,
+                CanEdit = up.CanEdit ?? false,
+                CanDelete = up.CanDelete ?? false
+            })
+            .ToListAsync();
+
+        var recentActivities = await _db.AuditLogs
+            .Where(a => a.UserID == targetUserId)
+            .OrderByDescending(a => a.CreatedAt)
+            .Take(10)
+            .Select(a => new RecentActivityViewModel
+            {
+                Action = a.Action,
+                TableName = a.TableName,
+                CreatedAt = a.CreatedAt
+            })
             .ToListAsync();
 
         var vm = new StaffProfileViewModel
@@ -95,8 +125,10 @@ namespace UniStay.Controllers;
             Name = user.Name ?? "",
             Email = user.Email ?? "",
             Phone = user.Phone ?? "",
-            NationalID = user.NationalID,
+            NationalID = user.NationalID ?? "",
             LastLoginAt = user.LastLoginAt,
+            IsActive = user.IsActive,
+            CreatedAt = user.CreatedAt,
             AssignedCities = assignedCities.Select(cs => new AssignedCityViewModel
             {
                 CityID = cs.DormitoryCity.ID,
@@ -104,10 +136,46 @@ namespace UniStay.Controllers;
                 CityType = cs.DormitoryCity.CityType,
                 RoleInCity = cs.RoleInCity,
                 IsPrimary = cs.IsPrimary
-            }).ToList()
+            }).ToList(),
+            Permissions = permissions,
+            RecentActivities = recentActivities,
+            CanEdit = canEdit
         };
 
         return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateProfile(UpdateStaffProfileViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "الرجاء تصحيح الأخطاء";
+            return RedirectToAction("Profile", new { id = model.ID });
+        }
+
+        var user = await _db.SystemUsers.FindAsync(model.ID);
+        if (user == null) return NotFound();
+
+        bool isOwnProfile = model.ID == CurrentUserId;
+        if (!isOwnProfile && !User.IsInRole("SuperAdmin"))
+        {
+            return Forbid();
+        }
+
+        user.Name = model.Name;
+        user.Email = model.Email;
+        user.Phone = model.Phone;
+        user.NationalID = model.NationalID;
+        user.LastUpdatedAt = DateTime.UtcNow;
+        user.LastUpdatedBy = CurrentUserId;
+
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync(CurrentUserId, "Staff", "Staff.ProfileUpdated", "SystemUser", user.ID);
+
+        TempData["Success"] = "تم تحديث الملف الشخصي بنجاح";
+        return RedirectToAction("Profile", new { id = model.ID });
     }
 
     public async Task<IActionResult> MyCities()

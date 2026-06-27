@@ -815,6 +815,317 @@ public class StatisticsController : Controller
         return File(pdf, "application/pdf", "SmsStatistics.pdf");
     }
 
+    // ====================================================================
+    // CUSTOM REPORT BUILDER
+    // ====================================================================
+    [HttpGet]
+    [RequirePermission("Statistics.View", "CanView")]
+    public async Task<IActionResult> CustomReport(
+        string reportType = "Students",
+        string[]? selectedColumns = null,
+        int? filterCityId = null,
+        string? filterAcademicYear = null,
+        string? filterStatus = null,
+        string? filterFaculty = null,
+        string? filterGender = null,
+        string? filterGovernorate = null,
+        DateTime? filterFromDate = null,
+        DateTime? filterToDate = null,
+        string? searchTerm = null)
+    {
+        var vm = new CustomReportViewModel
+        {
+            ReportType = reportType,
+            FilterCityId = filterCityId,
+            FilterAcademicYear = filterAcademicYear,
+            FilterStatus = filterStatus,
+            FilterFaculty = filterFaculty,
+            FilterGender = filterGender,
+            FilterGovernorate = filterGovernorate,
+            FilterFromDate = filterFromDate,
+            FilterToDate = filterToDate,
+            SearchTerm = searchTerm,
+            Cities = await _db.DormitoryCities.Where(c => !c.IsDeleted).Select(c => new FilterLookup { ID = c.ID, Name = c.Name }).ToListAsync(),
+            AcademicYears = await _db.Applications.Select(a => a.AcademicYear).Distinct().OrderByDescending(a => a).ToListAsync(),
+            Faculties = await _db.Students.Where(s => s.Faculty != null).Select(s => s.Faculty!).Distinct().OrderBy(f => f).ToListAsync(),
+            Governorates = await _db.Students.Where(s => s.Governorate != null).Select(s => s.Governorate!).Distinct().OrderBy(g => g).ToListAsync()
+        };
+
+        if (!ReportTypeInfo.Types.ContainsKey(reportType))
+        {
+            vm.HasRun = true;
+            return View(vm);
+        }
+
+        var def = ReportTypeInfo.Types[reportType];
+        var cols = selectedColumns?.Length > 0 ? selectedColumns.ToList() : def.AvailableColumns.Keys.ToList();
+        vm.Columns = cols;
+
+        switch (reportType)
+        {
+            case "Students":
+                await BuildStudentReport(vm);
+                break;
+            case "Applications":
+                await BuildApplicationReport(vm);
+                break;
+            case "Allocations":
+                await BuildAllocationReport(vm);
+                break;
+            case "Violations":
+                await BuildViolationReport(vm);
+                break;
+            case "Penalties":
+                await BuildPenaltyReport(vm);
+                break;
+            case "Payments":
+                await BuildPaymentReport(vm);
+                break;
+        }
+
+        vm.HasRun = true;
+        return View(vm);
+    }
+
+    private async Task BuildStudentReport(CustomReportViewModel vm)
+    {
+        var query = _db.Students.Where(s => s.IsDeleted != true).AsQueryable();
+
+        if (vm.FilterCityId.HasValue)
+            query = query.Where(s => s.Applications.Any(a => a.DormitoryCityID == vm.FilterCityId.Value));
+        if (!string.IsNullOrEmpty(vm.FilterFaculty))
+            query = query.Where(s => s.Faculty == vm.FilterFaculty);
+        if (!string.IsNullOrEmpty(vm.FilterGovernorate))
+            query = query.Where(s => s.Governorate == vm.FilterGovernorate);
+        if (!string.IsNullOrEmpty(vm.FilterGender))
+            query = query.Where(s => s.Gender == vm.FilterGender);
+        if (!string.IsNullOrEmpty(vm.SearchTerm))
+            query = query.Where(s => s.FullName.Contains(vm.SearchTerm) || (s.StudentCode != null && s.StudentCode.Contains(vm.SearchTerm)));
+
+        var data = await query.OrderByDescending(s => s.CreatedAt).Take(5000).ToListAsync();
+        vm.TotalCount = data.Count;
+
+        foreach (var s in data)
+        {
+            var row = new Dictionary<string, string>();
+            foreach (var col in vm.Columns)
+            {
+                row[col] = col switch
+                {
+                    "FullName" => s.FullName,
+                    "NationalID" => s.NationalID ?? "",
+                    "StudentCode" => s.StudentCode ?? "",
+                    "Gender" => s.Gender == "Male" ? "ذكر" : "أنثى",
+                    "Phone" => s.Phone,
+                    "Email" => s.Email,
+                    "Faculty" => s.Faculty ?? "",
+                    "Department" => s.Department ?? "",
+                    "GradeText" => s.GradeText ?? "",
+                    "GradePercentage" => s.GradePercentage?.ToString("0.##") ?? "",
+                    "Governorate" => s.Governorate ?? "",
+                    "Markaz" => s.Markaz ?? "",
+                    "City" => s.City ?? "",
+                    "Address" => s.Address ?? "",
+                    "DistanceFromUniv" => s.DistanceFromUniv?.ToString("0.##") ?? "",
+                    "IsActive" => s.IsActive == true ? "نعم" : "لا",
+                    "CreatedAt" => s.CreatedAt?.ToString("yyyy-MM-dd") ?? "",
+                    _ => ""
+                };
+            }
+            vm.Rows.Add(row);
+        }
+    }
+
+    private async Task BuildApplicationReport(CustomReportViewModel vm)
+    {
+        var query = _db.Applications.Include(a => a.Student).Include(a => a.DormitoryCity).AsQueryable();
+
+        if (vm.FilterCityId.HasValue)
+            query = query.Where(a => a.DormitoryCityID == vm.FilterCityId.Value);
+        if (!string.IsNullOrEmpty(vm.FilterAcademicYear))
+            query = query.Where(a => a.AcademicYear == vm.FilterAcademicYear);
+        if (!string.IsNullOrEmpty(vm.FilterFaculty))
+            query = query.Where(a => a.Student.Faculty == vm.FilterFaculty);
+        if (vm.FilterFromDate.HasValue)
+            query = query.Where(a => a.CreatedAt >= vm.FilterFromDate.Value);
+        if (vm.FilterToDate.HasValue)
+            query = query.Where(a => a.CreatedAt <= vm.FilterToDate.Value);
+        if (!string.IsNullOrEmpty(vm.SearchTerm))
+            query = query.Where(a => a.Student.FullName.Contains(vm.SearchTerm));
+
+        var data = await query.OrderByDescending(a => a.CreatedAt).Take(5000).ToListAsync();
+        vm.TotalCount = data.Count;
+
+        foreach (var a in data)
+        {
+            var row = new Dictionary<string, string>();
+            foreach (var col in vm.Columns)
+            {
+                row[col] = col switch
+                {
+                    "StudentName" => a.Student.FullName,
+                    "NationalID" => a.Student.NationalID ?? "",
+                    "DormitoryCity" => a.DormitoryCity.Name,
+                    "AcademicYear" => a.AcademicYear,
+                    "StudentType" => a.StudentType,
+                    "HousingType" => a.HousingType,
+                    "Status" => a.Status,
+                    "CoordinationScore" => a.CoordinationScore?.ToString("0.##") ?? "",
+                    "CreatedAt" => a.CreatedAt?.ToString("yyyy-MM-dd") ?? "",
+                    "ReviewedAt" => a.ReviewedAt?.ToString("yyyy-MM-dd") ?? "",
+                    _ => ""
+                };
+            }
+            vm.Rows.Add(row);
+        }
+    }
+
+    private async Task BuildAllocationReport(CustomReportViewModel vm)
+    {
+        var query = _db.Allocations
+            .Include(a => a.Student).Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding).ThenInclude(b => b.DormitoryCity)
+            .AsQueryable();
+
+        if (vm.FilterCityId.HasValue)
+            query = query.Where(a => a.CityRoom.CityBuilding.DormitoryCityID == vm.FilterCityId.Value);
+        if (!string.IsNullOrEmpty(vm.FilterAcademicYear))
+            query = query.Where(a => a.AcademicYear == vm.FilterAcademicYear);
+        if (!string.IsNullOrEmpty(vm.FilterFaculty))
+            query = query.Where(a => a.Student.Faculty == vm.FilterFaculty);
+        if (!string.IsNullOrEmpty(vm.SearchTerm))
+            query = query.Where(a => a.Student.FullName.Contains(vm.SearchTerm));
+
+        var data = await query.OrderByDescending(a => a.AllocatedAt).Take(5000).ToListAsync();
+        vm.TotalCount = data.Count;
+
+        foreach (var a in data)
+        {
+            var row = new Dictionary<string, string>();
+            foreach (var col in vm.Columns)
+            {
+                row[col] = col switch
+                {
+                    "StudentName" => a.Student.FullName,
+                    "NationalID" => a.Student.NationalID ?? "",
+                    "DormitoryCity" => a.CityRoom.CityBuilding.DormitoryCity.Name,
+                    "Building" => a.CityRoom.CityBuilding.BuildingName,
+                    "RoomNumber" => a.CityRoom.RoomNumber,
+                    "BedNumber" => a.BedNumber.ToString(),
+                    "AcademicYear" => a.AcademicYear,
+                    "Status" => a.Status,
+                    "StartDate" => a.StartDate?.ToString("yyyy-MM-dd") ?? "",
+                    "EndDate" => a.EndDate?.ToString("yyyy-MM-dd") ?? "",
+                    _ => ""
+                };
+            }
+            vm.Rows.Add(row);
+        }
+    }
+
+    private async Task BuildViolationReport(CustomReportViewModel vm)
+    {
+        var query = _db.Violations.Include(v => v.Student).AsQueryable();
+
+        if (vm.FilterCityId.HasValue)
+            query = query.Where(v => v.DormitoryCityID == vm.FilterCityId.Value);
+        if (!string.IsNullOrEmpty(vm.SearchTerm))
+            query = query.Where(v => v.Student.FullName.Contains(vm.SearchTerm));
+
+        var data = await query.OrderByDescending(v => v.RecordedAt).Take(5000).ToListAsync();
+        vm.TotalCount = data.Count;
+
+        foreach (var v in data)
+        {
+            var row = new Dictionary<string, string>();
+            foreach (var col in vm.Columns)
+            {
+                row[col] = col switch
+                {
+                    "StudentName" => v.Student.FullName,
+                    "ViolationType" => v.ViolationType,
+                    "Description" => v.Description ?? "",
+                    "Severity" => v.Severity,
+                    "Status" => v.Status,
+                    "FineAmount" => v.FineAmount?.ToString("0.##") ?? "",
+                    "FinePaid" => v.FinePaid?.ToString("0.##") ?? "",
+                    "RecordedAt" => v.RecordedAt?.ToString("yyyy-MM-dd") ?? "",
+                    _ => ""
+                };
+            }
+            vm.Rows.Add(row);
+        }
+    }
+
+    private async Task BuildPenaltyReport(CustomReportViewModel vm)
+    {
+        var query = _db.StudentPenalties
+            .Include(p => p.Student).Include(p => p.PenaltyType)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(vm.SearchTerm))
+            query = query.Where(p => p.Student.FullName.Contains(vm.SearchTerm));
+
+        var data = await query.OrderByDescending(p => p.RecordedAt).Take(5000).ToListAsync();
+        vm.TotalCount = data.Count;
+
+        foreach (var p in data)
+        {
+            var row = new Dictionary<string, string>();
+            foreach (var col in vm.Columns)
+            {
+                row[col] = col switch
+                {
+                    "StudentName" => p.Student.FullName,
+                    "PenaltyType" => p.PenaltyType.Name,
+                    "FineAmount" => p.FineAmount?.ToString("0.##") ?? "",
+                    "FinePaid" => p.FinePaid?.ToString("0.##") ?? "",
+                    "Status" => p.Status,
+                    "Description" => p.Description ?? "",
+                    "RecordedAt" => p.RecordedAt?.ToString("yyyy-MM-dd") ?? "",
+                    "ResolvedAt" => p.ResolvedAt?.ToString("yyyy-MM-dd") ?? "",
+                    _ => ""
+                };
+            }
+            vm.Rows.Add(row);
+        }
+    }
+
+    private async Task BuildPaymentReport(CustomReportViewModel vm)
+    {
+        var query = _db.Payments.Include(p => p.Student).AsQueryable();
+
+        if (vm.FilterFromDate.HasValue)
+            query = query.Where(p => p.RecordedAt >= vm.FilterFromDate.Value);
+        if (vm.FilterToDate.HasValue)
+            query = query.Where(p => p.RecordedAt <= vm.FilterToDate.Value);
+        if (!string.IsNullOrEmpty(vm.SearchTerm))
+            query = query.Where(p => p.Student.FullName.Contains(vm.SearchTerm));
+
+        var data = await query.OrderByDescending(p => p.RecordedAt).Take(5000).ToListAsync();
+        vm.TotalCount = data.Count;
+
+        foreach (var p in data)
+        {
+            var row = new Dictionary<string, string>();
+            foreach (var col in vm.Columns)
+            {
+                row[col] = col switch
+                {
+                    "StudentName" => p.Student.FullName,
+                    "PaymentType" => p.PaymentType,
+                    "Amount" => p.Amount.ToString("0.##"),
+                    "PaidAmount" => p.PaidAmount.ToString("0.##"),
+                    "Status" => p.Status,
+                    "MonthYear" => p.MonthYear ?? "",
+                    "RecordedAt" => p.RecordedAt?.ToString("yyyy-MM-dd") ?? "",
+                    "PaidAt" => p.PaidAt?.ToString("yyyy-MM-dd") ?? "",
+                    _ => ""
+                };
+            }
+            vm.Rows.Add(row);
+        }
+    }
+
     private static string GetCurrentAcademicYear()
     {
         var year = DateTime.Now.Year;

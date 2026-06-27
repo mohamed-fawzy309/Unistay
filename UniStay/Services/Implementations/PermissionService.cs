@@ -131,9 +131,118 @@ namespace UniStay.Services.Implementations
             return false;
         }
 
-        public async Task<bool> GrantPermissionAsync(int grantedBy, int targetUserId, int permissionId, object dto)
+        public bool CanUserGrantPermission(int grantedBy, string permissionKey)
         {
-            await _auditService.LogAsync(grantedBy, "Staff", "Permission.Granted", "UserPermission");
+            var user = _context.SystemUsers.Find(grantedBy);
+            if (user != null && user.IsSuperAdmin)
+                return true;
+
+            return HasPermission(grantedBy, permissionKey, "CanEdit");
+        }
+
+        public bool CanUserManageUser(int requesterId, int targetUserId)
+        {
+            if (requesterId == targetUserId)
+                return false;
+
+            var targetUser = _context.SystemUsers.Find(targetUserId);
+            if (targetUser == null)
+                return false;
+
+            var requester = _context.SystemUsers.Find(requesterId);
+            if (requester != null && requester.IsSuperAdmin)
+                return true;
+
+            if (targetUser.IsSuperAdmin)
+                return false;
+
+            return HasPermission(requesterId, "Permissions", "CanEdit");
+        }
+
+        public bool IsPermissionInUse(int permissionId)
+        {
+            return _context.UserPermissions.Any(up => up.PermissionID == permissionId)
+                || _context.RolePermissions.Any(rp => rp.PermissionID == permissionId);
+        }
+
+        public async Task<bool> GrantPermissionAsync(int grantedBy, int targetUserId, int permissionId, PermissionDto dto)
+        {
+            if (!CanUserManageUser(grantedBy, targetUserId))
+                return false;
+
+            var permission = await _context.Permissions.FindAsync(permissionId);
+            if (permission == null)
+                return false;
+
+            if (!CanUserGrantPermission(grantedBy, permission.PermissionKey))
+                return false;
+
+            var existing = await _context.UserPermissions
+                .FirstOrDefaultAsync(up => up.SystemUserID == targetUserId && up.PermissionID == permissionId);
+
+            if (existing != null)
+            {
+                existing.CanView = dto.CanView;
+                existing.CanCreate = dto.CanCreate;
+                existing.CanEdit = dto.CanEdit;
+                existing.CanDelete = dto.CanDelete;
+            }
+            else
+            {
+                existing = new UserPermission
+                {
+                    SystemUserID = targetUserId,
+                    PermissionID = permissionId,
+                    CanView = dto.CanView,
+                    CanCreate = dto.CanCreate,
+                    CanEdit = dto.CanEdit,
+                    CanDelete = dto.CanDelete,
+                    GrantedAt = DateTime.UtcNow,
+                    GrantedBy = grantedBy
+                };
+                _context.UserPermissions.Add(existing);
+            }
+
+            await _context.SaveChangesAsync();
+            await _auditService.LogAsync(grantedBy, "Admin", "Permission.Granted", "UserPermission", existing.ID);
+            return true;
+        }
+
+        public async Task<bool> RevokePermissionAsync(int revokedBy, int targetUserId, int permissionId)
+        {
+            if (!CanUserManageUser(revokedBy, targetUserId))
+                return false;
+
+            var permission = await _context.Permissions.FindAsync(permissionId);
+            if (permission == null)
+                return false;
+
+            if (!CanUserGrantPermission(revokedBy, permission.PermissionKey))
+                return false;
+
+            var userPerm = await _context.UserPermissions
+                .FirstOrDefaultAsync(up => up.SystemUserID == targetUserId && up.PermissionID == permissionId);
+
+            if (userPerm == null)
+                return false;
+
+            _context.UserPermissions.Remove(userPerm);
+            await _context.SaveChangesAsync();
+            await _auditService.LogAsync(revokedBy, "Admin", "Permission.Revoked", "UserPermission", userPerm.ID);
+            return true;
+        }
+
+        public async Task<bool> RemoveRolePermissionAsync(int removedBy, int roleId, int permissionId)
+        {
+            var rolePerm = await _context.RolePermissions
+                .FirstOrDefaultAsync(rp => rp.RoleID == roleId && rp.PermissionID == permissionId);
+
+            if (rolePerm == null)
+                return false;
+
+            _context.RolePermissions.Remove(rolePerm);
+            await _context.SaveChangesAsync();
+            await _auditService.LogAsync(removedBy, "Admin", "RolePermission.Removed", "RolePermission", rolePerm.ID);
             return true;
         }
     }

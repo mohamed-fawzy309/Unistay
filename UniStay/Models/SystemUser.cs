@@ -121,6 +121,21 @@ public partial class SystemUser
 
     public virtual ICollection<DataScope> DataScopes { get; set; } = new List<DataScope>();
 
+    public virtual ICollection<EmployeeRecord> EmployeeRecords { get; set; } = new List<EmployeeRecord>();
+
+    public virtual ICollection<GovernorateDistance> GovernorateDistances { get; set; } = new List<GovernorateDistance>();
+
+    public virtual ICollection<HousingFeeTemplate> HousingFeeTemplateCreatedByNavigations { get; set; } = new List<HousingFeeTemplate>();
+
+    public virtual ICollection<HousingFeeTemplate> HousingFeeTemplateLastUpdatedByNavigations { get; set; } = new List<HousingFeeTemplate>();
+
+    public virtual ICollection<PenaltyType> PenaltyTypes { get; set; } = new List<PenaltyType>();
+
+    public virtual ICollection<StudentFeeRecord> StudentFeeRecordRecordedByNavigations { get; set; } = new List<StudentFeeRecord>();
+
+    public virtual ICollection<StudentPenalty> StudentPenaltyRecordedByNavigations { get; set; } = new List<StudentPenalty>();
+
+    public virtual ICollection<StudentPenalty> StudentPenaltyResolvedByNavigations { get; set; } = new List<StudentPenalty>();
 
     public virtual ICollection<FeeConfiguration> FeeConfigurationCreatedByNavigations { get; set; } = new List<FeeConfiguration>();
 

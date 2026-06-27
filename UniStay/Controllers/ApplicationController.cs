@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UniStay.Data;
 using UniStay.Helpers;
@@ -82,6 +83,29 @@ namespace UniStay.Controllers
                 ModelState.AddModelError("Email", "البريد الإلكتروني مستخدم بالفعل من قبل طالب آخر");
                 return View(model);
             }
+
+            // -- Conditional validation based on nationality --
+            bool isEgyptian = model.Nationality == "مصري";
+
+            if (isEgyptian)
+            {
+                if (string.IsNullOrWhiteSpace(model.NationalID))
+                    ModelState.AddModelError("NationalID", "الرقم القومي مطلوب للطلاب المصريين");
+
+                if (string.IsNullOrWhiteSpace(model.FatherName))
+                    ModelState.AddModelError("FatherName", "اسم الأب مطلوب للطلاب المصريين");
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(model.CountryOfOrigin))
+                    ModelState.AddModelError("CountryOfOrigin", "الجنسية (البلد الأصل) مطلوبة للطلاب الوافدين");
+
+                if (string.IsNullOrWhiteSpace(model.PassportNumber))
+                    ModelState.AddModelError("PassportNumber", "رقم جواز السفر مطلوب للطلاب الوافدين");
+            }
+
+            if (!ModelState.IsValid)
+                return View(model);
 
             // -- Calculate distance from university --
             model.DistanceFromUniv = CalculateDistance(model.Governorate, model.City);
@@ -171,6 +195,20 @@ namespace UniStay.Controllers
                         HasFamilyAbroad = model.HasFamilyAbroad,
                         HasMedicalCondition = model.HasMedicalCondition,
                         MedicalDescription = model.MedicalDescription,
+                        HasDisability = model.SpecialNeeds,
+                        StudentCode = model.StudentCode,
+                        BirthPlace = model.BirthPlace,
+                        HighSchoolDivision = model.HighSchoolDivision,
+                        HighSchoolTotal = model.HighSchoolTotal,
+                        HighSchoolPercentage = model.HighSchoolPercentage,
+                        HighSchoolFromAbroad = model.HighSchoolFromAbroad,
+                        LastYearGrade = model.LastYearGrade,
+                        LastYearPercentage = model.LastYearPercentage,
+                        ParentStatus = model.ParentStatus,
+                        CountryOfOrigin = model.CountryOfOrigin,
+                        CountryOfOriginOther = model.CountryOfOriginOther,
+                        PassportNumber = model.PassportNumber,
+                        PassportIssuePlace = model.PassportIssuePlace,
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
                     };
@@ -186,6 +224,8 @@ namespace UniStay.Controllers
                         StudentID = student.ID,
                         GuardianType = "Father",
                         FullName = model.FatherName,
+                        NationalID = model.FatherNationalID,
+                        Phone = model.FatherPhone,
                         Job = model.FatherJob,
                         Address = model.FatherAddress,
                         IsDeceased = false
@@ -201,6 +241,7 @@ namespace UniStay.Controllers
                         GuardianType = "Other",
                         FullName = model.GuardianName,
                         NationalID = model.GuardianNationalID,
+                        Phone = model.GuardianPhone,
                         Address = model.GuardianAddress
                     };
                     _context.Guardians.Add(guardian);
@@ -228,7 +269,7 @@ namespace UniStay.Controllers
                     var studentLogin = new StudentLogin
                     {
                         StudentID = student.ID,
-                        Username = model.NationalID,
+                        Username = model.NationalID ?? model.PassportNumber ?? model.Email,
                         PasswordHash = _passwordService.HashPassword(model.Password),
                         IsActive = true,
                         MustChangePassword = false,
@@ -272,7 +313,7 @@ namespace UniStay.Controllers
                     string emailBody = $@"
                         <h3>تم استلام طلبك بنجاح</h3>
                         <p>رقم الطلب: <strong>{application.ID:00000}</strong></p>
-                        <p>اسم المستخدم: <strong>{model.NationalID}</strong></p>
+                        <p>اسم المستخدم: <strong>{model.NationalID ?? model.PassportNumber ?? model.Email}</strong></p>
                         <p>سيتم مراجعة طلبك قريباً وسنخبرك بالنتيجة.</p>";
                     await _emailService.SendAsync(
                         student.Email,
@@ -333,6 +374,121 @@ namespace UniStay.Controllers
 
             return View("TrackStatusResult", app);
         }
+        // GET: /Application/Review/{id}
+        [Authorize(AuthenticationSchemes = "StaffCookie")]
+        [RequirePermission("Applications.Review", "CanView")]
+        [HttpGet("Application/Review/{id}")]
+        public async Task<IActionResult> Review(int id)
+        {
+            var app = await _context.Applications
+                .Include(a => a.Student)
+                .Include(a => a.DormitoryCity)
+                .FirstOrDefaultAsync(a => a.ID == id);
+
+            if (app == null) return NotFound();
+
+            var vm = new ReviewApplicationViewModel
+            {
+                ApplicationID = app.ID,
+                AcademicYear = app.AcademicYear,
+                StudentType = app.StudentType,
+                HousingType = app.HousingType,
+                MealSubscription = app.MealSubscription,
+                HasSpecialNeeds = app.HasSpecialNeeds,
+                SpecialNeedsDescription = app.SpecialNeedsDescription,
+                Status = app.Status,
+                ServerVerificationStatus = app.ServerVerificationStatus,
+                CoordinationScore = app.CoordinationScore,
+                CoordinationRank = app.CoordinationRank,
+                CreatedAt = app.CreatedAt,
+                LastUpdatedAt = app.LastUpdatedAt,
+                CurrentRejectionReason = app.RejectionReason,
+                CurrentAdminNotes = app.AdminNotes,
+                DormitoryCityName = app.DormitoryCity.Name,
+                DormitoryCityType = app.DormitoryCity.CityType,
+                StudentID = app.Student.ID,
+                StudentName = app.Student.FullName,
+                StudentNationalID = app.Student.NationalID,
+                StudentCode = app.Student.StudentCode,
+                Gender = app.Student.Gender,
+                BirthDate = app.Student.BirthDate,
+                Religion = app.Student.Religion,
+                Nationality = app.Student.Nationality,
+                Phone = app.Student.Phone,
+                Email = app.Student.Email,
+                Faculty = app.Student.Faculty,
+                Department = app.Student.Department,
+                StudentAcademicYear = app.Student.AcademicYear,
+                Governorate = app.Student.Governorate,
+                Markaz = app.Student.Markaz,
+                City = app.Student.City,
+                Address = app.Student.Address,
+                DistanceFromUniv = app.Student.DistanceFromUniv,
+                GradePercentage = app.Student.GradePercentage,
+                GradeText = app.Student.GradeText,
+                Photo = app.Student.Photo,
+                HasDisability = app.Student.HasDisability,
+                IsOrphan = app.Student.IsOrphan,
+                IsLowIncome = app.Student.IsLowIncome,
+                HasFamilyAbroad = app.Student.HasFamilyAbroad,
+                HasMedicalCondition = app.Student.HasMedicalCondition,
+                MedicalDescription = app.Student.MedicalDescription,
+                IsForeign = app.Student.IsForeign
+            };
+
+            return View(vm);
+        }
+
+        // POST: /Application/Review
+        [Authorize(AuthenticationSchemes = "StaffCookie")]
+        [RequirePermission("Applications.Review", "CanEdit")]
+        [HttpPost("Application/Review")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Review(ReviewApplicationViewModel model)
+        {
+            if (string.IsNullOrEmpty(model.ReviewAction) ||
+                (model.ReviewAction != "Approve" && model.ReviewAction != "Reject"))
+            {
+                TempData["Error"] = "إجراء غير صالح";
+                return RedirectToAction("Review", new { id = model.ApplicationID });
+            }
+
+            var app = await _context.Applications
+                .Include(a => a.Student)
+                .FirstOrDefaultAsync(a => a.ID == model.ApplicationID);
+
+            if (app == null) return NotFound();
+
+            if (app.Status != "Pending")
+            {
+                TempData["Error"] = "تمت مراجعة هذا الطلب مسبقاً";
+                return RedirectToAction("Review", new { id = model.ApplicationID });
+            }
+
+            var staffUserId = int.Parse(User.FindFirst("UserID")!.Value);
+
+            app.Status = model.ReviewAction == "Approve" ? "Accepted" : "Rejected";
+            app.ReviewedBy = staffUserId;
+            app.ReviewedAt = DateTime.UtcNow;
+            app.RejectionReason = model.ReviewAction == "Reject" ? model.RejectionReason : null;
+            app.AdminNotes = model.AdminNotes;
+            app.LastUpdatedAt = DateTime.UtcNow;
+            app.LastUpdatedBy = staffUserId;
+
+            await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync(
+                app.Student.ID, "Student",
+                $"Application.{model.ReviewAction}",
+                "Application", app.ID);
+
+            TempData["Success"] = model.ReviewAction == "Approve"
+                ? "تم قبول الطلب بنجاح"
+                : "تم رفض الطلب";
+
+            return RedirectToAction("Review", new { id = model.ApplicationID });
+        }
+
         private decimal? CalculateDistance(string governorate, string city)
         {
             var distances = new Dictionary<string, decimal>

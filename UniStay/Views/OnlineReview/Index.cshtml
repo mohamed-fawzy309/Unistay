@@ -10,6 +10,12 @@
     <div class="card-body">
         <div class="row g-2 mb-3">
             <div class="col-md-3 col-6"><div class="border rounded p-2 text-center bg-light"><small class="text-muted d-block">بانتظار المراجعة</small><strong class="fs-5 text-warning">@Model.PendingReview</strong></div></div>
+            <div class="col-md-3 col-6 d-flex align-items-end">
+                <form asp-action="VerifyAll" method="post" class="w-100">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-success w-100"><i class="bi bi-check-all"></i> التحقق من سيرفر الجامعة</button>
+                </form>
+            </div>
         </div>
 
         <form method="get" class="row g-2 mb-3">
@@ -32,7 +38,7 @@
                             <td class="fw-bold">@app.StudentName</td>
                             <td>@app.NationalID</td>
                             <td>@app.Faculty</td>
-                            <td>@app.Status</td>
+                            <td>@app.StatusDisplayName</td>
                             <td>@app.SubmittedAt?.ToString("yyyy/MM/dd")</td>
                             <td><a asp-action="Review" asp-route-id="@app.ApplicationID" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i> مراجعة</a></td>
                         </tr>

@@ -802,6 +802,80 @@ public class ReportsController : Controller
         }).ToList();
     }
 
+    // ════════════════════════════════════════════════════════════════
+    // 11. Student Status Report (بيان حالة الطالب)
+    // ════════════════════════════════════════════════════════════════
+
+    [HttpGet]
+    [RequirePermission("Students.Manage", "CanView")]
+    public async Task<IActionResult> StudentStatusReport(int studentId)
+    {
+        var student = await _db.Students
+            .Include(s => s.Allocations.Where(a => a.Status == "Active"))
+                .ThenInclude(a => a.CityRoom).ThenInclude(r => r.CityBuilding).ThenInclude(b => b.DormitoryCity)
+            .FirstOrDefaultAsync(s => s.ID == studentId && s.IsDeleted != true);
+
+        if (student == null)
+            return NotFound();
+
+        var feeRecords = await _db.StudentFeeRecords
+            .Where(f => f.StudentID == studentId)
+            .ToListAsync();
+
+        var violations = await _db.Violations
+            .Where(v => v.StudentID == studentId)
+            .ToListAsync();
+
+        var penalties = await _db.StudentPenalties
+            .Include(p => p.PenaltyType)
+            .Where(p => p.StudentID == studentId)
+            .ToListAsync();
+
+        var activeAlloc = student.Allocations.FirstOrDefault(a => a.Status == "Active");
+
+        var vm = new StudentStatusReportViewModel
+        {
+            StudentID = student.ID,
+            FullName = student.FullName,
+            NationalID = student.NationalID ?? "",
+            StudentCode = student.StudentCode,
+            Gender = student.Gender,
+            Phone = student.Phone,
+            Email = student.Email,
+            Faculty = student.Faculty,
+            Department = student.Department,
+            GradeText = student.GradeText,
+            GradePercentage = student.GradePercentage,
+            AcademicYear = student.AcademicYear,
+            Governorate = student.Governorate,
+            Address = student.Address,
+            Religion = student.Religion,
+            Nationality = student.Nationality,
+
+            DormitoryCityName = activeAlloc?.CityRoom?.CityBuilding?.DormitoryCity?.Name,
+            BuildingName = activeAlloc?.CityRoom?.CityBuilding?.BuildingName,
+            RoomNumber = activeAlloc?.CityRoom?.RoomNumber,
+            BedNumber = activeAlloc?.BedNumber,
+            AllocationStatus = activeAlloc?.Status,
+            AllocationStartDate = activeAlloc?.StartDate,
+            AllocationEndDate = activeAlloc?.EndDate,
+
+            TotalFees = feeRecords.Sum(f => f.TotalAmount),
+            TotalPaid = feeRecords.Sum(f => f.PaidAmount),
+            OutstandingAmount = feeRecords.Sum(f => f.TotalAmount - f.PaidAmount),
+
+            ViolationsCount = violations.Count,
+            ViolationsFineTotal = violations.Sum(v => v.FineAmount ?? 0),
+            ViolationsPaidTotal = violations.Sum(v => v.FinePaid ?? 0),
+
+            PenaltiesCount = penalties.Count,
+            PenaltiesFineTotal = penalties.Sum(p => p.FineAmount ?? 0),
+            PenaltiesPaidTotal = penalties.Sum(p => p.FinePaid ?? 0)
+        };
+
+        return View(vm);
+    }
+
     private static string MapCaseType(string? type) => type switch
     {
         "Orphan" => "يتيم", "LowIncome" => "ضعف دخل", "Disability" => "إعاقة",

@@ -211,6 +211,83 @@ namespace UniStay.Controllers
             });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Blueprint(int buildingId, int? floorNumber = null)
+        {
+            if (buildingId <= 0)
+            {
+                TempData["Error"] = "يرجى اختيار المبنى أولاً";
+                return RedirectToAction("Index");
+            }
+
+            var building = await _db.CityBuildings
+                .FirstOrDefaultAsync(b => b.ID == buildingId && b.IsActive == true && b.IsDeleted != true);
+
+            if (building == null) return NotFound();
+
+            var roomsQuery = _db.CityRooms
+                .Where(r => r.CityBuildingID == buildingId && r.IsActive == true && r.IsDeleted != true
+                    && r.RoomType != "إشراف" && r.RoomType != "مخزن");
+
+            if (floorNumber.HasValue)
+                roomsQuery = roomsQuery.Where(r => r.FloorNumber == floorNumber.Value);
+
+            var rooms = await roomsQuery
+                .OrderBy(r => r.FloorNumber).ThenBy(r => r.RoomNumber)
+                .ToListAsync();
+
+            var roomIds = rooms.Select(r => r.ID).ToList();
+            var allocations = await _db.Allocations
+                .Where(a => roomIds.Contains(a.CityRoomID) && a.Status == "Active")
+                .Include(a => a.Student)
+                .ToListAsync();
+
+            var floors = rooms
+                .GroupBy(r => (int)r.FloorNumber)
+                .Select(g => new FloorBlueprint
+                {
+                    FloorNumber = g.Key,
+                    Rooms = g.Select(r => new RoomBlueprint
+                    {
+                        RoomID = r.ID,
+                        RoomNumber = r.RoomNumber,
+                        BedsCount = r.BedsCount,
+                        Beds = Enumerable.Range(1, r.BedsCount).Select(bedNum =>
+                        {
+                            var alloc = allocations.FirstOrDefault(a => a.CityRoomID == r.ID && a.BedNumber == bedNum);
+                            return new BedBlueprint
+                            {
+                                BedNumber = bedNum,
+                                IsOccupied = alloc != null,
+                                OccupiedByName = alloc?.Student?.FullName,
+                                OccupiedByStudentID = alloc?.StudentID
+                            };
+                        }).ToList()
+                    }).ToList()
+                })
+                .OrderBy(f => f.FloorNumber)
+                .ToList();
+
+            var availableFloors = await _db.CityRooms
+                .Where(r => r.CityBuildingID == buildingId && r.IsActive == true && r.IsDeleted != true
+                    && r.RoomType != "إشراف" && r.RoomType != "مخزن")
+                .Select(r => (int)r.FloorNumber)
+                .Distinct()
+                .OrderBy(f => f)
+                .ToListAsync();
+
+            var selectedFloor = floorNumber ?? (availableFloors.Any() ? availableFloors.First() : 0);
+
+            return View(new BlueprintViewModel
+            {
+                BuildingID = buildingId,
+                BuildingName = building.BuildingName,
+                FloorNumber = selectedFloor,
+                AvailableFloors = availableFloors,
+                Floors = floors
+            });
+        }
+
         [HttpPost]
         [IgnoreAntiforgeryToken]
         public async Task<IActionResult> Confirm(ConfirmAllocationViewModel model)

@@ -58,6 +58,10 @@ builder.Services.AddScoped<IMealRestrictionService, MealRestrictionService>();
 builder.Services.AddScoped<IMealReceivingService, MealReceivingService>();
 builder.Services.AddScoped<IMealBookingService, MealBookingService>();
 builder.Services.AddScoped<IMealPreparationService, MealPreparationService>();
+builder.Services.AddScoped<IEmployeeApiService, EmployeeApiService>();
+builder.Services.AddScoped<IHousingEligibilityService, HousingEligibilityService>();
+builder.Services.AddScoped<IFeeService, FeeService>();
+builder.Services.AddScoped<IPenaltyService, PenaltyService>();
 
 // ===== Settings =====
 builder.Services.Configure<UniversityApiSettings>(

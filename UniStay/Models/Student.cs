@@ -7,7 +7,7 @@ public partial class Student
 {
     public int ID { get; set; }
 
-    public string NationalID { get; set; } = null!;
+    public string? NationalID { get; set; }
 
     public string? StudentCode { get; set; }
 
@@ -28,6 +28,30 @@ public partial class Student
     public string? Faculty { get; set; }
 
     public string? Department { get; set; }
+
+    public string? BirthPlace { get; set; }
+
+    public string? HighSchoolDivision { get; set; }
+
+    public decimal? HighSchoolTotal { get; set; }
+
+    public decimal? HighSchoolPercentage { get; set; }
+
+    public bool? HighSchoolFromAbroad { get; set; }
+
+    public string? LastYearGrade { get; set; }
+
+    public decimal? LastYearPercentage { get; set; }
+
+    public string? ParentStatus { get; set; }
+
+    public string? CountryOfOrigin { get; set; }
+
+    public string? CountryOfOriginOther { get; set; }
+
+    public string? PassportNumber { get; set; }
+
+    public string? PassportIssuePlace { get; set; }
 
     public byte? AcademicYear { get; set; }
 
@@ -118,4 +142,8 @@ public partial class Student
     public virtual ICollection<StudentValidationLog> StudentValidationLogs { get; set; } = new List<StudentValidationLog>();
 
     public virtual ICollection<Violation> Violations { get; set; } = new List<Violation>();
+
+    public virtual ICollection<StudentPenalty> StudentPenalties { get; set; } = new List<StudentPenalty>();
+
+    public virtual ICollection<StudentFeeRecord> StudentFeeRecords { get; set; } = new List<StudentFeeRecord>();
 }

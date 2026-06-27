@@ -51,6 +51,7 @@ public class OnlineReviewController : Controller
             ApplicationID = a.ID, StudentName = a.Student?.FullName ?? "",
             NationalID = a.Student?.NationalID ?? "", Faculty = a.Student?.Faculty,
             CityName = a.DormitoryCity?.Name, Status = a.Status,
+            ServerVerificationStatus = a.ServerVerificationStatus,
             SubmittedAt = a.CreatedAt
         }).ToList();
 
@@ -140,6 +141,42 @@ public class OnlineReviewController : Controller
                 EmailType.ApplicationRejected, app.StudentID);
 
         TempData["Success"] = "تم رفض الطلب";
+        return RedirectToAction("Index");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequirePermission("Applications.Review", "CanEdit")]
+    public async Task<IActionResult> VerifyAll()
+    {
+        var apps = await _db.Applications
+            .Where(a => a.Status == "Pending" && a.ServerVerificationStatus != "Verified")
+            .ToListAsync();
+
+        if (!apps.Any())
+        {
+            TempData["Warning"] = "لا توجد طلبات قيد المراجعة للتحقق منها";
+            return RedirectToAction("Index");
+        }
+
+        var now = DateTime.UtcNow;
+        var userId = CurrentUserId;
+
+        foreach (var app in apps)
+        {
+            app.ServerVerificationStatus = "Verified";
+            app.ServerVerificationAt = now;
+            app.ServerVerificationBy = userId;
+            app.LastUpdatedAt = now;
+            app.LastUpdatedBy = userId;
+        }
+
+        await _db.SaveChangesAsync();
+        await _audit.LogAsync(userId, "Staff", "Application.VerifyAll", "Application", null,
+            new { Count = apps.Count, OldStatus = "Pending" },
+            new { Count = apps.Count, NewStatus = "Verified" });
+
+        TempData["Success"] = $"تم التحقق من {apps.Count} طلب بنجاح";
         return RedirectToAction("Index");
     }
 

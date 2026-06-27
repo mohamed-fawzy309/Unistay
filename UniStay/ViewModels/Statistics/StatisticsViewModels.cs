@@ -176,6 +176,115 @@ public class FilterLookup
     public string Name { get; set; } = "";
 }
 
+// ─── Module 7: Custom Report Builder ───
+public class CustomReportViewModel
+{
+    public string ReportType { get; set; } = "Students";
+    public string? SelectedColumns { get; set; }
+    public int? FilterCityId { get; set; }
+    public string? FilterAcademicYear { get; set; }
+    public string? FilterStatus { get; set; }
+    public string? FilterFaculty { get; set; }
+    public string? FilterGender { get; set; }
+    public string? FilterGovernorate { get; set; }
+    public DateTime? FilterFromDate { get; set; }
+    public DateTime? FilterToDate { get; set; }
+    public string? SearchTerm { get; set; }
+
+    public List<FilterLookup> Cities { get; set; } = new();
+    public List<string> AcademicYears { get; set; } = new();
+    public List<string> Faculties { get; set; } = new();
+    public List<string> Governorates { get; set; } = new();
+
+    public List<string> Columns { get; set; } = new();
+    public List<Dictionary<string, string>> Rows { get; set; } = new();
+    public int TotalCount { get; set; }
+    public bool HasRun { get; set; }
+}
+
+public static class ReportTypeInfo
+{
+    public static readonly Dictionary<string, ReportTypeDefinition> Types = new()
+    {
+        ["Students"] = new ReportTypeDefinition
+        {
+            DisplayName = "الطلاب",
+            AvailableColumns = new Dictionary<string, string>
+            {
+                ["FullName"] = "الاسم", ["NationalID"] = "الرقم القومي", ["StudentCode"] = "كود الطالب",
+                ["Gender"] = "النوع", ["Phone"] = "الهاتف", ["Email"] = "البريد",
+                ["Faculty"] = "الكلية", ["Department"] = "القسم", ["GradeText"] = "الفرقة",
+                ["GradePercentage"] = "النسبة المئوية", ["Governorate"] = "المحافظة",
+                ["Markaz"] = "المركز", ["City"] = "المدينة", ["Address"] = "العنوان",
+                ["DistanceFromUniv"] = "المسافة", ["IsActive"] = "نشط", ["CreatedAt"] = "تاريخ التسجيل"
+            }
+        },
+        ["Applications"] = new ReportTypeDefinition
+        {
+            DisplayName = "طلبات التقديم",
+            AvailableColumns = new Dictionary<string, string>
+            {
+                ["StudentName"] = "اسم الطالب", ["NationalID"] = "الرقم القومي",
+                ["DormitoryCity"] = "المدينة", ["AcademicYear"] = "العام الدراسي",
+                ["StudentType"] = "نوع الطالب", ["HousingType"] = "نوع السكن",
+                ["Status"] = "الحالة", ["CoordinationScore"] = "درجة التنسيق",
+                ["CreatedAt"] = "تاريخ التقديم", ["ReviewedAt"] = "تاريخ المراجعة"
+            }
+        },
+        ["Allocations"] = new ReportTypeDefinition
+        {
+            DisplayName = "التسكين",
+            AvailableColumns = new Dictionary<string, string>
+            {
+                ["StudentName"] = "اسم الطالب", ["NationalID"] = "الرقم القومي",
+                ["DormitoryCity"] = "المدينة", ["Building"] = "المبنى",
+                ["RoomNumber"] = "الغرفة", ["BedNumber"] = "السرير",
+                ["AcademicYear"] = "العام الدراسي", ["Status"] = "الحالة",
+                ["StartDate"] = "تاريخ البدء", ["EndDate"] = "تاريخ الانتهاء"
+            }
+        },
+        ["Violations"] = new ReportTypeDefinition
+        {
+            DisplayName = "المخالفات",
+            AvailableColumns = new Dictionary<string, string>
+            {
+                ["StudentName"] = "اسم الطالب", ["ViolationType"] = "نوع المخالفة",
+                ["Description"] = "الوصف", ["Severity"] = "الخطورة",
+                ["Status"] = "الحالة", ["FineAmount"] = "قيمة الغرامة",
+                ["FinePaid"] = "المدفوع", ["RecordedAt"] = "تاريخ التسجيل"
+            }
+        },
+        ["Penalties"] = new ReportTypeDefinition
+        {
+            DisplayName = "الجزاءات",
+            AvailableColumns = new Dictionary<string, string>
+            {
+                ["StudentName"] = "اسم الطالب", ["PenaltyType"] = "نوع الجزاء",
+                ["FineAmount"] = "قيمة الغرامة", ["FinePaid"] = "المدفوع",
+                ["Status"] = "الحالة", ["Description"] = "الوصف",
+                ["RecordedAt"] = "تاريخ التسجيل", ["ResolvedAt"] = "تاريخ الحل"
+            }
+        },
+        ["Payments"] = new ReportTypeDefinition
+        {
+            DisplayName = "المدفوعات",
+            AvailableColumns = new Dictionary<string, string>
+            {
+                ["StudentName"] = "اسم الطالب", ["PaymentType"] = "نوع الدفع",
+                ["Amount"] = "المبلغ", ["PaidAmount"] = "المدفوع",
+                ["Status"] = "الحالة", ["MonthYear"] = "الشهر",
+                ["RecordedAt"] = "تاريخ التسجيل", ["PaidAt"] = "تاريخ الدفع"
+            }
+        }
+    };
+}
+
+public class ReportTypeDefinition
+{
+    public string DisplayName { get; set; } = "";
+    public Dictionary<string, string> AvailableColumns { get; set; } = new();
+}
+
 // ─── Chart JSON response ───
 public class ChartJsonResponse
 {

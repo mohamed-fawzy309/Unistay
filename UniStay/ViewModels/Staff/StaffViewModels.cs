@@ -38,5 +38,30 @@ public class StaffProfileViewModel
     public string Phone { get; set; } = null!;
     public string NationalID { get; set; } = null!;
     public DateTime? LastLoginAt { get; set; }
+    public bool IsActive { get; set; }
+    public DateTime? CreatedAt { get; set; }
     public List<AssignedCityViewModel> AssignedCities { get; set; } = new();
+    public List<StaffPermissionViewModel> Permissions { get; set; } = new();
+    public List<RecentActivityViewModel> RecentActivities { get; set; } = new();
+    public bool CanEdit { get; set; }
+}
+
+public class StaffPermissionViewModel
+{
+    public string PermissionKey { get; set; } = null!;
+    public string DisplayName { get; set; } = null!;
+    public string? Category { get; set; }
+    public bool CanView { get; set; }
+    public bool CanCreate { get; set; }
+    public bool CanEdit { get; set; }
+    public bool CanDelete { get; set; }
+}
+
+public class UpdateStaffProfileViewModel
+{
+    public int ID { get; set; }
+    public string Name { get; set; } = null!;
+    public string Email { get; set; } = null!;
+    public string Phone { get; set; } = null!;
+    public string NationalID { get; set; } = null!;
 }
