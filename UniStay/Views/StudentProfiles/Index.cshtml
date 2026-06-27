@@ -48,14 +48,13 @@
                             <th>السنة</th>
                             <th>الحالة</th>
                             <th>سكن</th>
-                            <th>حالات خاصة</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (!Model.Students.Any())
                         {
-                            <tr><td colspan="10" class="text-center text-muted py-3">لا توجد نتائج</td></tr>
+                            <tr><td colspan="9" class="text-center text-muted py-3">لا توجد نتائج</td></tr>
                         }
                         @foreach (var s in Model.Students.Select((item, idx) => new { item, idx }))
                         {
@@ -81,11 +80,9 @@
                                         <span class="text-muted">-</span>
                                     }
                                 </td>
-                                <td>@(s.item.ActiveSpecialCases > 0 ? s.item.ActiveSpecialCases.ToString() : "-")</td>
                                 <td class="text-nowrap">
                                     <a asp-action="Details" asp-route-id="@s.item.StudentId" class="btn btn-outline-info btn-sm" title="عرض"><i class="bi bi-eye"></i></a>
                                     <a asp-action="Status" asp-route-id="@s.item.StudentId" class="btn btn-outline-primary btn-sm" title="بيان حالة"><i class="bi bi-card-list"></i></a>
-                                    <a asp-action="SpecialCases" asp-route-id="@s.item.StudentId" class="btn btn-outline-warning btn-sm" title="الحالات"><i class="bi bi-exclamation-triangle"></i></a>
                                     <a asp-action="Print" asp-route-id="@s.item.StudentId" class="btn btn-outline-secondary btn-sm" title="طباعة" target="_blank"><i class="bi bi-printer"></i></a>
                                 </td>
                             </tr>

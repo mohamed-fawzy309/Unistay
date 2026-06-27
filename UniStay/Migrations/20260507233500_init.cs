@@ -1062,29 +1062,6 @@ namespace UniStay.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "UniversityPhoto",
-                columns: table => new
-                {
-                    ID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    DormitoryCityID = table.Column<int>(type: "int", nullable: true),
-                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    PhotoType = table.Column<string>(type: "varchar(30)", unicode: false, maxLength: 30, nullable: true, defaultValue: "Campus"),
-                    FilePath = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    SortOrder = table.Column<byte>(type: "tinyint", nullable: true, defaultValue: (byte)0),
-                    IsActive = table.Column<bool>(type: "bit", nullable: true, defaultValue: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK__Universi__3214EC27620AC0CD", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_UniversityPhoto_DormitoryCity",
-                        column: x => x.DormitoryCityID,
-                        principalTable: "DormitoryCity",
-                        principalColumn: "ID");
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Violation",
                 columns: table => new
                 {
@@ -2267,11 +2244,6 @@ namespace UniStay.Migrations
                 column: "SyncedBy");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UniversityPhoto_DormitoryCityID",
-                table: "UniversityPhoto",
-                column: "DormitoryCityID");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_UserDataScope_DataScopeID",
                 table: "UserDataScope",
                 column: "DataScopeID");
@@ -2413,9 +2385,6 @@ namespace UniStay.Migrations
 
             migrationBuilder.DropTable(
                 name: "UniversityAPISync");
-
-            migrationBuilder.DropTable(
-                name: "UniversityPhoto");
 
             migrationBuilder.DropTable(
                 name: "UserDataScope");

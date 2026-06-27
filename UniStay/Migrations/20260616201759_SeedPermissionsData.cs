@@ -59,14 +59,14 @@ namespace UniStay.Migrations
                     { 13, "Floors.Manage",             "إدارة الطوابق",                null, 4 },
                     { 14, "Rooms.Manage",              "إدارة الغرف",                  null, 4 },
                     { 15, "Furniture.Manage",          "إدارة الأثاث",                 null, 4 },
-                    { 16, "Villages.Manage",           "إدارة القرى",                  null, 4 },
+
                     { 17, "HousingTypes.Manage",       "إدارة أنواع السكن",            null, 4 },
 
                     // Group 5: Appointments & Instructions
                     { 18, "Appointments.Manage",       "إدارة المواعيد",               null, 5 },
                     { 19, "AppointmentInstructions.Manage","إدارة تعليمات المواعيد",    null, 5 },
                     { 20, "Instructions.Manage",       "إدارة التعليمات",              null, 5 },
-                    { 21, "StudentCategories.Manage",  "إدارة فئات الطلاب",            null, 5 },
+
 
                     // Group 6: Meals & Nutrition
                     { 22, "Meals.Manage",              "إدارة الوجبات",                null, 6 },
@@ -86,7 +86,7 @@ namespace UniStay.Migrations
                     { 32, "FeeConfigurations.Manage",  "إدارة إعدادات الرسوم",         null, 8 },
 
                     // Group 9: Administration
-                    { 33, "Countries.Manage",          "إدارة الدول",                  null, 9 },
+
                     { 34, "AppConfig.Manage",          "إدارة إعدادات التطبيق",        null, 9 },
                     { 35, "SystemUsers.Manage",        "إدارة المستخدمين",             null, 9 },
                     { 36, "Roles.Manage",              "إدارة الأدوار",                null, 9 },

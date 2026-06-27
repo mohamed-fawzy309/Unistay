@@ -33,22 +33,6 @@ namespace UniStay.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Country",
-                columns: table => new
-                {
-                    ID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    NameAr = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
-                    Code = table.Column<string>(type: "varchar(10)", unicode: false, maxLength: 10, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK__Country__3214EC27", x => x.ID);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "FeeType",
                 columns: table => new
                 {
@@ -111,55 +95,6 @@ namespace UniStay.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK__Role__3214EC27", x => x.ID);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "StudentCategory",
-                columns: table => new
-                {
-                    ID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK__StudentCategory__3214EC27", x => x.ID);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Village",
-                columns: table => new
-                {
-                    ID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    DormitoryCityID = table.Column<int>(type: "int", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false, defaultValue: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: true, defaultValueSql: "(getdate())"),
-                    CreatedBy = table.Column<int>(type: "int", nullable: true),
-                    LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    LastUpdatedBy = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK__Village__3214EC27", x => x.ID);
-                    table.ForeignKey(
-                        name: "FK_Village_CreatedBy",
-                        column: x => x.CreatedBy,
-                        principalTable: "SystemUser",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_Village_DormitoryCity",
-                        column: x => x.DormitoryCityID,
-                        principalTable: "DormitoryCity",
-                        principalColumn: "ID");
-                    table.ForeignKey(
-                        name: "FK_Village_LastUpdatedBy",
-                        column: x => x.LastUpdatedBy,
-                        principalTable: "SystemUser",
-                        principalColumn: "ID");
                 });
 
             migrationBuilder.CreateTable(
@@ -321,20 +256,6 @@ namespace UniStay.Migrations
                 columns: new[] { "SystemUserID", "RoleID" },
                 unique: true);
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Village_CreatedBy",
-                table: "Village",
-                column: "CreatedBy");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Village_DormitoryCityID",
-                table: "Village",
-                column: "DormitoryCityID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Village_LastUpdatedBy",
-                table: "Village",
-                column: "LastUpdatedBy");
         }
 
         /// <inheritdoc />
@@ -342,9 +263,6 @@ namespace UniStay.Migrations
         {
             migrationBuilder.DropTable(
                 name: "ApplicationConfiguration");
-
-            migrationBuilder.DropTable(
-                name: "Country");
 
             migrationBuilder.DropTable(
                 name: "FeeConfiguration");
@@ -359,13 +277,7 @@ namespace UniStay.Migrations
                 name: "RolePermission");
 
             migrationBuilder.DropTable(
-                name: "StudentCategory");
-
-            migrationBuilder.DropTable(
                 name: "UserRole");
-
-            migrationBuilder.DropTable(
-                name: "Village");
 
             migrationBuilder.DropTable(
                 name: "FeeType");

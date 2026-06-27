@@ -23,7 +23,6 @@ namespace UniStay.Migrations
                 values: new object[,]
                 {
                     { 39, "Photos.View",   "عرض الصور",     null, 10 },
-                    { 40, "Photos.Manage", "إدارة الصور",   null, 10 },
                     { 41, "Cards.View",    "عرض البطاقات",  null, 10 },
                     { 42, "Cards.Print",   "طباعة البطاقات",null, 10 },
                     { 43, "Cards.Manage",  "إدارة البطاقات",null, 10 }

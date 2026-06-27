@@ -265,53 +265,11 @@
                     </div>
                     <div class="collapse" id="menuSuperAdmin">
                         <ul class="nav flex-column">
-                            <!-- بيانات أساسية وإعدادات -->
-                            <li class="nav-item">
-                                <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuBasicSettings" role="button" style="padding-right:1.5rem;font-size:0.85rem;">
-                                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> بيانات أساسية وإعدادات
-                                </div>
-                                <div class="collapse" id="menuBasicSettings">
-                                    <ul class="nav flex-column">
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Schedules"><i class="bi bi-calendar-event"></i> مواعيد التقديم</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Instructions"><i class="bi bi-info-circle"></i> تعليمات التقدم</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="UniversityPhotos" asp-action="Index"><i class="bi bi-images"></i> صور الجامعة</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="HousingTypes"><i class="bi bi-house-gear"></i> أنواع السكن المميز</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="MealTypes"><i class="bi bi-list"></i> الوجبات</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="FeeTypes"><i class="bi bi-tag"></i> الرسوم</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Rooms"><i class="bi bi-door-open"></i> الغرف</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="StudentCategories"><i class="bi bi-tags"></i> الفئات</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Admin" asp-action="Countries"><i class="bi bi-globe"></i> البلاد</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Permissions" asp-action="Users"><i class="bi bi-shield-lock"></i> المستخدمين</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="ApplicationTypes"><i class="bi bi-file-earmark-text"></i> تطبيقات الطلاب</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="CreateAdmin"><i class="bi bi-person-plus"></i> إنشاء أدمن وتحديد صلاحياته</a></li>
-                                    </ul>
-                                </div>
-                            </li>
-                            <!-- إدارة بيانات الطالب -->
-                            <li class="nav-item">
-                                <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuStudentMgmt" role="button" style="padding-right:1.5rem;font-size:0.85rem;">
-                                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> إدارة بيانات الطالب (صلاحيات متقدمة)
-                                </div>
-                                <div class="collapse" id="menuStudentMgmt">
-                                    <ul class="nav flex-column">
-                                        <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="StudentOperations"><i class="bi bi-pencil-square"></i> إدارة بيانات الطالب</a></li>
-                                    </ul>
-                                </div>
-                            </li>
-                            <!-- إحصائيات وتقارير عامة -->
-                            <li class="nav-item">
-                                <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuStatsReports" role="button" style="padding-right:1.5rem;font-size:0.85rem;">
-                                    <i class="bi bi-chevron-left small ms-2 collapse-icon"></i> إحصائيات وتقارير عامة
-                                </div>
-                                <div class="collapse" id="menuStatsReports">
-                                    <ul class="nav flex-column">
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="Index"><i class="bi bi-speedometer2"></i> إحصائيات عامة</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="MealConsumption"><i class="bi bi-cup-hot"></i> إحصائية استلام الوجبات</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="StudentsByHousingType"><i class="bi bi-pie-chart"></i> أعداد الطلاب حسب أنواع السكن</a></li>
-                                        <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="StudentLists"><i class="bi bi-file-text"></i> تقارير</a></li>
-                                    </ul>
-                                </div>
-                            </li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Permissions" asp-action="Users"><i class="bi bi-shield-lock"></i> المستخدمين</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="CreateAdmin"><i class="bi bi-person-plus"></i> إنشاء أدمن وتحديد صلاحياته</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="StudentOperations"><i class="bi bi-pencil-square"></i> إدارة بيانات الطالب</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Statistics" asp-action="Index"><i class="bi bi-speedometer2"></i> إحصائيات عامة</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="SystemAdmin" asp-action="StudentsByHousingType"><i class="bi bi-pie-chart"></i> أعداد الطلاب حسب أنواع السكن</a></li>
                         </ul>
                     </div>
                 </li>
@@ -331,16 +289,6 @@
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Admin" asp-action="StudentStatement">
                                     <i class="bi bi-file-text"></i> بيان حالة
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Coordination" asp-action="SpecialCases">
-                                    <i class="bi bi-star-fill"></i> قبول الحالات الخاصة
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="SocialCases">
-                                    <i class="bi bi-heart-pulse"></i> حالات البحث الاجتماعى
                                 </a>
                             </li>
                         </ul>
@@ -369,21 +317,7 @@
                                     <i class="bi bi-door-open"></i> الغرف
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="HousingTypes">
-                                    <i class="bi bi-house-gear"></i> أنواع السكن
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="StudentCategories">
-                                    <i class="bi bi-tags"></i> تصنيفات الطلاب
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="BuildingLayout">
-                                    <i class="bi bi-map"></i> الكروكي التفاعلي
-                                </a>
-                            </li>
+
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Allocation" asp-action="ManualAllocation">
                                     <i class="bi bi-pin-map-fill"></i> التسكين اليدوي
@@ -394,16 +328,7 @@
                                     <i class="bi bi-list-check"></i> إدارة التسكين
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="RoomOccupancy">
-                                    <i class="bi bi-bar-chart"></i> تقرير إشغال الغرف
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Admin" asp-action="Villages">
-                                    <i class="bi bi-house-heart"></i> القرى
-                                </a>
-                            </li>
+
                         </ul>
                     </div>
                 </li>
@@ -462,25 +387,11 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="Discipline" asp-action="BulkPenalty">
-                                    <i class="bi bi-exclamation-triangle"></i> جزاء جماعي
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Violation" asp-action="Report">
-                                    <i class="bi bi-file-text"></i> تقرير الجزاءات
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Attendance" asp-action="Report">
-                                    <i class="bi bi-calendar-x"></i> تقرير الغياب والتصاريح
-                                </a>
-                            </li>
-                            <li class="nav-item">
                                 <a class="nav-link" asp-controller="Discipline" asp-action="BulkPermission">
-                                    <i class="bi bi-calendar-check"></i> تصريح جماعي
+                                    <i class="bi bi-calendar-check"></i> تسجيل تصريح 
                                 </a>
                             </li>
+                            
                         </ul>
                     </div>
                 </li>
@@ -532,13 +443,6 @@
                                     <i class="bi bi-hourglass-split"></i> قائمة الانتظار
                                 </a>
                             </li>
-
-                            
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="StudentLists">
-                                    <i class="bi bi-list-ul"></i> تقرير قوائم الطلاب
-                                </a>
-                            </li>
                         </ul>
                     </div>
                 </li>
@@ -553,11 +457,6 @@
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Payment" asp-action="StudentPayments">
                                     <i class="bi bi-currency-exchange"></i> تسجيل الرسوم
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Payment" asp-action="Report">
-                                    <i class="bi bi-file-text"></i> بيان بالرسوم
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -662,15 +561,11 @@
                                     <i class="bi bi-journal"></i> وجبات الطالب
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="SocialCase">
-                                    <i class="bi bi-search-heart"></i> قوائم البحث الاجتماعي
-                                </a>
-                            </li>
                         </ul>
+
                     </div>
                 </li>
-
+                        
                 <!-- ===== الإحصائيات ===== -->
                 <li class="nav-item">
                     <div class="menu-header d-flex align-items-center" data-bs-toggle="collapse" data-bs-target="#menuStats" role="button">
@@ -828,16 +723,6 @@
                             <li class="nav-item">
                                 <a class="nav-link" asp-controller="Cards" asp-action="PrintSelection">
                                     <i class="bi bi-person-check"></i> اختيار البطاقات للطباعة
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="PrintedCards">
-                                    <i class="bi bi-file-earmark-bar-graph"></i> تقرير البطاقات المطبوعة
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reports" asp-action="StudentsWithoutPhotos">
-                                    <i class="bi bi-camera-off"></i> الطلاب بدون صور
                                 </a>
                             </li>
                         </ul>

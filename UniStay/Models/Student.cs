@@ -107,9 +107,7 @@ public partial class Student
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
-    public virtual ICollection<SocialCase> SocialCases { get; set; } = new List<SocialCase>();
 
-    public virtual ICollection<SpecialCase> SpecialCases { get; set; } = new List<SpecialCase>();
 
     public virtual ICollection<StudentDownloadLog> StudentDownloadLogs { get; set; } = new List<StudentDownloadLog>();
 

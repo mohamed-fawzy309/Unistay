@@ -1800,34 +1800,6 @@ namespace UniStay.Migrations
                     b.ToTable("HousingInstructionAttachment", (string)null);
                 });
 
-            modelBuilder.Entity("UniStay.Models.HousingType", b =>
-                {
-                    b.Property<int>("ID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("ID")
-                        .HasName("PK__HousingType__3214EC27");
-
-                    b.ToTable("HousingType", (string)null);
-                });
-
             modelBuilder.Entity("UniStay.Models.IDCard", b =>
                 {
                     b.Property<int>("ID")
