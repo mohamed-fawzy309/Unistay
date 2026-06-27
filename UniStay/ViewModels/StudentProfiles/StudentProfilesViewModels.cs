@@ -23,7 +23,6 @@ public class StudentProfileItem
     public byte? AcademicYear { get; set; }
     public string Phone { get; set; }
     public bool HasActiveAllocation { get; set; }
-    public int ActiveSpecialCases { get; set; }
 }
 
 public class StudentDetailsVM
@@ -175,38 +174,6 @@ public class MealInfo
     public string MealType { get; set; }
     public DateOnly MealDate { get; set; }
 }
-
-public class StudentSpecialCasesVM
-{
-    public int StudentId { get; set; }
-    public string StudentName { get; set; }
-    public string StudentCode { get; set; }
-
-    public IEnumerable<SpecialCaseItem> SpecialCases { get; set; } = new List<SpecialCaseItem>();
-    public IEnumerable<SocialCaseItem> SocialCases { get; set; } = new List<SocialCaseItem>();
-}
-
-public class SpecialCaseItem
-{
-    public int CaseId { get; set; }
-    public string CaseType { get; set; }
-    public string Description { get; set; }
-    public string Status { get; set; }
-    public string ReviewNotes { get; set; }
-    public DateTime? CreatedAt { get; set; }
-}
-
-public class SocialCaseItem
-{
-    public int CaseId { get; set; }
-    public string CaseType { get; set; }
-    public string Description { get; set; }
-    public string Priority { get; set; }
-    public string Status { get; set; }
-    public int? AssignedTo { get; set; }
-    public DateTime? CreatedAt { get; set; }
-}
-
 public class StudentProfilePrintVM
 {
     public string Title { get; set; }

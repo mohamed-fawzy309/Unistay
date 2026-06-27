@@ -63,7 +63,7 @@ public partial class Application
 
     public virtual SystemUser? ServerVerificationByNavigation { get; set; }
 
-    public virtual ICollection<SpecialCase> SpecialCases { get; set; } = new List<SpecialCase>();
+
 
     public virtual Student Student { get; set; } = null!;
 }

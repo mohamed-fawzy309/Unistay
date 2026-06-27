@@ -30,8 +30,7 @@ public class StudentProfilesController : Controller
         const int pageSize = 20;
 
         IQueryable<Student> query = _db.Students
-            .Include(s => s.Allocations)
-            .Include(s => s.SpecialCases);
+            .Include(s => s.Allocations);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -73,8 +72,7 @@ public class StudentProfilesController : Controller
                 Faculty = s.Faculty,
                 AcademicYear = s.AcademicYear,
                 Phone = s.Phone,
-                HasActiveAllocation = s.Allocations.Any(a => a.Status == "Active"),
-                ActiveSpecialCases = s.SpecialCases.Count
+                HasActiveAllocation = s.Allocations.Any(a => a.Status == "Active")
             })
             .ToListAsync();
 
@@ -274,128 +272,6 @@ public class StudentProfilesController : Controller
 
         await _audit.LogAsync(CurrentUserId, "Staff", "StudentProfiles.Status", "Student", student.ID);
         return View(vm);
-    }
-
-    [RequirePermission("SpecialCases.Manage")]
-    public async Task<IActionResult> SpecialCases(int id)
-    {
-        var student = await _db.Students
-            .Include(s => s.SpecialCases)
-            .Include(s => s.SocialCases)
-            .FirstOrDefaultAsync(s => s.ID == id);
-
-        if (student == null) return NotFound();
-
-        var vm = new StudentSpecialCasesVM
-        {
-            StudentId = student.ID,
-            StudentName = student.FullName,
-            StudentCode = student.StudentCode,
-            SpecialCases = student.SpecialCases.Select(sc => new SpecialCaseItem
-            {
-                CaseId = sc.ID,
-                CaseType = sc.CaseType,
-                Description = sc.Description,
-                Status = sc.Status,
-                ReviewNotes = sc.ReviewNotes,
-                CreatedAt = sc.CreatedAt
-            }),
-            SocialCases = student.SocialCases.Select(sc => new SocialCaseItem
-            {
-                CaseId = sc.ID,
-                CaseType = sc.CaseType,
-                Description = sc.Description,
-                Priority = sc.Priority,
-                Status = sc.Status,
-                AssignedTo = sc.AssignedTo,
-                CreatedAt = sc.CreatedAt
-            })
-        };
-
-        await _audit.LogAsync(CurrentUserId, "Staff", "StudentProfiles.SpecialCases", "Student", student.ID);
-        return View(vm);
-    }
-
-    [HttpPost]
-    [RequirePermission("SpecialCases.Manage")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ApproveSpecialCase(int caseId)
-    {
-        var sc = await _db.SpecialCases.FindAsync(caseId);
-        if (sc == null) return NotFound();
-
-        sc.Status = "Approved";
-        sc.ReviewedBy = CurrentUserId;
-        sc.ReviewedAt = DateTime.Now;
-        await _db.SaveChangesAsync();
-        await _audit.LogAsync(CurrentUserId, "Staff", "StudentProfiles.ApproveSpecialCase", "SpecialCase", caseId);
-
-        return RedirectToAction(nameof(SpecialCases), new { id = sc.StudentID });
-    }
-
-    [HttpPost]
-    [RequirePermission("SpecialCases.Manage")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RejectSpecialCase(int caseId, string notes)
-    {
-        var sc = await _db.SpecialCases.FindAsync(caseId);
-        if (sc == null) return NotFound();
-
-        sc.Status = "Rejected";
-        sc.ReviewNotes = notes;
-        sc.ReviewedBy = CurrentUserId;
-        sc.ReviewedAt = DateTime.Now;
-        await _db.SaveChangesAsync();
-        await _audit.LogAsync(CurrentUserId, "Staff", "StudentProfiles.RejectSpecialCase", "SpecialCase", caseId);
-
-        return RedirectToAction(nameof(SpecialCases), new { id = sc.StudentID });
-    }
-
-    [HttpPost]
-    [RequirePermission("SpecialCases.Manage")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddSocialCase(int studentId, string caseType, string description, string priority)
-    {
-        var student = await _db.Students.FindAsync(studentId);
-        if (student == null) return NotFound();
-
-        var sc = new SocialCase
-        {
-            StudentID = studentId,
-            CaseType = caseType,
-            Description = description,
-            Status = "مفتوحة",
-            Priority = priority ?? "متوسطة",
-            AssignedTo = CurrentUserId,
-            CreatedAt = DateTime.Now
-        };
-
-        _db.SocialCases.Add(sc);
-        await _db.SaveChangesAsync();
-        await _audit.LogAsync(CurrentUserId, "Staff", "StudentProfiles.AddSocialCase", "SocialCase", sc.ID);
-
-        return RedirectToAction(nameof(SpecialCases), new { id = studentId });
-    }
-
-    [HttpPost]
-    [RequirePermission("SpecialCases.Manage")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateSocialCaseStatus(int caseId, string status)
-    {
-        var sc = await _db.SocialCases.FindAsync(caseId);
-        if (sc == null) return NotFound();
-
-        sc.Status = status ?? sc.Status;
-
-        if (status == "مغلقة" || status == "مؤرشفة")
-            sc.ClosedAt = DateTime.Now;
-        else if (status == "مفتوحة")
-            sc.ClosedAt = null;
-
-        await _db.SaveChangesAsync();
-        await _audit.LogAsync(CurrentUserId, "Staff", "StudentProfiles.UpdateSocialCaseStatus", "SocialCase", caseId);
-
-        return RedirectToAction(nameof(SpecialCases), new { id = sc.StudentID });
     }
 
     public async Task<IActionResult> ExportExcel(string search, string status, byte? year, string faculty)

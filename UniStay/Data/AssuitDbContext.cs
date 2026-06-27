@@ -22,8 +22,6 @@ public partial class AssuitDbContext : DbContext
 
     public virtual DbSet<Application> Applications { get; set; }
 
-    public virtual DbSet<ApplicationType> ApplicationTypes { get; set; }
-
     public virtual DbSet<ApplicationSchedule> ApplicationSchedules { get; set; }
 
     public virtual DbSet<AuditLog> AuditLogs { get; set; }
@@ -84,10 +82,6 @@ public partial class AssuitDbContext : DbContext
 
     public virtual DbSet<PermissionGroup> PermissionGroups { get; set; }
 
-    public virtual DbSet<SocialCase> SocialCases { get; set; }
-
-    public virtual DbSet<SpecialCase> SpecialCases { get; set; }
-
     public virtual DbSet<Student> Students { get; set; }
 
     public virtual DbSet<StudentDownloadLog> StudentDownloadLogs { get; set; }
@@ -104,27 +98,17 @@ public partial class AssuitDbContext : DbContext
 
     public virtual DbSet<UniversityAPISync> UniversityAPISyncs { get; set; }
 
-    public virtual DbSet<UniversityPhoto> UniversityPhotos { get; set; }
-
     public virtual DbSet<UserPermission> UserPermissions { get; set; }
 
     public virtual DbSet<Violation> Violations { get; set; }
 
-    public virtual DbSet<Village> Villages { get; set; }
-
     public virtual DbSet<Faculty> Faculties { get; set; }
-
-    public virtual DbSet<HousingType> HousingTypes { get; set; }
 
     public virtual DbSet<MealType> MealTypes { get; set; }
 
     public virtual DbSet<FeeType> FeeTypes { get; set; }
 
     public virtual DbSet<FeeConfiguration> FeeConfigurations { get; set; }
-
-    public virtual DbSet<Country> Countries { get; set; }
-
-    public virtual DbSet<StudentCategory> StudentCategories { get; set; }
 
     public virtual DbSet<ApplicationConfiguration> ApplicationConfigurations { get; set; }
 
@@ -1168,71 +1152,6 @@ public partial class AssuitDbContext : DbContext
             entity.Property(e => e.GroupName).HasMaxLength(200);
         });
 
-        modelBuilder.Entity<SocialCase>(entity =>
-        {
-            entity.HasKey(e => e.ID).HasName("PK__SocialCa__3214EC2716577C8C");
-
-            entity.ToTable("SocialCase");
-
-            entity.HasIndex(e => e.StudentID, "IX_SocialCase_StudentID");
-
-            entity.Property(e => e.CaseType).HasMaxLength(100);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.Description).HasMaxLength(1000);
-            entity.Property(e => e.Priority)
-                .HasMaxLength(20)
-                .IsUnicode(false);
-            entity.Property(e => e.Status)
-                .HasMaxLength(20)
-                .IsUnicode(false)
-                .HasDefaultValue("Open");
-
-            entity.HasOne(d => d.AssignedToNavigation).WithMany(p => p.SocialCases)
-                .HasForeignKey(d => d.AssignedTo)
-                .HasConstraintName("FK_SocialCase_AssignedTo");
-
-            entity.HasOne(d => d.Student).WithMany(p => p.SocialCases)
-                .HasForeignKey(d => d.StudentID)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SocialCase_Student");
-        });
-
-        modelBuilder.Entity<SpecialCase>(entity =>
-        {
-            entity.HasKey(e => e.ID).HasName("PK__SpecialC__3214EC2755A318C5");
-
-            entity.ToTable("SpecialCase");
-
-            entity.HasIndex(e => e.StudentID, "IX_SpecialCase_StudentID");
-
-            entity.HasIndex(e => e.ApplicationID, "IX_SpecialCase_ApplicationID");
-
-            entity.Property(e => e.CaseType)
-                .HasMaxLength(30)
-                .IsUnicode(false);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-            entity.Property(e => e.Description).HasMaxLength(1000);
-            entity.Property(e => e.ReviewNotes).HasMaxLength(500);
-            entity.Property(e => e.Status)
-                .HasMaxLength(20)
-                .IsUnicode(false)
-                .HasDefaultValue("Pending");
-
-            entity.HasOne(d => d.Application).WithMany(p => p.SpecialCases)
-                .HasForeignKey(d => d.ApplicationID)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SpecialCase_Application");
-
-            entity.HasOne(d => d.ReviewedByNavigation).WithMany(p => p.SpecialCases)
-                .HasForeignKey(d => d.ReviewedBy)
-                .HasConstraintName("FK_SpecialCase_ReviewedBy");
-
-            entity.HasOne(d => d.Student).WithMany(p => p.SpecialCases)
-                .HasForeignKey(d => d.StudentID)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_SpecialCase_Student");
-        });
-
         modelBuilder.Entity<Student>(entity =>
         {
             entity.HasKey(e => e.ID).HasName("PK__Student__3214EC2710B21BF6");
@@ -1512,26 +1431,6 @@ public partial class AssuitDbContext : DbContext
                 .HasConstraintName("FK_UniversityAPISync_SyncedBy");
         });
 
-        modelBuilder.Entity<UniversityPhoto>(entity =>
-        {
-            entity.HasKey(e => e.ID).HasName("PK__Universi__3214EC27620AC0CD");
-
-            entity.ToTable("UniversityPhoto");
-
-            entity.Property(e => e.FilePath).HasMaxLength(500);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.PhotoType)
-                .HasMaxLength(30)
-                .IsUnicode(false)
-                .HasDefaultValue("Campus");
-            entity.Property(e => e.SortOrder).HasDefaultValue((byte)0);
-            entity.Property(e => e.Title).HasMaxLength(200);
-
-            entity.HasOne(d => d.DormitoryCity).WithMany(p => p.UniversityPhotos)
-                .HasForeignKey(d => d.DormitoryCityID)
-                .HasConstraintName("FK_UniversityPhoto_DormitoryCity");
-        });
-
         modelBuilder.Entity<UserPermission>(entity =>
         {
             entity.HasKey(e => e.ID).HasName("PK__UserPerm__3214EC273AA19E9B");
@@ -1606,37 +1505,6 @@ public partial class AssuitDbContext : DbContext
                 .HasConstraintName("FK_Violation_Student");
         });
 
-        modelBuilder.Entity<Village>(entity =>
-        {
-            entity.HasKey(e => e.ID).HasName("PK__Village__3214EC27");
-            entity.ToTable("Village");
-            entity.Property(e => e.Name).HasMaxLength(200);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
-
-            entity.HasOne(d => d.DormitoryCity).WithMany(p => p.Villages)
-                .HasForeignKey(d => d.DormitoryCityID)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Village_DormitoryCity");
-
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.VillageCreatedByNavigations)
-                .HasForeignKey(d => d.CreatedBy)
-                .HasConstraintName("FK_Village_CreatedBy");
-
-            entity.HasOne(d => d.LastUpdatedByNavigation).WithMany(p => p.VillageLastUpdatedByNavigations)
-                .HasForeignKey(d => d.LastUpdatedBy)
-                .HasConstraintName("FK_Village_LastUpdatedBy");
-        });
-
-        modelBuilder.Entity<HousingType>(entity =>
-        {
-            entity.HasKey(e => e.ID).HasName("PK__HousingType__3214EC27");
-            entity.ToTable("HousingType");
-            entity.Property(e => e.Name).HasMaxLength(100);
-            entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-        });
-
         modelBuilder.Entity<MealType>(entity =>
         {
             entity.HasKey(e => e.ID).HasName("PK__MealType__3214EC27");
@@ -1682,25 +1550,6 @@ public partial class AssuitDbContext : DbContext
             entity.HasOne(d => d.LastUpdatedByNavigation).WithMany(p => p.FeeConfigurationLastUpdatedByNavigations)
                 .HasForeignKey(d => d.LastUpdatedBy)
                 .HasConstraintName("FK_FeeConfig_LastUpdatedBy");
-        });
-
-        modelBuilder.Entity<Country>(entity =>
-        {
-            entity.HasKey(e => e.ID).HasName("PK__Country__3214EC27");
-            entity.ToTable("Country");
-            entity.Property(e => e.Name).HasMaxLength(200);
-            entity.Property(e => e.NameAr).HasMaxLength(200);
-            entity.Property(e => e.Code).HasMaxLength(10).IsUnicode(false);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-        });
-
-        modelBuilder.Entity<StudentCategory>(entity =>
-        {
-            entity.HasKey(e => e.ID).HasName("PK__StudentCategory__3214EC27");
-            entity.ToTable("StudentCategory");
-            entity.Property(e => e.Name).HasMaxLength(200);
-            entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
         });
 
         modelBuilder.Entity<ApplicationConfiguration>(entity =>

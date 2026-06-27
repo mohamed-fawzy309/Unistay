@@ -11,11 +11,15 @@ namespace UniStay.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Document");
+            migrationBuilder.Sql(@"
+                IF OBJECT_ID(N'[Document]', 'U') IS NOT NULL
+                    DROP TABLE [Document]
+            ");
 
-            migrationBuilder.DropTable(
-                name: "FacultyQuota");
+            migrationBuilder.Sql(@"
+                IF OBJECT_ID(N'[FacultyQuota]', 'U') IS NOT NULL
+                    DROP TABLE [FacultyQuota]
+            ");
         }
 
         /// <inheritdoc />

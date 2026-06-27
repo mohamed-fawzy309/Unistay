@@ -67,11 +67,10 @@ public partial class DormitoryCity
 
     public virtual University University { get; set; } = null!;
 
-    public virtual ICollection<UniversityPhoto> UniversityPhotos { get; set; } = new List<UniversityPhoto>();
+
 
     public virtual ICollection<Violation> Violations { get; set; } = new List<Violation>();
 
-    public virtual ICollection<Village> Villages { get; set; } = new List<Village>();
 
     public virtual ICollection<FeeConfiguration> FeeConfigurations { get; set; } = new List<FeeConfiguration>();
 }
