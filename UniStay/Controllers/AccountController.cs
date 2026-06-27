@@ -72,12 +72,12 @@ namespace UniStay.Controllers
             // 🔥 غير القيم دي
             string name = "admin";
             string email = "admin@unistay.com";
-            string nationalId = "12345678912346";
-            string password = "moh7elw7";
+            string nationalId = "12345678912345";
+            string password = "12345678";
 
             // تحقق لو موجود
             var existing = await _context.SystemUsers
-                .FirstOrDefaultAsync(x => x.NationalID == nationalId);
+                .FirstOrDefaultAsync(x => x.Name == name);
 
             if (existing != null)
                 return Content("Admin already exists");
@@ -127,7 +127,7 @@ namespace UniStay.Controllers
                 return View(model);
 
             var user = await _context.SystemUsers
-                .FirstOrDefaultAsync(u => u.NationalID == model.NationalID && !u.IsDeleted);
+                .FirstOrDefaultAsync(u => u.Name == model.Name && !u.IsDeleted);
 
             if (user == null || user.IsActive != true)
             {

@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using UniStay.Data;
+using UniStay.Models;
 
 namespace UniStay.Helpers
 {
-    public class StudentAuthFilter : IAsyncActionFilter
+    public class StudentAuthFilter : IAsyncAuthorizationFilter, IAsyncActionFilter
     {
         private readonly AssuitDbContext _context;
 
@@ -16,7 +17,9 @@ namespace UniStay.Helpers
             _context = context;
         }
 
-        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        // Authorization filter — runs BEFORE [ValidateAntiForgeryToken]
+        // Sets HttpContext.User so anti-forgery sees the correct identity
+        public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
         {
             var httpContext = context.HttpContext;
             var authResult = await httpContext.AuthenticateAsync("StudentCookie");
@@ -48,24 +51,34 @@ namespace UniStay.Helpers
 
             httpContext.Items["CurrentStudent"] = studentLogin;
             httpContext.Items["StudentName"] = studentLogin.Student?.FullName;
+        }
 
+        // Action filter — runs AFTER authorization (and after ValidateAntiForgeryToken)
+        // Sets ViewBag for the layout
+        public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        {
             var resultContext = await next();
 
             if (resultContext.Controller is Controller controller)
             {
-                controller.ViewBag.StudentName ??= studentLogin.Student?.FullName ?? "طالب";
+                var studentLogin = context.HttpContext.Items["CurrentStudent"] as StudentLogin;
+                controller.ViewBag.StudentName ??= studentLogin?.Student?.FullName ?? "طالب";
 
-                var hasAllocation = await _context.Allocations
-                    .AnyAsync(a => a.StudentID == studentId && a.Status == "Active");
-                controller.ViewBag.IsAllocated = hasAllocation;
+                if (studentLogin != null)
+                {
+                    var studentId = studentLogin.StudentID;
+                    var hasAllocation = await _context.Allocations
+                        .AnyAsync(a => a.StudentID == studentId && a.Status == "Active");
+                    controller.ViewBag.IsAllocated = hasAllocation;
 
-                var hasAcceptedApp = await _context.Applications
-                    .AnyAsync(a => a.StudentID == studentId && a.Status == "Accepted");
-                controller.ViewBag.IsAccepted = hasAcceptedApp;
+                    var hasAcceptedApp = await _context.Applications
+                        .AnyAsync(a => a.StudentID == studentId && a.Status == "Accepted");
+                    controller.ViewBag.IsAccepted = hasAcceptedApp;
 
-                var hasReservation = await _context.Allocations
-                    .AnyAsync(a => a.StudentID == studentId && a.Status == "Reserved");
-                controller.ViewBag.HasReservation = hasReservation;
+                    var hasReservation = await _context.Allocations
+                        .AnyAsync(a => a.StudentID == studentId && a.Status == "Reserved");
+                    controller.ViewBag.HasReservation = hasReservation;
+                }
             }
         }
     }

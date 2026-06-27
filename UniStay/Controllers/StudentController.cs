@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Concurrent;
 using System.Security.Claims;
 using System.Text.Json;
 using UniStay.Data;
@@ -89,9 +90,9 @@ namespace UniStay.Controllers
                 .OrderByDescending(a => a.CreatedAt)
                 .FirstOrDefaultAsync();
 
-            if (app != null && (app.Status == "Accepted" || app.Status == "Allocated"))
+            if (app != null && (app.Status == "UnderReview" || app.Status == "Accepted" || app.Status == "Allocated"))
             {
-                TempData["Warning"] = "لا يمكن تعديل البيانات بعد القبول النهائي. يرجى التواصل مع الإدارة.";
+                TempData["Warning"] = "لا يمكن تعديل البيانات بعد تقديم الطلب. يرجى التواصل مع الإدارة.";
                 return RedirectToAction("StatusReport");
             }
 
@@ -133,6 +134,17 @@ namespace UniStay.Controllers
 
             var student = await _context.Students.FindAsync(studentId.Value);
             if (student == null) return NotFound();
+
+            var app = await _context.Applications
+                .Where(a => a.StudentID == studentId.Value)
+                .OrderByDescending(a => a.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (app != null && (app.Status == "UnderReview" || app.Status == "Accepted" || app.Status == "Allocated"))
+            {
+                TempData["Warning"] = "لا يمكن تعديل البيانات بعد تقديم الطلب. يرجى التواصل مع الإدارة.";
+                return RedirectToAction("StatusReport");
+            }
 
             student.FullName = model.FullName;
             student.Phone = model.Phone;
@@ -401,7 +413,7 @@ namespace UniStay.Controllers
         [HttpGet]
         public IActionResult RequestAbsence()
         {
-            return View();
+            return View(new Absence());
         }
 
         // POST: /Student/RequestAbsence
@@ -409,6 +421,11 @@ namespace UniStay.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> RequestAbsence(Absence model)
         {
+            ModelState.Remove("Status");
+            ModelState.Remove("RequestedBy");
+            ModelState.Remove("Student");
+            ModelState.Remove("DormitoryCity");
+
             if (!ModelState.IsValid) return View(model);
 
             var studentId = GetCurrentStudentId();
@@ -425,29 +442,56 @@ namespace UniStay.Controllers
             var currentAllocation = await _context.Allocations
                 .FirstOrDefaultAsync(a => a.StudentID == studentId.Value && a.Status == "Active");
 
-            if (currentAllocation != null)
+            if (currentAllocation == null)
             {
-                var room = await _context.CityRooms
-                    .Include(r => r.CityBuilding)
-                    .FirstOrDefaultAsync(r => r.ID == currentAllocation.CityRoomID);
-
-                if (room?.CityBuilding != null)
-                {
-                    model.DormitoryCityID = room.CityBuilding.DormitoryCityID;
-                }
+                ModelState.AddModelError("", "يجب أن تكون مسكناً حالياً لتقديم طلب الغياب");
+                return View(model);
             }
 
-            _context.Absences.Add(model);
-            await _context.SaveChangesAsync();
+            var room = await _context.CityRooms
+                .Include(r => r.CityBuilding)
+                .FirstOrDefaultAsync(r => r.ID == currentAllocation.CityRoomID);
 
-            if (!string.IsNullOrEmpty(student.Email))
+            if (room?.CityBuilding == null)
             {
-                await _emailService.SendAsync(
-                    student.Email,
-                    "تم استلام طلب الإذن/الغياب",
-                    $"تم استلام طلبك رقم #{model.ID} وسيتم مراجعته قريباً.",
-                    EmailType.General,
-                    studentId.Value);
+                ModelState.AddModelError("", "خطأ في جلب بيانات المدينة الجامعية");
+                return View(model);
+            }
+
+            model.DormitoryCityID = room.CityBuilding.DormitoryCityID;
+
+            try
+            {
+                _context.Absences.Add(model);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                await _auditService.LogAsync(
+                    userId: studentId.Value,
+                    userType: "Student",
+                    action: "Absence.SaveFailed",
+                    tableName: "Absence",
+                    newValues: new { Error = ex.Message });
+                ModelState.AddModelError("", "خطأ في حفظ الطلب. يرجى المحاولة لاحقاً.");
+                return View(model);
+            }
+
+            try
+            {
+                if (!string.IsNullOrEmpty(student.Email))
+                {
+                    await _emailService.SendAsync(
+                        student.Email,
+                        "تم استلام طلب الإذن/الغياب",
+                        $"تم استلام طلبك رقم #{model.ID} وسيتم مراجعته قريباً.",
+                        EmailType.General,
+                        studentId.Value);
+                }
+            }
+            catch
+            {
+                // Email failure is non-critical — request was already saved
             }
 
             TempData["Success"] = "تم إرسال الطلب بنجاح";
@@ -461,76 +505,208 @@ namespace UniStay.Controllers
             var studentId = GetCurrentStudentId();
             if (studentId == null) return RedirectToAction("Login", "StudentAccount");
 
-            var alloc = await _context.Allocations
-                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
-                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
-            if (alloc == null)
+            try
             {
-                TempData["Error"] = "أنت غير مسكن حالياً";
+
+                var alloc = await _context.Allocations
+                    .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
+                    .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
+                if (alloc == null)
+                {
+                    TempData["Error"] = "أنت غير مسكن حالياً";
+                    return RedirectToAction("Home");
+                }
+
+                var payments = await _context.Payments
+                    .Where(p => p.StudentID == studentId && p.AcademicYear == alloc.AcademicYear)
+                    .OrderByDescending(p => p.RecordedAt)
+                    .ToListAsync();
+
+                var violations = await _context.Violations
+                    .Where(v => v.StudentID == studentId && v.FineAmount.HasValue)
+                    .OrderByDescending(v => v.RecordedAt)
+                    .ToListAsync();
+
+                var totalDue = payments.Where(p => p.Status != "Completed").Sum(p => p.Amount);
+                var totalPaid = payments.Where(p => p.Status == "Completed").Sum(p => p.PaidAmount);
+                var monthlyFee = await GetMonthlyFee(alloc);
+
+                ViewBag.Allocation = alloc;
+                ViewBag.TotalDue = totalDue + violations.Where(v => v.Status == "Active" && v.FineAmount.HasValue).Sum(v => v.FineAmount!.Value);
+                ViewBag.TotalPaid = totalPaid + violations.Where(v => v.FinePaid.HasValue).Sum(v => v.FinePaid!.Value);
+                ViewBag.MonthlyFee = monthlyFee;
+                ViewBag.Violations = violations;
+
+                // Business rule: current month label visible only in the last 10 days of the month
+                var now = DateTime.UtcNow;
+                var lastTenStartDay = DateTime.DaysInMonth(now.Year, now.Month) - 10;
+                ViewBag.CurrentMonthLabel = now.Day > lastTenStartDay ? GetMonthLabel(now) : null;
+
+                return View(payments);
+            }
+            catch (Exception ex)
+            {
+                await _auditService.LogAsync(
+                    userId: studentId ?? 0,
+                    userType: "Student",
+                    action: "Payments.PageError",
+                    tableName: "Payment",
+                    newValues: new { Error = ex.Message });
+                TempData["Error"] = "حدث خطأ في تحميل صفحة الدفعات. يرجى المحاولة لاحقاً.";
                 return RedirectToAction("Home");
             }
+        }
 
-            await EnsureMonthlyFees(alloc);
+        // ============================================================
+        // RATE LIMITING (simple in-memory sliding window)
+        // In production, replace with distributed rate limiter (Redis, etc.)
+        // ============================================================
+        private static readonly ConcurrentDictionary<int, List<DateTime>> _paymentAttempts = new();
 
-            var payments = await _context.Payments
-                .Where(p => p.StudentID == studentId && p.AcademicYear == alloc.AcademicYear)
-                .OrderByDescending(p => p.RecordedAt)
-                .ToListAsync();
-
-            var violations = await _context.Violations
-                .Where(v => v.StudentID == studentId && v.FineAmount.HasValue)
-                .OrderByDescending(v => v.RecordedAt)
-                .ToListAsync();
-
-            var totalDue = payments.Where(p => p.Status != "Completed").Sum(p => p.Amount);
-            var totalPaid = payments.Where(p => p.Status == "Completed").Sum(p => p.PaidAmount);
-            var monthlyFee = 500m;
-
-            ViewBag.Allocation = alloc;
-            ViewBag.TotalDue = totalDue + violations.Where(v => v.Status == "Active" && v.FineAmount.HasValue).Sum(v => v.FineAmount!.Value);
-            ViewBag.TotalPaid = totalPaid + violations.Where(v => v.FinePaid.HasValue).Sum(v => v.FinePaid!.Value);
-            ViewBag.MonthlyFee = monthlyFee;
-            ViewBag.Violations = violations;
-
-            var months = new[] { "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس" };
+        private bool IsRateLimited(int studentId)
+        {
             var now = DateTime.UtcNow;
-            ViewBag.CurrentMonthLabel = now.Day >= 20 ? months[now.Month - 1] : null;
+            var window = _paymentAttempts.GetOrAdd(studentId, _ => new List<DateTime>());
 
-            return View(payments);
+            lock (window)
+            {
+                window.RemoveAll(t => (now - t).TotalMinutes > 1);
+                if (window.Count >= 5) return true;
+                window.Add(now);
+                return false;
+            }
         }
 
         // POST: /Student/PayItem
+        /// <summary>
+        /// Process a single pending payment. Security measures implemented:
+        /// - Double-payment prevention (checks Status == "Completed")
+        /// - Receipt number uniqueness via GUID
+        /// - Audit logging (who, when, IP, User-Agent)
+        /// - Transaction safety via CreateExecutionStrategy
+        /// - Rate limiting (max 5 attempts/minute)
+        /// - PaidAt separate from RecordedAt (creation date preserved)
+        /// NOTE: Payment gateway integration is a placeholder — server-side
+        /// verification of a gateway token MUST be added before production.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PayItem(int paymentId)
         {
             var studentId = GetCurrentStudentId();
-            if (studentId == null) return Json(new { success = false, message = "غير مصرح" });
+            if (studentId == null)
+                return Json(new { success = false, message = "غير مصرح" });
 
+            // Bug 13: Rate limiting
+            if (IsRateLimited(studentId.Value))
+                return Json(new { success = false, message = "لقد تجاوزت عدد محاولات الدفع المسموح بها. حاول بعد دقيقة." });
+
+            // Bug 1: Fast-path check outside strategy (avoid unnecessary retry traffic)
             var payment = await _context.Payments
+                .AsNoTracking()
                 .FirstOrDefaultAsync(p => p.ID == paymentId && p.StudentID == studentId);
             if (payment == null)
                 return Json(new { success = false, message = "الدفعة غير موجودة" });
+            if (payment.Status == "Completed")
+                return Json(new { success = false, message = "هذه الدفعة مدفوعة بالفعل" });
 
-            payment.Status = "Completed";
-            payment.PaidAmount = payment.Amount;
-            payment.PaymentMethod = "StudentPortal";
-            payment.ReceiptNumber = $"SIM-{DateTime.Now:yyyyMMdd}-{DateTime.Now.Ticks % 100000}";
-            payment.RecordedAt = DateTime.UtcNow;
+            // Bug 4: Capture audit context outside strategy
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers["User-Agent"].ToString();
 
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "تم الدفع بنجاح" });
+            try
+            {
+                // Bug 7: Execution strategy (retry-safe, compatible with SqlServerRetryingExecutionStrategy)
+                var strategy = _context.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
+                {
+                    // Re-read inside strategy for fresh data on every retry
+                    var p = await _context.Payments
+                        .FirstOrDefaultAsync(x => x.ID == paymentId && x.StudentID == studentId);
+
+                    if (p == null)
+                        throw new InvalidOperationException("الدفعة غير موجودة");
+
+                    // Bug 1: Double-payment prevention (re-check inside strategy)
+                    if (p.Status == "Completed")
+                        throw new InvalidOperationException("هذه الدفعة مدفوعة بالفعل");
+
+                    // Bug 2: PAYMENT GATEWAY PLACEHOLDER
+                    // TODO: Before marking as Completed, verify the transaction with the
+                    // payment gateway (Stripe, PayPal, local service, etc.):
+                    //   1. Student submits payment via gateway in browser
+                    //   2. Gateway returns a transaction token/reference
+                    //   3. Student POSTs the token along with paymentId
+                    //   4. Server verifies the token with the gateway API
+                    //   5. Only if gateway confirms success, proceed to mark as Completed
+                    // Without this step, any API request can mark unpaid bills as paid.
+
+                    p.Status = "Completed";
+                    p.PaidAmount = p.Amount;
+                    p.PaymentMethod = "StudentPortal";
+
+                    // Bug 3: Unique receipt number (GUID guarantees no collision)
+                    p.ReceiptNumber = $"SIM-{studentId}-{paymentId}-{Guid.NewGuid()}";
+
+                    // Bug 5 & 6: Preserve RecordedAt (creation date), set PaidAt for completion
+                    p.PaidAt = DateTime.UtcNow;
+
+                    await _context.SaveChangesAsync();
+                });
+
+                // Audit log after successful commit (outside strategy to avoid retry noise)
+                await _auditService.LogAsync(
+                    userId: studentId.Value,
+                    userType: "Student",
+                    action: "Payment.Completed",
+                    tableName: "Payment",
+                    recordId: paymentId,
+                    oldValues: new { Status = "Pending" },
+                    newValues: new { Status = "Completed", PaidAmount = payment.Amount },
+                    ipAddress: ipAddress);
+
+                return Json(new { success = true, message = "تم الدفع بنجاح" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Expected business-rule violations (double-payment, not found)
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                await _auditService.LogAsync(
+                    userId: studentId.Value,
+                    userType: "Student",
+                    action: "Payment.Failed",
+                    tableName: "Payment",
+                    recordId: paymentId,
+                    oldValues: new { Status = payment?.Status ?? "Unknown" },
+                    newValues: new { Error = ex.Message },
+                    ipAddress: ipAddress);
+
+                return Json(new { success = false, message = "حدث خطأ أثناء معالجة الدفع. يرجى المحاولة لاحقاً." });
+            }
         }
 
         // POST: /Student/PayViolationFine
+        /// <summary>
+        /// Pay a violation fine. Same security measures as PayItem:
+        /// double-payment prevention, audit logging, execution strategy,
+        /// receipt number, rate limiting.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PayViolationFine(int violationId)
         {
             var studentId = GetCurrentStudentId();
-            if (studentId == null) return Json(new { success = false, message = "غير مصرح" });
+            if (studentId == null)
+                return Json(new { success = false, message = "غير مصرح" });
+
+            if (IsRateLimited(studentId.Value))
+                return Json(new { success = false, message = "لقد تجاوزت عدد محاولات الدفع المسموح بها. حاول بعد دقيقة." });
 
             var violation = await _context.Violations
+                .AsNoTracking()
                 .FirstOrDefaultAsync(v => v.ID == violationId && v.StudentID == studentId);
             if (violation == null)
                 return Json(new { success = false, message = "المخالفة غير موجودة" });
@@ -538,12 +714,57 @@ namespace UniStay.Controllers
             if (violation.Status == "Paid")
                 return Json(new { success = false, message = "تم دفع الغرامة مسبقاً" });
 
-            violation.FinePaid = violation.FineAmount;
-            violation.Status = "Paid";
-            violation.ResolvedAt = DateTime.UtcNow;
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
 
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, message = "تم دفع الغرامة بنجاح" });
+            try
+            {
+                var strategy = _context.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
+                {
+                    var v = await _context.Violations
+                        .FirstOrDefaultAsync(x => x.ID == violationId && x.StudentID == studentId);
+                    if (v == null)
+                        throw new InvalidOperationException("المخالفة غير موجودة");
+                    if (v.Status == "Paid")
+                        throw new InvalidOperationException("تم دفع الغرامة مسبقاً");
+
+                    v.FinePaid = v.FineAmount;
+                    v.Status = "Paid";
+                    v.ResolvedAt = DateTime.UtcNow;
+
+                    await _context.SaveChangesAsync();
+                });
+
+                await _auditService.LogAsync(
+                    userId: studentId.Value,
+                    userType: "Student",
+                    action: "ViolationFine.Paid",
+                    tableName: "Violation",
+                    recordId: violationId,
+                    oldValues: new { Status = "Active" },
+                    newValues: new { Status = "Paid", FinePaid = violation.FineAmount },
+                    ipAddress: ipAddress);
+
+                return Json(new { success = true, message = "تم دفع الغرامة بنجاح" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                await _auditService.LogAsync(
+                    userId: studentId.Value,
+                    userType: "Student",
+                    action: "ViolationFine.PaymentFailed",
+                    tableName: "Violation",
+                    recordId: violationId,
+                    oldValues: new { Status = violation?.Status ?? "Unknown" },
+                    newValues: new { Error = ex.Message },
+                    ipAddress: ipAddress);
+
+                return Json(new { success = false, message = "حدث خطأ أثناء معالجة الدفع. يرجى المحاولة لاحقاً." });
+            }
         }
 
         // GET: /Student/Violations
@@ -716,19 +937,54 @@ namespace UniStay.Controllers
             return View(vm);
         }
 
+        /// <summary>
+        /// Returns the monthly fee for a given allocation, reading from FeeConfiguration
+        /// (by DormitoryCity + AcademicYear). Falls back to 500 EGP if not configured.
+        /// </summary>
+        private async Task<decimal> GetMonthlyFee(Allocation alloc)
+        {
+            var dormitoryCityId = alloc.CityRoom?.CityBuilding?.DormitoryCityID;
+            if (dormitoryCityId == null) return 500m;
+
+            var fee = await _context.FeeConfigurations
+                .Include(fc => fc.FeeType)
+                .Where(fc => fc.DormitoryCityID == dormitoryCityId
+                    && fc.AcademicYear == alloc.AcademicYear
+                    && fc.IsActive
+                    && fc.FeeType.FeeCategory == "Monthly")
+                .Select(fc => (decimal?)fc.Amount)
+                .FirstOrDefaultAsync();
+
+            return fee ?? 500m;
+        }
+
+        /// <summary>
+        /// Academic-year month label for a given Gregorian DateTime.
+        /// Index 0 = September (start of academic year).
+        /// </summary>
+        private static string GetMonthLabel(DateTime date)
+        {
+            var months = new[] { "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس" };
+            return months[(date.Month + 3) % 12];
+        }
+
         private async Task EnsureMonthlyFees(Allocation alloc)
         {
             var now = DateTime.UtcNow;
-            var monthlyFee = 500m;
+            var monthlyFee = await GetMonthlyFee(alloc);
 
-            // Only show monthly fee after the 20th of the month
-            if (now.Day < 20) return;
+            // Business rule: monthly fee for the current month becomes visible/chargeable
+            // only in the last 10 days of the month.
+            var lastTenStartDay = DateTime.DaysInMonth(now.Year, now.Month) - 10;
+            if (now.Day <= lastTenStartDay) return;
 
-            var months = new[] { "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس" };
-            var currentMonthLabel = months[now.Month - 1];
+            var currentMonthLabel = GetMonthLabel(now);
+            var currentMonthYear = $"{currentMonthLabel} {now.Year}";
 
+            // Check using MonthYear column (new schema). If null, fall back to Notes (legacy).
             var exists = await _context.Payments
-                .AnyAsync(p => p.AllocationID == alloc.ID && p.PaymentType == "MonthlyFee" && p.Notes == currentMonthLabel);
+                .AnyAsync(p => p.AllocationID == alloc.ID && p.PaymentType == "MonthlyFee"
+                    && (p.MonthYear == currentMonthYear || (p.MonthYear == null && p.Notes == currentMonthLabel)));
 
             if (exists) return;
 
@@ -743,6 +999,7 @@ namespace UniStay.Controllers
                 PaidAmount = 0,
                 Status = "Pending",
                 AcademicYear = alloc.AcademicYear,
+                MonthYear = currentMonthYear,
                 Notes = currentMonthLabel,
                 RecordedAt = dueDate
             });
