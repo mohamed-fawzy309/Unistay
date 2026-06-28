@@ -9,6 +9,7 @@ using UniStay.Models;
 using UniStay.Services.Interfaces;
 using UniStay.ViewModels.Application;
 using UniStay.ViewModels.Attendance;
+using UniStay.ViewModels.Meal;
 
 namespace UniStay.Controllers
 {
@@ -18,12 +19,14 @@ namespace UniStay.Controllers
         private readonly AssuitDbContext _context;
         private readonly IAuditService _auditService;
         private readonly IEmailService _emailService;
+        private readonly IMealBookingService _mealBookingService;
 
-        public StudentController(AssuitDbContext context, IAuditService auditService, IEmailService emailService)
+        public StudentController(AssuitDbContext context, IAuditService auditService, IEmailService emailService, IMealBookingService mealBookingService)
         {
             _context = context;
             _auditService = auditService;
             _emailService = emailService;
+            _mealBookingService = mealBookingService;
         }
 
         // GET: /Student/Home
@@ -43,6 +46,10 @@ namespace UniStay.Controllers
             ViewBag.StudentName = student?.FullName ?? "طالب";
             ViewBag.LatestStatus = latestApp?.Status ?? "لا يوجد طلبات حالية";
             ViewBag.LatestStatusColor = GetStatusColor(latestApp?.Status);
+
+            var alloc = await _context.Allocations
+                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
+            ViewBag.IsAllocated = alloc != null;
 
             return View();
         }
@@ -793,6 +800,101 @@ namespace UniStay.Controllers
             return View(violations);
         }
 
+        // GET: /Student/MealBooking
+        [HttpGet]
+        public async Task<IActionResult> MealBooking()
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
+
+            var alloc = await _context.Allocations
+                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
+                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
+
+            if (alloc == null)
+            {
+                ViewBag.DormitoryCityID = null;
+                return View();
+            }
+
+            var dormitoryCityId = alloc.CityRoom?.CityBuilding?.DormitoryCityID ?? 0;
+            var now = DateTime.UtcNow;
+            var today = DateOnly.FromDateTime(now);
+
+            var (currentMonthYear, nextMonthYear) = await _mealBookingService.GetBookingMonthsAsync(studentId.Value);
+            var isNextUnlocked = await _mealBookingService.IsMonthPaidAsync(studentId.Value, now.Month, now.Year);
+
+            var blockedRanges = await _context.MealBlocks
+                .Where(b => b.StudentID == studentId && b.IsActive == true)
+                .ToListAsync();
+
+            ViewBag.DormitoryCityID = dormitoryCityId;
+            ViewBag.CurrentMonthYear = currentMonthYear;
+            ViewBag.NextMonthYear = nextMonthYear;
+            ViewBag.IsNextUnlocked = isNextUnlocked;
+            ViewBag.MaxDaysPerMonth = 4;
+            ViewBag.StudentID = studentId.Value;
+            ViewBag.CalendarDays = await BuildCalendarDaysAsync(studentId.Value, now.Month, now.Year, today, blockedRanges);
+            ViewBag.NextCalendarDays = isNextUnlocked
+                ? await BuildCalendarDaysAsync(studentId.Value, now.AddMonths(1).Month, now.AddMonths(1).Year, today, blockedRanges)
+                : null;
+
+            return View();
+        }
+
+        private async Task<List<CalendarDayViewModel>> BuildCalendarDaysAsync(int studentId, int month, int year, DateOnly today, List<MealBlock> blockedRanges)
+        {
+            var bookedDates = await _mealBookingService.GetBookedDaysInMonthAsync(studentId, month, year);
+            var firstOfMonth = new DateTime(year, month, 1);
+            var lastOfMonth = firstOfMonth.AddMonths(1).AddDays(-1);
+            var days = new List<CalendarDayViewModel>();
+
+            var dayOfWeek = (int)firstOfMonth.DayOfWeek;
+            for (int i = dayOfWeek - 1; i >= 0; i--)
+            {
+                var dt = firstOfMonth.AddDays(-i - 1);
+                days.Add(new CalendarDayViewModel
+                {
+                    Date = DateOnly.FromDateTime(dt),
+                    DayNumber = dt.Day,
+                    IsCurrentMonth = false, IsPast = true, IsBooked = true, IsBlocked = true
+                });
+            }
+
+            for (var dt = firstOfMonth; dt <= lastOfMonth; dt = dt.AddDays(1))
+            {
+                var date = DateOnly.FromDateTime(dt);
+                var deadline = new DateTime(date.Year, date.Month, date.Day, 11, 0, 0, DateTimeKind.Utc).AddDays(-1);
+                var isPast = DateTime.UtcNow >= deadline;
+                days.Add(new CalendarDayViewModel
+                {
+                    Date = date,
+                    DayNumber = dt.Day,
+                    IsCurrentMonth = true,
+                    IsPast = isPast,
+                    IsBooked = bookedDates.Contains(date),
+                    IsBlocked = blockedRanges.Any(b => date >= b.FromDate && date <= b.ToDate)
+                });
+            }
+
+            var remaining = 7 - (days.Count % 7);
+            if (remaining < 7)
+            {
+                for (int i = 1; i <= remaining; i++)
+                {
+                    var dt = lastOfMonth.AddDays(i);
+                    days.Add(new CalendarDayViewModel
+                    {
+                        Date = DateOnly.FromDateTime(dt),
+                        DayNumber = dt.Day,
+                        IsCurrentMonth = false, IsPast = true, IsBooked = true, IsBlocked = true
+                    });
+                }
+            }
+
+            return days;
+        }
+
         // GET: /Student/Meals
         [HttpGet]
         public async Task<IActionResult> Meals()
@@ -835,6 +937,148 @@ namespace UniStay.Controllers
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, booked = meal.IsBooked });
+        }
+
+        // POST: /Student/BookMealDate
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> BookMealDate(int day, int month, int year)
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null)
+                return Json(new { success = false, message = "غير مصرح" });
+
+            var date = new DateOnly(year, month, day);
+            var alloc = await _context.Allocations
+                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
+                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
+            if (alloc == null)
+                return Json(new { success = false, message = "أنت غير مسكن حالياً" });
+
+            var dormitoryCityId = alloc.CityRoom?.CityBuilding?.DormitoryCityID ?? 0;
+            var (success, message) = await _mealBookingService.BookDateAsync(studentId.Value, date, dormitoryCityId);
+
+            if (success)
+                await _auditService.LogAsync(studentId.Value, "Student", "MealBooking.BookDate", "Meal",
+                    null, null, new { MealDate = date.ToString() });
+
+            return Json(new { success, message });
+        }
+
+        // POST: /Student/UnbookMealDate
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UnbookMealDate(int day, int month, int year)
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null)
+                return Json(new { success = false, message = "غير مصرح" });
+
+            var date = new DateOnly(year, month, day);
+            var (success, message) = await _mealBookingService.UnbookDateAsync(studentId.Value, date);
+
+            if (success)
+                await _auditService.LogAsync(studentId.Value, "Student", "MealBooking.UnbookDate", "Meal",
+                    null, null, new { MealDate = date.ToString() });
+
+            return Json(new { success, message });
+        }
+
+        // POST: /Student/StudentBookDates
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> StudentBookDates(List<DateOnly> selectedDates)
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
+
+            if (selectedDates == null || selectedDates.Count == 0)
+            {
+                TempData["Error"] = "الرجاء اختيار يوم واحد على الأقل";
+                return RedirectToAction("MealBooking");
+            }
+
+            var alloc = await _context.Allocations
+                .Include(a => a.CityRoom).ThenInclude(r => r.CityBuilding)
+                .FirstOrDefaultAsync(a => a.StudentID == studentId && a.Status == "Active");
+
+            if (alloc == null)
+            {
+                TempData["Error"] = "أنت غير مسكن حالياً";
+                return RedirectToAction("MealBooking");
+            }
+
+            var dormitoryCityId = alloc.CityRoom?.CityBuilding?.DormitoryCityID ?? 0;
+
+            var successCount = 0;
+            var errors = new List<string>();
+
+            foreach (var date in selectedDates.OrderBy(d => d))
+            {
+                var (success, message) = await _mealBookingService.BookDateAsync(studentId.Value, date, dormitoryCityId);
+                if (success)
+                {
+                    successCount++;
+                    await _auditService.LogAsync(studentId.Value, "Student", "MealBooking.BookDate", "Meal",
+                        null, null, new { MealDate = date.ToString() });
+                }
+                else
+                {
+                    errors.Add($"{date:yyyy-MM-dd}: {message}");
+                }
+            }
+
+            if (successCount > 0)
+                TempData["Success"] = $"تم حجز {successCount} وجبة بنجاح";
+            if (errors.Count > 0)
+                TempData["Error"] = string.Join(" | ", errors.Take(3));
+
+            return RedirectToAction("MealBooking");
+        }
+
+        // GET: /Student/MyMealBookings
+        [HttpGet]
+        public async Task<IActionResult> MyMealBookings()
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
+
+            var meals = await _mealBookingService.GetBookedMealsAsync(studentId.Value);
+            ViewBag.DeadlineRule = await _mealBookingService.GetDeadlineDisplayAsync();
+            return View(meals);
+        }
+
+        // POST: /Student/CancelMyBooking
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CancelMyBooking(int mealId)
+        {
+            var studentId = GetCurrentStudentId();
+            if (studentId == null) return RedirectToAction("Login", "StudentAccount");
+
+            var meal = await _context.Meals
+                .FirstOrDefaultAsync(m => m.ID == mealId && m.StudentID == studentId && m.IsBooked == true);
+
+            if (meal == null)
+            {
+                TempData["Error"] = "الوجبة غير موجودة أو تم إلغاؤها مسبقاً";
+                return RedirectToAction("MyMealBookings");
+            }
+
+            var (success, message) = await _mealBookingService.UnbookDateAsync(studentId.Value, meal.MealDate);
+
+            if (success)
+            {
+                await _auditService.LogAsync(studentId.Value, "Student", "MealBooking.Cancel", "Meal",
+                    meal.ID, new { IsBooked = true }, new { IsBooked = false });
+                TempData["Success"] = $"تم إلغاء حجز وجبة {meal.MealDate:yyyy-MM-dd} بنجاح";
+            }
+            else
+            {
+                TempData["Error"] = message;
+            }
+
+            return RedirectToAction("MyMealBookings");
         }
 
         // GET: /Student/AnnouncementsList

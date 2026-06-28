@@ -498,6 +498,22 @@ namespace UniStay.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> PingFlask()
+        {
+            var baseUrl = _configuration["FaceRecognition:BaseUrl"];
+            var client = CreateFlaskClient();
+            try
+            {
+                var response = await client.GetAsync($"{baseUrl}/api/status");
+                return Json(new { alive = response.IsSuccessStatusCode });
+            }
+            catch
+            {
+                return Json(new { alive = false });
+            }
+        }
+
+        [HttpGet]
         public async Task<IActionResult> GetRecognitionEvents()
         {
             var baseUrl = _configuration["FaceRecognition:BaseUrl"];
@@ -849,7 +865,7 @@ namespace UniStay.Controllers
                     UseShellExecute = false,
                     CreateNoWindow = true,
                 };
-                using var process = new Process { StartInfo = psi };
+                var process = new Process { StartInfo = psi };
                 process.Start();
                 System.IO.File.WriteAllText(FlaskPidFilePath, process.Id.ToString());
 

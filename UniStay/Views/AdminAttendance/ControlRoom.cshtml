@@ -224,6 +224,10 @@
                 <span class="dot offline" id="sessStatusDot"></span>
                 <span id="sessStatusText">الجلسة غير نشطة</span>
             </span>
+            <span class="status-indicator bg-stopped" id="modelStatusBadge">
+                <span class="dot offline" id="modelStatusDot"></span>
+                <span id="modelStatusText">النظام متوقف</span>
+            </span>
         </div>
 
         <!-- Camera Panel -->
@@ -286,6 +290,9 @@
                     </button>
                     <button id="btnDevMode" class="btn btn-outline-secondary control-btn">
                         <i class="bi bi-code-slash"></i> وضع المطور
+                    </button>
+                    <button id="btnToggleModel" class="btn btn-outline-info control-btn">
+                        <i class="bi bi-cpu"></i> تشغيل النظام
                     </button>
                 </div>
                 <div class="row g-2 align-items-center">
@@ -601,6 +608,7 @@
         let activityRefreshInterval = null;
         let streamActive = false;
         let currentSessionRunning = @(Model.ActiveSession != null ? "true" : "false");
+        let modelRunning = false;
         let soundEnabled = true;
         let reconnectCount = 0;
         let lastReconnectCount = 0;
@@ -752,10 +760,10 @@
         }
 
         function updateSessionUI(running) {
-            document.getElementById('btnStartSession').disabled = running;
-            document.getElementById('btnStopSession').disabled = !running;
-            document.getElementById('btnOpenCamera').disabled = !running;
-            document.getElementById('btnCloseCamera').disabled = !running;
+            document.getElementById('btnStartSession').disabled = running || !modelRunning;
+            document.getElementById('btnStopSession').disabled = !running || !modelRunning;
+            document.getElementById('btnOpenCamera').disabled = !running || !modelRunning;
+            document.getElementById('btnCloseCamera').disabled = !running || !modelRunning;
             const dot = document.getElementById('sessStatusDot');
             const text = document.getElementById('sessStatusText');
             const badge = document.getElementById('sessStatusBadge');
@@ -767,6 +775,70 @@
                 badge.className = 'status-indicator bg-stopped';
             }
         }
+
+        function updateModelUI(running) {
+            const dot = document.getElementById('modelStatusDot');
+            const text = document.getElementById('modelStatusText');
+            const badge = document.getElementById('modelStatusBadge');
+            const btn = document.getElementById('btnToggleModel');
+            if (running) {
+                dot.className = 'dot online'; text.textContent = 'النظام يعمل';
+                badge.className = 'status-indicator bg-running';
+                btn.innerHTML = '<i class="bi bi-stop-circle"></i> إيقاف النظام';
+                btn.className = 'btn btn-outline-danger control-btn';
+            } else {
+                dot.className = 'dot offline'; text.textContent = 'النظام متوقف';
+                badge.className = 'status-indicator bg-stopped';
+                btn.innerHTML = '<i class="bi bi-cpu"></i> تشغيل النظام';
+                btn.className = 'btn btn-outline-info control-btn';
+                if (currentSessionRunning) {
+                    currentSessionRunning = false;
+                    updateSessionUI(false);
+                    stopStream();
+                }
+            }
+            document.getElementById('btnToggleModel').disabled = false;
+        }
+
+        // ——— Model Toggle ———
+        document.getElementById('btnToggleModel').addEventListener('click', function () {
+            const btn = this; btn.disabled = true;
+            if (modelRunning) {
+                fetch('/AdminAttendance/StopFlask', { method: 'POST' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        modelRunning = false; updateModelUI(false);
+                        showMessage(data.message || 'تم إيقاف النظام', 'warning');
+                    }).catch(function () { showMessage('تعذر إيقاف النظام', 'danger'); })
+                    .finally(function () { btn.disabled = false; });
+            } else {
+                fetch('/AdminAttendance/StartFlask', { method: 'POST' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        modelRunning = true; updateModelUI(true);
+                        showMessage(data.message || 'تم تشغيل النظام', 'success');
+                    }).catch(function () { showMessage('تعذر تشغيل النظام', 'danger'); })
+                    .finally(function () { btn.disabled = false; });
+            }
+        });
+
+        // ——— Model Status Polling (always runs) ———
+        let modelPollInterval = setInterval(function () {
+            fetch('/AdminAttendance/PingFlask')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var isAlive = data.alive === true;
+                    if (isAlive !== modelRunning) {
+                        modelRunning = isAlive;
+                        updateModelUI(isAlive);
+                    }
+                }).catch(function () {
+                    if (modelRunning !== false) {
+                        modelRunning = false;
+                        updateModelUI(false);
+                    }
+                });
+        }, 5000);
 
         // ——— Stream ———
         function startStream() {

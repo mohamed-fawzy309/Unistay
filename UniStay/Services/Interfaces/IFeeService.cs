@@ -20,5 +20,6 @@ namespace UniStay.Services.Interfaces
         Task<decimal> GetOutstandingBalanceAsync(int studentId);
         Task<bool> UpdateMealSubscriptionAsync(int studentId, bool subscribed, string academicYear);
         Task<List<StudentFeeRecord>> GetStudentFeeRecordsAsync(int studentId);
+        Task<bool> IsMonthPaidAsync(int studentId, string monthYear);
     }
 }

@@ -177,5 +177,13 @@ namespace UniStay.Services.Implementations
                 .OrderBy(f => f.DueDate)
                 .ToListAsync();
         }
+
+        public async Task<bool> IsMonthPaidAsync(int studentId, string monthYear)
+        {
+            return await _db.StudentFeeRecords
+                .AnyAsync(f => f.StudentID == studentId
+                    && f.MonthYear == monthYear
+                    && f.Status == "Paid");
+        }
     }
 }

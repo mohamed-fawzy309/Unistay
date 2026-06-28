@@ -355,10 +355,38 @@ namespace UniStay.Controllers
             _db.MealBlocks.Add(block);
             await _db.SaveChangesAsync();
 
+            var bookedMeals = await _db.Meals
+                .Where(m => m.StudentID == model.StudentID
+                    && m.IsBooked == true
+                    && m.MealDate >= model.FromDate
+                    && m.MealDate <= model.ToDate)
+                .ToListAsync();
+
+            if (bookedMeals.Count != 0)
+            {
+                foreach (var meal in bookedMeals)
+                {
+                    meal.IsBooked = false;
+                    meal.IsActive = false;
+                }
+                await _db.SaveChangesAsync();
+
+                await _audit.LogAsync(CurrentUserId, "Staff", "Meal.Block.AutoUnbook", "Meal",
+                    null, null, new
+                    {
+                        model.StudentID,
+                        model.FromDate,
+                        model.ToDate,
+                        UnbookedCount = bookedMeals.Count
+                    });
+            }
+
             await _audit.LogAsync(CurrentUserId, "Staff", "Meal.Block", "MealBlock",
                 block.ID, null, new { model.StudentID, model.DormitoryCityID, model.FromDate, model.ToDate });
 
-            return Json(new { success = true, message = "تم حظر الوجبات للطالب" });
+            return Json(new { success = true, message = bookedMeals.Count > 0
+                ? $"تم حظر الوجبات للطالب وإلغاء {bookedMeals.Count} حجز سابق"
+                : "تم حظر الوجبات للطالب" });
         }
 
         [HttpGet]

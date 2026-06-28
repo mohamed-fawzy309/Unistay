@@ -1,0 +1,182 @@
+@{
+    ViewData["Title"] = "حجز الوجبات";
+    var calendarDays = ViewBag.CalendarDays as List<CalendarDayViewModel> ?? new();
+    var nextCalendarDays = ViewBag.NextCalendarDays as List<CalendarDayViewModel>;
+}
+
+@if (ViewBag.DormitoryCityID == null)
+{
+    <div class="card-site">
+        <div class="card-site-body text-center py-5">
+            <div style="font-size:3rem;margin-bottom:.75rem;color:var(--muted)"><i class="bi bi-house-x"></i></div>
+            <h6 style="font-weight:700">أنت غير مسكن حالياً</h6>
+            <p style="color:var(--muted);font-size:.88rem">يجب أن تكون مسكناً لاستخدام خدمة حجز الوجبات</p>
+            <a asp-controller="Student" asp-action="Home" class="btn" style="background:var(--red);color:#fff;border:none;border-radius:8px;font-weight:700;padding:.5rem 1.5rem">
+                <i class="bi bi-arrow-right me-1"></i> العودة للرئيسية
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0" style="font-weight:800">
+            <i class="bi bi-calendar-check me-2" style="color:var(--success)"></i> حجز الوجبات
+        </h4>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    }
+
+    <form asp-action="StudentBookDates" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="StudentID" value="@ViewBag.StudentID" />
+
+        @Html.Raw(BuildCalendarHtml(calendarDays, ViewBag.CurrentMonthYear as string ?? ""))
+
+        @if (nextCalendarDays != null)
+        {
+            <div class="mt-4">
+                @Html.Raw(BuildCalendarHtml(nextCalendarDays, ViewBag.NextMonthYear as string ?? ""))
+            </div>
+        }
+
+        <div class="mt-3 d-flex gap-3 align-items-center">
+            <button type="submit" class="btn btn-success btn-lg" id="bookBtn">
+                <i class="bi bi-check-circle"></i> حجز الأيام المحددة
+            </button>
+            <div class="d-flex gap-3 me-auto">
+                <span class="badge bg-success p-2"><i class="bi bi-check-circle-fill"></i> محجوز</span>
+                <span class="badge bg-danger p-2"><i class="bi bi-x-circle-fill"></i> محظور</span>
+                <span class="badge bg-secondary p-2"><i class="bi bi-square"></i> متاح</span>
+            </div>
+        </div>
+    </form>
+}
+
+@functions {
+    private string BuildCalendarHtml(List<CalendarDayViewModel> days, string monthYear)
+    {
+        var h = new System.Text.StringBuilder();
+        h.AppendLine("<div class=\"card\">");
+        h.AppendLine("<div class=\"card-header bg-success text-white d-flex justify-content-between align-items-center\">");
+        h.AppendLine($"<h5 class=\"mb-0\">{monthYear}</h5>");
+        h.AppendLine("<span>أقصى 4 أيام للشهر</span>");
+        h.AppendLine("</div><div class=\"card-body\">");
+        h.AppendLine("<div class=\"calendar-grid\">");
+        h.AppendLine("<div class=\"calendar-header\">");
+        h.AppendLine("<span>الأحد</span><span>الاثنين</span><span>الثلاثاء</span><span>الأربعاء</span><span>الخميس</span><span>الجمعة</span><span>السبت</span>");
+        h.AppendLine("</div><div class=\"calendar-body\">");
+
+        foreach (var day in days)
+        {
+            var css = $"calendar-day{(day.IsCurrentMonth ? "" : " other-month")}{(day.IsPast ? " past" : "")}{(day.IsBooked ? " booked" : "")}{(day.IsBlocked ? " blocked" : "")}";
+            h.AppendLine($"<div class=\"{css}\">");
+
+            if (day.IsCurrentMonth && !day.IsPast && !day.IsBlocked)
+            {
+                h.AppendLine("<label class=\"day-label\">");
+                h.AppendLine($"<input type=\"checkbox\" name=\"selectedDates\" value=\"{day.Date:yyyy-MM-dd}\" class=\"day-checkbox\"{(day.IsBooked ? " checked disabled" : "")} />");
+                h.AppendLine($"<span class=\"day-number\">{day.DayNumber}</span>");
+                h.AppendLine("</label>");
+            }
+            else
+            {
+                var numCss = day.IsBooked ? "text-success" : day.IsBlocked ? "text-danger" : "";
+                h.AppendLine($"<span class=\"day-number {numCss}\">{day.DayNumber}");
+                if (day.IsBooked) h.AppendLine("<i class=\"bi bi-check-circle-fill text-success small\"></i>");
+                if (day.IsBlocked && !day.IsBooked) h.AppendLine("<i class=\"bi bi-x-circle-fill text-danger small\"></i>");
+                h.AppendLine("</span>");
+            }
+
+            h.AppendLine("</div>");
+        }
+
+        h.AppendLine("</div></div></div></div>");
+        return h.ToString();
+    }
+}
+
+@section Styles {
+    <style>
+        .calendar-grid { direction: ltr; }
+        .calendar-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-weight: bold;
+            background: #f8f9fa;
+            padding: 8px 0;
+            border-radius: 8px 8px 0 0;
+        }
+        .calendar-body {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            border: 1px solid #dee2e6;
+            border-top: none;
+        }
+        .calendar-day {
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #eee;
+            padding: 4px;
+            position: relative;
+        }
+        .calendar-day.other-month { opacity: 0.3; }
+        .calendar-day.past { background: #f5f5f5; }
+        .calendar-day.booked { background: #d4edda; }
+        .calendar-day.blocked { background: #f8d7da; }
+        .day-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+        }
+        .day-checkbox { width: 18px; height: 18px; cursor: pointer; }
+        .day-number { font-size: 14px; margin-top: 2px; display: flex; align-items: center; gap: 2px; }
+        .day-checkbox:disabled + .day-number { opacity: 0.7; }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        var submitting = false;
+        document.getElementById('bookBtn').addEventListener('click', function(e) {
+            if (submitting) { e.preventDefault(); return; }
+            var allChecked = document.querySelectorAll('.day-checkbox:checked:not(:disabled)');
+            if (allChecked.length === 0) {
+                e.preventDefault();
+                alert('اختر يوم واحد على الأقل');
+                return;
+            }
+            var cards = document.querySelectorAll('.card');
+            var ok = true;
+            cards.forEach(function(card) {
+                var header = card.querySelector('.card-header h5');
+                if (!header) return;
+                var cardChecked = card.querySelectorAll('.day-checkbox:checked:not(:disabled)').length;
+                var cardBooked = card.querySelectorAll('.day-checkbox:disabled:checked').length;
+                if (cardBooked + cardChecked > 4) {
+                    e.preventDefault();
+                    alert('لا يمكن حجز أكثر من 4 أيام في الشهر الواحد');
+                    ok = false;
+                    return;
+                }
+            });
+            if (!ok) return;
+            submitting = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> جاري الحجز...';
+        });
+    </script>
+}

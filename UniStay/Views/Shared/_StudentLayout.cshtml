@@ -46,8 +46,11 @@
                 <a class="nav-link" asp-controller="Student" asp-action="Violations">
                     <i class="bi bi-exclamation-triangle"></i> المخالفات والغرامات
                 </a>
-                <a class="nav-link" asp-controller="Student" asp-action="Meals">
-                    <i class="bi bi-fork-knife"></i> الوجبات
+                <a class="nav-link" asp-controller="Student" asp-action="MealBooking">
+                    <i class="bi bi-calendar-check"></i> حجز الوجبات
+                </a>
+                <a class="nav-link" asp-controller="Student" asp-action="MyMealBookings">
+                    <i class="bi bi-basket"></i> وجباتي المحجوزة
                 </a>
             <a class="nav-link" asp-controller="Student" asp-action="AnnouncementsList">
                 <i class="bi bi-megaphone"></i> الإعلانات
@@ -83,6 +86,7 @@
     </div>
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    @RenderSection("Styles", required: false)
     @RenderSection("Scripts", required: false)
 </body>
 </html>

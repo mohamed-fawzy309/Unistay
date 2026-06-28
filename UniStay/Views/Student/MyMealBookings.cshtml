@@ -1,0 +1,98 @@
+@model List<Meal>
+@{
+    ViewData["Title"] = "وجباتي المحجوزة";
+    var deadlineRule = ViewBag.DeadlineRule as string ?? "";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0" style="font-weight:800">
+        <i class="bi bi-basket me-2" style="color:var(--success)"></i> وجباتي المحجوزة
+    </h4>
+</div>
+
+<div class="alert alert-info py-2" role="alert">
+    <i class="bi bi-info-circle me-1"></i> @deadlineRule
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+@if (Model.Count == 0)
+{
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <div style="font-size:3rem;color:var(--muted)"><i class="bi bi-basket"></i></div>
+            <h6 class="mt-2" style="font-weight:700">لا توجد وجبات محجوزة</h6>
+            <p style="color:var(--muted)">يمكنك حجز الوجبات من صفحة حجز الوجبات</p>
+            <a asp-action="MealBooking" class="btn btn-success">
+                <i class="bi bi-calendar-check"></i> حجز وجبات
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+            <thead class="table-success">
+                <tr>
+                    <th>#</th>
+                    <th>التاريخ</th>
+                    <th>اليوم</th>
+                    <th>الحالة</th>
+                    <th>السعر</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int i = 1;
+                    var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                }
+                @foreach (var meal in Model)
+                {
+                    var isPast = meal.MealDate <= today;
+                    var canCancel = !isPast;
+                    var status = meal.IsConsumed == true ? "تم الاستلام" : isPast ? "لم يستلم" : "محجوزة";
+                    var statusClass = meal.IsConsumed == true ? "text-success" : isPast ? "text-danger" : "text-primary";
+                    <tr>
+                        <td>@(i++)</td>
+                        <td>@meal.MealDate.ToString("yyyy-MM-dd")</td>
+                        <td>@meal.MealDate.ToString("dddd", new System.Globalization.CultureInfo("ar-SA"))</td>
+                        <td class="@statusClass fw-bold">@status</td>
+                        <td>@meal.Price.ToString("F2") ج.م</td>
+                        <td>
+                            @if (canCancel)
+                            {
+                                <form asp-action="CancelMyBooking" method="post" style="display:inline"
+                                      onsubmit="return confirm('هل أنت متأكد من إلغاء حجز وجبة @(meal.MealDate.ToString("yyyy-MM-dd"))؟');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="mealId" value="@meal.ID" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-x-circle"></i> إلغاء الحجز
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted"><i class="bi bi-lock"></i> لا يمكن الإلغاء</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<div class="mt-3">
+    <a asp-action="MealBooking" class="btn btn-success">
+        <i class="bi bi-calendar-check"></i> حجز وجبات جديدة
+    </a>
+</div>

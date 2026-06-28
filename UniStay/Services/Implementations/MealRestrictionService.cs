@@ -104,6 +104,32 @@ public class MealRestrictionService(AssuitDbContext db, IAuditService audit) : I
         db.MealBlocks.Add(block);
         await db.SaveChangesAsync();
 
+        var bookedMeals = await db.Meals
+            .Where(m => m.StudentID == model.StudentID
+                && m.IsBooked == true
+                && m.MealDate >= model.FromDate
+                && m.MealDate <= toDate)
+            .ToListAsync();
+
+        if (bookedMeals.Count != 0)
+        {
+            foreach (var meal in bookedMeals)
+            {
+                meal.IsBooked = false;
+                meal.IsActive = false;
+            }
+            await db.SaveChangesAsync();
+
+            await audit.LogAsync(userId, "Staff", "MealRestriction.AutoUnbook", "Meal",
+                null, null, new
+                {
+                    model.StudentID,
+                    model.FromDate,
+                    toDate,
+                    UnbookedCount = bookedMeals.Count
+                });
+        }
+
         await audit.LogAsync(userId, "Staff", "MealRestriction.Create", "MealBlock",
             block.ID, null, new { model.StudentID, model.DormitoryCityID, model.FromDate, toDate, model.MealType, model.Reason });
 
